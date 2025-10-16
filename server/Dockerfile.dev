@@ -1,0 +1,14 @@
+
+FROM golang:1.25-alpine
+
+RUN apk add --no-cache nodejs npm git 
+
+RUN go install github.com/cosmtrek/air@latest
+
+WORKDIR /app
+
+CMD npm --prefix ./web install && \
+    (npm --prefix ./web run dev &) && \
+    cd server && \
+    air
+

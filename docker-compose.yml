@@ -1,0 +1,15 @@
+services: 
+  server: 
+    container_name: mist-server
+    build: 
+      context: ./server
+      dockerfile: Dockerfile.dev
+
+    ports: 
+      - "4269:4269"
+      - "5173:5173"
+
+    volumes: 
+      - ./server:/app/server
+      - ./dash:/app/dash
+      - /var/run/docker.sock:/var/run/docker.sock

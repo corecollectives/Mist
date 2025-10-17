@@ -2,23 +2,16 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/corecollectives/mist/api"
-	"github.com/corecollectives/mist/api/middleware"
-	"log"
-	"net/http"
-	"time"
+	"github.com/corecollectives/mist/db"
 )
 
 func main() {
-	mux := http.NewServeMux()
-
-	api.RegisterRoutes(mux)
-	handler := middleware.Logger(mux)
-	server := &http.Server{
-		Addr:              ":8080",
-		Handler:           handler,
-		ReadHeaderTimeout: 5 * time.Second,
+	dbInstance, err := db.InitDB("mist.db")
+	if err != nil {
+		panic(err)
 	}
-	fmt.Println("Server is running on port 8080")
-	log.Fatal(server.ListenAndServe())
+	fmt.Println("Database initialized:", dbInstance)
+	api.InitApiServer()
 }

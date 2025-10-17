@@ -8,6 +8,7 @@ services:
       - "8080:8080"
     volumes: 
       - ./server:/app
+      - mist-db:/var/lib/mist
       - /var/run/docker.sock:/var/run/docker.sock
     networks: 
       - mistnet
@@ -25,6 +26,9 @@ services:
       - /app/node_modules
     networks: 
       - mistnet
+
+volumes: 
+  mist-db: {}
 
 networks:
   mistnet: 

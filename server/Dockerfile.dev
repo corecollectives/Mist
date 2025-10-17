@@ -1,18 +1,26 @@
 FROM golang:1.25-alpine
 
-RUN apk add --no-cache git curl
+ENV CGO_ENABLED=1
+ENV GO111MODULE=on
+ENV PATH="/root/go/bin:${PATH}"
+
+RUN apk add --no-cache \
+    build-base \     
+    git \
+    curl \
+    sqlite \
+    bash
 
 RUN go install github.com/air-verse/air@latest
-
-ENV PATH="/root/go/bin:${PATH}"
 
 WORKDIR /app
 
 COPY go.mod go.sum ./
-
 RUN go mod download
 
 COPY . .
+
+RUN mkdir -p /var/lib/mist
 
 EXPOSE 8080
 

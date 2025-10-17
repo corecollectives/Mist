@@ -1,14 +1,19 @@
-
 FROM golang:1.25-alpine
 
-RUN apk add --no-cache nodejs npm git 
+RUN apk add --no-cache git curl
 
-RUN go install github.com/cosmtrek/air@latest
+RUN go install github.com/air-verse/air@latest
+
+ENV PATH="/root/go/bin:${PATH}"
 
 WORKDIR /app
 
-CMD npm --prefix ./web install && \
-    (npm --prefix ./web run dev &) && \
-    cd server && \
-    air
+COPY go.mod go.sum ./
 
+RUN go mod download
+
+COPY . .
+
+EXPOSE 8080
+
+CMD ["air"]

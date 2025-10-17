@@ -10,4 +10,14 @@ export default defineConfig({
       },
     }),
   ],
+  server: {
+    proxy: {
+      '/api': {
+        changeOrigin: true,
+        target: 'http://server:8080/',
+        rewrite: (path) => path.replace(/^\/api/, ''),
+        ws: true,
+      }
+    }
+  }
 })

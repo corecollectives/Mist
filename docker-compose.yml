@@ -4,12 +4,28 @@ services:
     build: 
       context: ./server
       dockerfile: Dockerfile.dev
-
     ports: 
-      - "4269:4269"
-      - "5173:5173"
-
+      - "8080:8080"
     volumes: 
-      - ./server:/app/server
-      - ./dash:/app/dash
+      - ./server:/app
       - /var/run/docker.sock:/var/run/docker.sock
+    networks: 
+      - mistnet
+  dashboard:
+    container_name: mist-dashboard
+    depends_on:
+      - server
+    build:
+      context: ./dash
+      dockerfile: Dockerfile.dev
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./dash:/app
+      - /app/node_modules
+    networks: 
+      - mistnet
+
+networks:
+  mistnet: 
+    driver: bridge

@@ -25,4 +25,3 @@ func InitApiServer() {
 	fmt.Println("Server is running on port 8080")
 	log.Fatal(server.ListenAndServe())
 }
-

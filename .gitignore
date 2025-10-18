@@ -1,4 +1,3 @@
 tmp/
-node_modules/
 .env
 mist.db

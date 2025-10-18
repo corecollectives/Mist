@@ -14,6 +14,5 @@ func main() {
 		return
 	}
 	defer dbInstance.Close()
-	fmt.Println("Database initialized")
 	api.InitApiServer()
 }

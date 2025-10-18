@@ -11,10 +11,10 @@ import (
 
 func InitDB() (*sql.DB, error) {
 	dbPath := ""
-	if os.Getenv("ENV") == "prod" {
-		dbPath = "/var/lib/mist/mist.db"
-	} else {
+	if os.Getenv("ENV") == "dev" {
 		dbPath = "./mist.db"
+	} else {
+		dbPath = "/var/lib/mist/mist.db"
 	}
 	dbDir := filepath.Dir(dbPath)
 	if err := os.MkdirAll(dbDir, os.ModePerm); err != nil {

@@ -8,10 +8,12 @@ import (
 )
 
 func main() {
-	dbInstance, err := db.InitDB("mist.db")
+	dbInstance, err := db.InitDB()
 	if err != nil {
-		panic(err)
+		fmt.Println("Error initializing database:", err)
+		return
 	}
-	fmt.Println("Database initialized:", dbInstance)
+	defer dbInstance.Close()
+	fmt.Println("Database initialized")
 	api.InitApiServer()
 }

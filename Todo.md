@@ -3,7 +3,7 @@
 ## Server
 
 - [ ] Setup Database
-- [ ] Setup HTTP API server
+- [x] Setup HTTP API server
 - [ ] Setup WebSocket server
 
 - [ ] Setup Auth

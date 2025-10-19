@@ -2,15 +2,20 @@ package api
 
 import (
 	"fmt"
-	"github.com/corecollectives/mist/api/handlers"
-	"github.com/corecollectives/mist/api/middleware"
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/corecollectives/mist/api/handlers"
+	"github.com/corecollectives/mist/api/middleware"
 )
 
 func RegisterRoutes(mux *http.ServeMux) {
+	//jo protected routes honge usme middleware use kar lena jaise /dashboard waghera jo bhi
 	mux.HandleFunc("/health", handlers.HealthCheckHandler)
+	mux.HandleFunc("/signup", handlers.SignUpHandler)
+	mux.HandleFunc("/login", handlers.LoginHandler)
+	mux.HandleFunc("/doesExist", handlers.DoesUserExist)
 }
 
 func InitApiServer() {

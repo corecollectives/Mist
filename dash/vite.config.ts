@@ -14,11 +14,7 @@ export default defineConfig({
     proxy: {
       '/api': {
         changeOrigin: true,
-<<<<<<< HEAD
-        target: process.env.API_URL || 'http://localhost:8080',
-=======
         target: 'http://localhost:8080/',
->>>>>>> websockets
         rewrite: (path) => path.replace(/^\/api/, ''),
         ws: true,
       }

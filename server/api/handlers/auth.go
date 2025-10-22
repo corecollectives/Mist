@@ -13,26 +13,20 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-var db *sql.DB
-
-func SetDB(database *sql.DB) {
-	db = database
-}
-
 func ErrorResponse(w http.ResponseWriter, message string, code int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	json.NewEncoder(w).Encode(map[string]string{"error": message})
 }
 
-func SignUpHandler(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) SignUpHandler(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Username string `json:"username"`
 		Email    string `json:"email"`
 		Password string `json:"password"`
 		Role     string `json:"role"`
 	}
-
+	db := h.DB
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		ErrorResponse(w, "Invalid request payload", http.StatusBadRequest)
 		return
@@ -73,12 +67,12 @@ func SignUpHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func LoginHandler(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	var cred struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
 	}
-
+	db := h.DB
 	if err := json.NewDecoder(r.Body).Decode(&cred); err != nil {
 		ErrorResponse(w, "Invalid request payload", http.StatusBadRequest)
 		return
@@ -117,12 +111,13 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"token": token})
 }
 
-func DoesUserExist(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) DoesUserExist(w http.ResponseWriter, r *http.Request) {
 	email := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("email")))
 	if email == "" {
 		ErrorResponse(w, "Email is required", http.StatusBadRequest)
 		return
 	}
+	db := h.DB
 	var exists bool
 	err := db.QueryRowContext(r.Context(), `SELECT EXISTS(SELECT 1 FROM users WHERE LOWER(email)=?)`, email).Scan(&exists)
 	if err != nil {

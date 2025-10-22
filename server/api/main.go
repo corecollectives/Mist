@@ -1,6 +1,7 @@
 package api
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
@@ -11,18 +12,19 @@ import (
 	"github.com/corecollectives/mist/websockets"
 )
 
-func RegisterRoutes(mux *http.ServeMux) {
+func RegisterRoutes(mux *http.ServeMux, db *sql.DB) {
+	h := &handlers.Handler{DB: db}
 	//jo protected routes honge usme middleware use kar lena jaise /dashboard waghera jo bhi
 	mux.HandleFunc("/ws", websockets.WsHandler)
 	mux.HandleFunc("/health", handlers.HealthCheckHandler)
-	mux.HandleFunc("/signup", handlers.SignUpHandler)
-	mux.HandleFunc("/login", handlers.LoginHandler)
-	mux.HandleFunc("/doesExist", handlers.DoesUserExist)
+	mux.HandleFunc("/signup", h.SignUpHandler)
+	mux.HandleFunc("/login", h.LoginHandler)
+	mux.HandleFunc("/doesExist", h.DoesUserExist)
 }
 
-func InitApiServer() {
+func InitApiServer(db *sql.DB) {
 	mux := http.NewServeMux()
-	RegisterRoutes(mux)
+	RegisterRoutes(mux, db)
 	go websockets.BroadcastMessages() //need to run this goroutine before starting the server to handle broadcasting.
 	handler := middleware.Logger(mux)
 	server := &http.Server{

@@ -10,4 +10,8 @@ services:
     dir: ./dash
     cmd: bun dev
     env:
+<<<<<<< HEAD
       API_URL: http://localhost:8080
+=======
+      API_URL: http://localhost:8080/
+>>>>>>> websockets

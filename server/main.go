@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-
 	"github.com/corecollectives/mist/api"
 	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/db"

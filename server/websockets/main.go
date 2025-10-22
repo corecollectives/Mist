@@ -1,9 +1,12 @@
 package websockets
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -13,9 +16,9 @@ var upgrader = websocket.Upgrader{
 		return true
 	},
 }
+
 var clients = make(map[*websocket.Conn]bool)
-var mu = sync.Mutex{}
-var broadcast = make(chan []byte, 5)
+var mu sync.Mutex
 
 func WsHandler(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
@@ -24,41 +27,45 @@ func WsHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Upgrade error:", err)
 		return
 	}
-	// just for testing purpose
-	// TODO: remove this in prod
-	fmt.Println("Client connected")
-	defer conn.Close()
-
 	mu.Lock()
 	clients[conn] = true
 	mu.Unlock()
 
+	defer func() {
+		mu.Lock()
+		delete(clients, conn)
+		mu.Unlock()
+		conn.Close()
+	}()
+
 	for {
-		_, msg, err := conn.ReadMessage()
-		if err != nil {
-			mu.Lock()
-			delete(clients, conn)
-			mu.Unlock()
-			fmt.Println("Client disconnected:", err)
+		if _, _, err := conn.ReadMessage(); err != nil {
 			break
 		}
-		// just for testing purpose
-		// TODO: remove this in prod
-		println("Received message:", string(msg))
-		// conn.WriteMessage(websocket.TextMessage, []byte("hello from server")) NO Need for this ig?(only confirms that server recieved a message fropm this client)
-		broadcast <- msg
 	}
 
 }
 
-func BroadcastMessages() {
+func BroadcastMetrics() {
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
 
-	for {
-		message := <-broadcast
+	for range ticker.C {
+		metrics, err := GetMetrics()
+		if err != nil {
+			log.Println("Error in getting the metrics: ", err)
+			continue
+		}
+		msg, err := json.Marshal(metrics)
+		if err != nil {
+			log.Println("error in marshallung metrics: ", err)
+			continue
+		}
 		mu.Lock()
 		for client := range clients {
-			err := client.WriteMessage(websocket.TextMessage, message)
-			if err != nil {
+			client.SetWriteDeadline(time.Now().Add(3*time.Second))
+			if err := client.WriteMessage(websocket.TextMessage, msg); err != nil {
+				log.Println("Error sending message, removing client:", err)
 				client.Close()
 				delete(clients, client)
 			}

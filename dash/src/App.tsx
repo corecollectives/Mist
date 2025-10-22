@@ -1,21 +1,33 @@
+import { useEffect, useRef, useState } from 'react'
 import './App.css'
 
 function App() {
-  const fetchData = async () => {
-    const response = await fetch('/api/health', {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-
-    })
-    const data = await response.json()
-    console.log(data)
-  }
-  fetchData()
+  const wsRef = useRef<WebSocket | null>(null)
+  const [msg, setMsg] = useState<any>(null)
+  
+  useEffect(() => {
+    console.log("Opening WebSocket connection");
+    wsRef.current = new WebSocket('/api/ws');
+    
+    wsRef.current.onopen = () => {
+      console.log("WebSocket connection opened");
+      wsRef.current?.send("hello from client");
+    }
+    
+    wsRef.current.onmessage = (event) => {
+      console.log("Received message:", event.data);
+      setMsg(event.data);
+    }
+    
+    return () => {
+      wsRef.current?.close();
+    }
+  }, []);
+  
   return (
     <>
-      Hello
+      <p>this msg is coming from server via ws</p>
+      <div>msg: {msg}</div>
     </>
   )
 }

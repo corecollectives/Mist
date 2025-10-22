@@ -2,10 +2,9 @@ package websockets
 
 import (
 	"fmt"
+	"github.com/gorilla/websocket"
 	"net/http"
 	"sync"
-
-	"github.com/gorilla/websocket"
 )
 
 var upgrader = websocket.Upgrader{
@@ -21,8 +20,12 @@ func WsHandler(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		http.NotFound(w, r)
+		fmt.Println("Upgrade error:", err)
 		return
 	}
+	// just for testing purpose
+	// TODO: remove this in prod
+	fmt.Println("Client connected")
 	defer conn.Close()
 
 	mu.Lock()
@@ -38,12 +41,17 @@ func WsHandler(w http.ResponseWriter, r *http.Request) {
 			fmt.Println("Client disconnected:", err)
 			break
 		}
+		// just for testing purpose
+		// TODO: remove this in prod
+		println("Received message:", string(msg))
+		conn.WriteMessage(websocket.TextMessage, []byte("hello from server"))
 		broadcast <- msg
 	}
-
+	
 }
 
 func BroadcastMessages() {
+
 	for {
 		message := <-broadcast
 		mu.Lock()
@@ -56,11 +64,4 @@ func BroadcastMessages() {
 		}
 		mu.Unlock()
 	}
-}
-
-func InnitWSServer() {
-	http.HandleFunc("/ws", WsHandler)
-	go BroadcastMessages()
-	fmt.Println("WebSocket server started on :5000")
-	http.ListenAndServe(":5000", nil)
 }

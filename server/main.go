@@ -2,11 +2,9 @@ package main
 
 import (
 	"fmt"
-
 	"github.com/corecollectives/mist/api"
 	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/db"
-	"github.com/corecollectives/mist/websockets"
 )
 
 func main() {
@@ -18,5 +16,4 @@ func main() {
 	}
 	defer dbInstance.Close()
 	api.InitApiServer()
-	websockets.InnitWSServer()
 }

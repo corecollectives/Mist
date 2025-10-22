@@ -8,10 +8,12 @@ import (
 
 	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/api/middleware"
+	"github.com/corecollectives/mist/websockets"
 )
 
 func RegisterRoutes(mux *http.ServeMux) {
 	//jo protected routes honge usme middleware use kar lena jaise /dashboard waghera jo bhi
+	mux.HandleFunc("/ws", websockets.WsHandler)
 	mux.HandleFunc("/health", handlers.HealthCheckHandler)
 	mux.HandleFunc("/signup", handlers.SignUpHandler)
 	mux.HandleFunc("/login", handlers.LoginHandler)

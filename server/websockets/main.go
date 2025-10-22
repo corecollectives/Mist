@@ -2,9 +2,10 @@ package websockets
 
 import (
 	"fmt"
-	"github.com/gorilla/websocket"
 	"net/http"
 	"sync"
+
+	"github.com/gorilla/websocket"
 )
 
 var upgrader = websocket.Upgrader{
@@ -44,10 +45,10 @@ func WsHandler(w http.ResponseWriter, r *http.Request) {
 		// just for testing purpose
 		// TODO: remove this in prod
 		println("Received message:", string(msg))
-		conn.WriteMessage(websocket.TextMessage, []byte("hello from server"))
+		// conn.WriteMessage(websocket.TextMessage, []byte("hello from server")) NO Need for this ig?(only confirms that server recieved a message fropm this client)
 		broadcast <- msg
 	}
-	
+
 }
 
 func BroadcastMessages() {

@@ -23,6 +23,7 @@ func RegisterRoutes(mux *http.ServeMux) {
 func InitApiServer() {
 	mux := http.NewServeMux()
 	RegisterRoutes(mux)
+	go websockets.BroadcastMessages() //need to run this goroutine before starting the server to handle broadcasting.
 	handler := middleware.Logger(mux)
 	server := &http.Server{
 		Addr:              ":8080",

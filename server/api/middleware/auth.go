@@ -41,7 +41,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		tokenString := parts[1]
 
 		claims := jwt.MapClaims{}
-		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (any, error) {
 			return jwtSecret, nil
 		})
 		if err != nil || !token.Valid {

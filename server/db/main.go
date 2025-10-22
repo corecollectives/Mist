@@ -21,7 +21,6 @@ func InitDB() (*sql.DB, error) {
 		return nil, fmt.Errorf("failed to create db directory: %v", err)
 	}
 	db, err := sql.Open("sqlite3", dbPath)
-	fmt.Println("Database path:", dbPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %v", err)
 	}

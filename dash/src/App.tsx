@@ -14,7 +14,7 @@ function App() {
       wsRef.current?.send("hello from client");
     }
     
-    wsRef.current.onmessage = (event) => {
+    wsRef.current.onmessage = (event:MessageEvent) => {
       console.log("Received message:", event.data);
       setMsg(event.data);
     }

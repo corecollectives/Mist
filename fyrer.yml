@@ -1,0 +1,13 @@
+services:
+
+  - name: server
+    dir: ./server
+    cmd: go run main.go
+    env:
+      ENV: dev
+
+  - name: dash
+    dir: ./dash
+    cmd: bun dev
+    env:
+      API_URL: http://localhost:8080

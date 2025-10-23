@@ -17,10 +17,10 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-var clients = make(map[*websocket.Conn]bool)
+var StatClients = make(map[*websocket.Conn]bool)
 var mu sync.Mutex
 
-func WsHandler(w http.ResponseWriter, r *http.Request) {
+func StatWsHandler(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		http.NotFound(w, r)
@@ -28,12 +28,12 @@ func WsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	mu.Lock()
-	clients[conn] = true
+	StatClients[conn] = true
 	mu.Unlock()
 
 	defer func() {
 		mu.Lock()
-		delete(clients, conn)
+		delete(StatClients, conn)
 		mu.Unlock()
 		conn.Close()
 	}()
@@ -51,10 +51,10 @@ func BroadcastMetrics() {
 	defer ticker.Stop()
 
 	for range ticker.C {
-		if len(clients) == 0 {
+		if len(StatClients) == 0 {
 			continue
 		}
-		metrics, err := GetMetrics()
+		metrics, err := GetStats()
 		if err != nil {
 			log.Println("Error in getting the metrics: ", err)
 			continue
@@ -65,12 +65,12 @@ func BroadcastMetrics() {
 			continue
 		}
 		mu.Lock()
-		for client := range clients {
+		for client := range StatClients {
 			client.SetWriteDeadline(time.Now().Add(3 * time.Second))
 			if err := client.WriteMessage(websocket.TextMessage, msg); err != nil {
 				log.Println("Error sending message, removing client:", err)
 				client.Close()
-				delete(clients, client)
+				delete(StatClients, client)
 			}
 		}
 		mu.Unlock()

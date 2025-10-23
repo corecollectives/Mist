@@ -51,6 +51,9 @@ func BroadcastMetrics() {
 	defer ticker.Stop()
 
 	for range ticker.C {
+		if len(clients) == 0 {
+			continue
+		}
 		metrics, err := GetMetrics()
 		if err != nil {
 			log.Println("Error in getting the metrics: ", err)
@@ -63,7 +66,7 @@ func BroadcastMetrics() {
 		}
 		mu.Lock()
 		for client := range clients {
-			client.SetWriteDeadline(time.Now().Add(3*time.Second))
+			client.SetWriteDeadline(time.Now().Add(3 * time.Second))
 			if err := client.WriteMessage(websocket.TextMessage, msg); err != nil {
 				log.Println("Error sending message, removing client:", err)
 				client.Close()

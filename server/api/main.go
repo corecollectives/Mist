@@ -3,13 +3,12 @@ package api
 import (
 	"database/sql"
 	"fmt"
-	"log"
-	"net/http"
-	"time"
-
 	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/api/middleware"
 	"github.com/corecollectives/mist/websockets"
+	"log"
+	"net/http"
+	"time"
 )
 
 func RegisterRoutes(mux *http.ServeMux, db *sql.DB) {

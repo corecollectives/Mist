@@ -1,12 +1,9 @@
 package websockets
 
 import (
-	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"sync"
-	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -46,30 +43,30 @@ func WsHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func BroadcastMetrics() {
-	ticker := time.NewTicker(1 * time.Second)
-	defer ticker.Stop()
-
-	for range ticker.C {
-		metrics, err := GetMetrics()
-		if err != nil {
-			log.Println("Error in getting the metrics: ", err)
-			continue
-		}
-		msg, err := json.Marshal(metrics)
-		if err != nil {
-			log.Println("error in marshallung metrics: ", err)
-			continue
-		}
-		mu.Lock()
-		for client := range clients {
-			client.SetWriteDeadline(time.Now().Add(3*time.Second))
-			if err := client.WriteMessage(websocket.TextMessage, msg); err != nil {
-				log.Println("Error sending message, removing client:", err)
-				client.Close()
-				delete(clients, client)
-			}
-		}
-		mu.Unlock()
-	}
-}
+// func BroadcastMetrics() {
+// 	ticker := time.NewTicker(1 * time.Second)
+// 	defer ticker.Stop()
+//
+// 	for range ticker.C {
+// 		metrics, err := GetMetrics()
+// 		if err != nil {
+// 			log.Println("Error in getting the metrics: ", err)
+// 			continue
+// 		}
+// 		msg, err := json.Marshal(metrics)
+// 		if err != nil {
+// 			log.Println("error in marshallung metrics: ", err)
+// 			continue
+// 		}
+// 		mu.Lock()
+// 		for client := range clients {
+// 			client.SetWriteDeadline(time.Now().Add(3 * time.Second))
+// 			if err := client.WriteMessage(websocket.TextMessage, msg); err != nil {
+// 				log.Println("Error sending message, removing client:", err)
+// 				client.Close()
+// 				delete(clients, client)
+// 			}
+// 		}
+// 		mu.Unlock()
+// 	}
+// }

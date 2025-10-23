@@ -11,18 +11,33 @@
   - [x] JWT
   - [x] Role based user creation [admin, user]
 
-- [ ] dashboard api
-  - [ ] send live data using ws with timestamp
-    - [ ] cpu usage
-    - [ ] memory usage 
-    - [ ] disk usage
-    - [ ] load
-    - [ ] uptime
-    - [ ] cpu temp 
+- [ ] Basic CRUD
+  - [ ] user
+    - [ ] /me route
+    - [ ] user creation by admin
+    - [ ] logout
+    - [ ] deletion of user by admin
+  - [ ] projects
+    - [ ] create project
+    - [ ] get all projects
+    - [ ] get single project
+    - [ ] update project
+    - [ ] delete project
+    - [ ] get apps in that project
+  - [ ] apps
+
+- [x] dashboard api
+  - [x] send live data using ws with timestamp
+    - [x] cpu usage
+    - [x] memory usage 
+    - [x] disk usage
+    - [x] load
+    - [x] uptime
+    - [x] cpu temp 
 
 ## Dash
 
 - [ ] make basic pages
   - [ ] login page
   - [ ] first user register page
-  - [ ] dashboard page
+  - [x] dashboard page

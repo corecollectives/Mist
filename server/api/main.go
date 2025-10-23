@@ -14,8 +14,10 @@ import (
 
 func RegisterRoutes(mux *http.ServeMux, db *sql.DB) {
 	h := &handlers.Handler{DB: db}
-	//jo protected routes honge usme middleware use kar lena jaise /dashboard waghera jo bhi
+
+	// send the req coming to the /ws/stats endpoint to StatsWsHandler, where it will be upgraded to a websocket connection
 	mux.HandleFunc("/ws/stats", websockets.StatsWsHandler)
+
 	mux.HandleFunc("/health", handlers.HealthCheckHandler)
 	mux.HandleFunc("/signup", h.SignUpHandler)
 	mux.HandleFunc("/login", h.LoginHandler)

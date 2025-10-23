@@ -2,14 +2,14 @@ package websockets
 
 import (
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/disk"
 	"github.com/shirou/gopsutil/host"
 	"github.com/shirou/gopsutil/load"
 	"github.com/shirou/gopsutil/mem"
-	"net/http"
-	"strings"
-	"time"
 )
 
 type Stats struct {
@@ -38,51 +38,6 @@ type LoadAvgStats struct {
 	OneMinute      float64 `json:"oneMinute"`
 	FiveMinutes    float64 `json:"fiveMinutes"`
 	FifteenMinutes float64 `json:"fifteenMinutes"`
-}
-
-func StatsWsHandler(w http.ResponseWriter, r *http.Request) {
-	conn, err := upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		http.Error(w, "could not upgrade", http.StatusBadRequest)
-		return
-	}
-	defer conn.Close()
-
-	ticker := time.NewTicker(2 * time.Second)
-	defer ticker.Stop()
-
-	done := make(chan struct{})
-
-	// to check if client has closed its connection
-	go func() {
-		defer close(done)
-		for {
-			_, _, err := conn.ReadMessage()
-			// error thrown when client has disconnected so break the loop
-			if err != nil {
-				break
-			}
-		}
-	}()
-
-	for {
-		select {
-		// if go routine is closed, hence the client has disconnected so return and close the connection
-		case <-done:
-			return
-		// calc stas and send to client every tick
-		case <-ticker.C:
-			stats, err := GetStats()
-			if err != nil {
-				continue
-			}
-			err = conn.WriteJSON(stats)
-			// if there is some error sending the sats, return and close the connection
-			if err != nil {
-				return
-			}
-		}
-	}
 }
 
 func GetStats() (*Stats, error) {
@@ -157,6 +112,7 @@ func GetStats() (*Stats, error) {
 		Uptime:         uptime,
 		CPUTemperature: cpuTemp,
 	}
+
 	fmt.Println("sent stats")
 	return &metrics, nil
 }

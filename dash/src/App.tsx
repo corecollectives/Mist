@@ -1,13 +1,40 @@
-import { Home } from "./pages/Home";
-
+import Loading from "./components/Loading";
+import { useAuth } from "./context/AuthContext";
+import { Navigate, Route, BrowserRouter as Router, Routes } from "react-router-dom"
+import { SetupPage } from "./pages/Setup";
+import { HomePage } from "./pages/Home";
 
 
 export default function App() {
-  return (
+  const { setupRequired } = useAuth();
+  console.log("Setup required:", setupRequired);
 
-    <div className="flex min-h-screen h-full bg-gray-100 dark:bg-gray-900">
-      <Home />
-    </div>
+  if (setupRequired === null) {
+    return <div className="flex h-screen w-screen items-center justify-center">
+      <Loading />
+    </div>;
+
+  }
+  return (
+    <Router>
+      <Routes>
+        {setupRequired ? (
+          <>
+            <Route path="/setup" element={<SetupPage />} />
+            <Route path="*" element={<Navigate to="/setup" replace />} />
+          </>
+
+        ) :
+          (
+            <>
+              <Route path="*" element={<HomePage />} />
+              <Route path="/setup" element={<Navigate to="/" replace />} />
+            </>
+          )
+        }
+      </Routes>
+    </Router>
+
   )
 }
 

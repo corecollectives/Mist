@@ -37,7 +37,7 @@ interface SystemStats {
   cpuTemperature: number;
 }
 
-export const Home = () => {
+export const HomePage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const wsRef = useRef<WebSocket | null>(null);
   const [stats, setStats] = useState<SystemStats[]>([]);
@@ -52,7 +52,7 @@ export const Home = () => {
 
       wsRef.current.onmessage = (event) => {
         const data: SystemStats = JSON.parse(event.data);
-        setStats((prev) => [...prev.slice(-30), data]); // Keep last 30 data points
+        setStats((prev) => [...prev.slice(-30), data]);
       };
 
       wsRef.current.onerror = (error) => {
@@ -113,7 +113,9 @@ export const Home = () => {
   };
 
   if (loading || stats.length === 0) {
-    return <Loading />;
+    return <div className="flex h-screen w-full items-center justify-center">
+      <Loading />
+    </div>;
   }
 
   return (

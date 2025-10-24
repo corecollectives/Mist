@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/corecollectives/mist/api/handlers"
+	"github.com/corecollectives/mist/api/handlers/auth"
 	"github.com/corecollectives/mist/api/middleware"
 	"github.com/corecollectives/mist/websockets"
 	"log"
@@ -12,19 +13,19 @@ import (
 )
 
 func RegisterRoutes(mux *http.ServeMux, db *sql.DB) {
-	h := &handlers.Handler{DB: db}
-	//jo protected routes honge usme middleware use kar lena jaise /dashboard waghera jo bhi
+	// h := &handlers.Handler{DB: db}
+	auth := &auth.Handler{DB: db}
 	mux.HandleFunc("/ws/stats", websockets.StatWsHandler)
 	mux.HandleFunc("/health", handlers.HealthCheckHandler)
-	mux.HandleFunc("/signup", h.SignUpHandler)
-	mux.HandleFunc("/login", h.LoginHandler)
-	mux.HandleFunc("/doesExist", h.DoesUserExist)
+	mux.HandleFunc("/auth/signup", auth.SignUpHandler)
+	mux.HandleFunc("/login", auth.LoginHandler)
+	mux.HandleFunc("/auth/check-setup-status", auth.SetupStatusHandler)
 }
 
 func InitApiServer(db *sql.DB) {
 	mux := http.NewServeMux()
 	RegisterRoutes(mux, db)
-	go websockets.BroadcastMetrics() //need to run this goroutine before starting the server to handle broadcasting.
+	go websockets.BroadcastMetrics()
 	handler := middleware.Logger(mux)
 	server := &http.Server{
 		Addr:              ":8080",

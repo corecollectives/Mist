@@ -1,7 +1,6 @@
 package websockets
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
@@ -113,6 +112,6 @@ func GetStats() (*Stats, error) {
 		CPUTemperature: cpuTemp,
 	}
 
-	fmt.Println("sent stats")
+	// fmt.Println("sent stats")
 	return &metrics, nil
 }

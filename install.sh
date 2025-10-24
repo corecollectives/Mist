@@ -45,9 +45,15 @@ if ! command -v bun &>/dev/null; then
     echo 'export PATH=$HOME/.bun/bin:$PATH' >> ~/.bashrc
 fi
 
-echo "Cloning repository..."
-sudo rm -rf $INSTALL_DIR
-git clone -b $BRANCH --single-branch $REPO $INSTALL_DIR
+if [ -d "$INSTALL_DIR/.git" ]; then
+    echo "Repository exists. Pulling latest changes from branch $BRANCH..."
+    cd $INSTALL_DIR
+    git fetch origin $BRANCH
+    git reset --hard origin/$BRANCH
+else
+    echo "Cloning repository from branch $BRANCH..."
+    git clone -b $BRANCH --single-branch $REPO $INSTALL_DIR
+fi
 
 echo "Building frontend..."
 cd $INSTALL_DIR/$VITE_FRONTEND_DIR
@@ -72,6 +78,31 @@ sudo mkdir -p $(dirname $MIST_FILE)
 sudo touch $MIST_FILE
 sudo chown $USER:$USER $MIST_FILE
 
+echo "Opening port $PORT in firewall if applicable..."
+
+if command -v ufw &>/dev/null; then
+    echo "Configuring UFW..."
+    sudo ufw allow $PORT/tcp
+    sudo ufw reload
+elif command -v firewall-cmd &>/dev/null; then
+    echo "Configuring firewalld..."
+    sudo firewall-cmd --permanent --add-port=${PORT}/tcp
+    sudo firewall-cmd --reload
+elif command -v iptables &>/dev/null; then
+    echo "Configuring iptables..."
+    sudo iptables -C INPUT -p tcp --dport $PORT -j ACCEPT 2>/dev/null || \
+        sudo iptables -A INPUT -p tcp --dport $PORT -j ACCEPT
+    # Save iptables rules for persistence
+    if command -v netfilter-persistent &>/dev/null; then
+        sudo netfilter-persistent save
+    elif command -v service &>/dev/null; then
+        sudo service iptables save || true
+    fi
+else
+    echo "No recognized firewall found. Make sure port $PORT is open manually if needed."
+fi
+
+
 SERVICE_FILE="/etc/systemd/system/$APP_NAME.service"
 
 echo "Creating systemd service..."
@@ -95,6 +126,6 @@ EOL
 
 sudo systemctl daemon-reload
 sudo systemctl enable $APP_NAME
-sudo systemctl start $APP_NAME
+sudo systemctl restart $APP_NAME
 
 echo "Installation complete! $APP_NAME is running on port $PORT"

@@ -18,7 +18,9 @@ func RegisterRoutes(mux *http.ServeMux, db *sql.DB) {
 	mux.HandleFunc("/ws/stats", websockets.StatWsHandler)
 	mux.HandleFunc("/health", handlers.HealthCheckHandler)
 	mux.HandleFunc("/auth/signup", auth.SignUpHandler)
-	mux.HandleFunc("/login", auth.LoginHandler)
+	mux.HandleFunc("/auth/login", auth.LoginHandler)
+	mux.HandleFunc("/auth/me", auth.MeHandler)
+	mux.HandleFunc("/auth/logout", auth.LogoutHandler)
 	mux.HandleFunc("/auth/check-setup-status", auth.SetupStatusHandler)
 }
 

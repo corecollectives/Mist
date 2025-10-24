@@ -113,13 +113,13 @@ export const HomePage: React.FC = () => {
   };
 
   if (loading || stats.length === 0) {
-    return <div className="flex h-screen w-full items-center justify-center">
+    return <div className="flex h-full w-full items-center justify-center">
       <Loading />
     </div>;
   }
 
   return (
-    <div className="min-h-screen bg-[#0D1117] p-6 space-y-6 w-full">
+    <div className="min-h-screen bg-[#0D1117] space-y-6 w-full">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-[#161B22] p-6 rounded-lg border border-[#30363D]">
           <h2 className="text-[#C9D1D9] text-xl font-semibold mb-4">

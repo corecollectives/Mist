@@ -2,6 +2,7 @@ package auth
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -49,6 +50,7 @@ func (h *Handler) SignUpHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	fmt.Println(req.Password)
 	if err != nil {
 		log.Printf("Error hashing password: %v", err)
 		ErrorResponse(w, "Error processing password", http.StatusInternalServerError)

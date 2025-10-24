@@ -13,9 +13,9 @@
 
 - [ ] Basic CRUD
   - [ ] user
-    - [ ] /me route
+    - [x] /me route
     - [ ] user creation by admin
-    - [ ] logout
+    - [x] logout
     - [ ] deletion of user by admin
   - [ ] projects
     - [ ] create project

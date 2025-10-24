@@ -3,6 +3,7 @@ package auth
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -23,6 +24,7 @@ func (h *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	cred.Email = strings.ToLower(strings.TrimSpace(cred.Email))
+	fmt.Println(cred.Password)
 
 	if cred.Email == "" || cred.Password == "" {
 		ErrorResponse(w, "Email and password are required", http.StatusBadRequest)
@@ -30,8 +32,8 @@ func (h *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	var user models.User
 	err := db.QueryRowContext(r.Context(),
-		`SELECT id, username, email, password_hash, role FROM users WHERE LOWER(email) = ?`,
-		cred.Email).Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.Role)
+		`SELECT id, username, password_hash, email,  role FROM users WHERE LOWER(email) = ?`,
+		cred.Email).Scan(&user.ID, &user.Username, &user.PasswordHash, &user.Email, &user.Role)
 	if err == sql.ErrNoRows {
 		ErrorResponse(w, "User not found", http.StatusUnauthorized)
 		return
@@ -52,6 +54,21 @@ func (h *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		ErrorResponse(w, "Error generating token", http.StatusInternalServerError)
 		return
 	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "mist_token",
+		Value:    token,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   false,
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   3600 * 24 * 30,
+	})
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"token": token})
+	json.NewEncoder(w).Encode(map[string]any{
+		"success": true,
+		"data":    user,
+		"message": "Login successful",
+		"error":   nil,
+	})
 }

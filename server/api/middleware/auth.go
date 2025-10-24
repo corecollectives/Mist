@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strings"
 	"time"
@@ -20,6 +21,57 @@ func GenerateJWT(userID int64, email, role string) (string, error) {
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString(jwtSecret)
+}
+
+type JWTClaims struct {
+	UserID int64
+	Email  string
+	Role   string
+}
+
+func VerifyJWT(tokenStr string) (*JWTClaims, error) {
+	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, errors.New("unexpected signing method")
+		}
+		return jwtSecret, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Extract claims
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		// Check expiration
+		if exp, ok := claims["exp"].(float64); ok {
+			if int64(exp) < time.Now().Unix() {
+				return nil, errors.New("token expired")
+			}
+		}
+
+		userIDFloat, ok := claims["user_id"].(float64)
+		if !ok {
+			return nil, errors.New("invalid user_id in token")
+		}
+
+		email, ok := claims["email"].(string)
+		if !ok {
+			return nil, errors.New("invalid email in token")
+		}
+
+		role, ok := claims["role"].(string)
+		if !ok {
+			return nil, errors.New("invalid role in token")
+		}
+
+		return &JWTClaims{
+			UserID: int64(userIDFloat),
+			Email:  email,
+			Role:   role,
+		}, nil
+	}
+
+	return nil, errors.New("invalid token")
 }
 
 type contextKey string

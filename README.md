@@ -2,8 +2,7 @@
 
 ## setup dev envirvonment
 
-### using `fyrer` (recommended)
-
+### using `fyrer` 
 - Install `fyrer`: 
 
 ```bash
@@ -16,11 +15,4 @@
 git clone https://github.com/corecollectives/mist
 cd mist
 fyrer
-```
-
-### using docker-compose
-```bash
-git clone https://github.com/corecollectives/mist
-cd mist
-docker-compose up --build
 ```

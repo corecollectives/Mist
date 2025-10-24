@@ -37,7 +37,7 @@ interface SystemStats {
   cpuTemperature: number;
 }
 
-export const Home = () => {
+export const HomePage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const wsRef = useRef<WebSocket | null>(null);
   const [stats, setStats] = useState<SystemStats[]>([]);
@@ -52,7 +52,7 @@ export const Home = () => {
 
       wsRef.current.onmessage = (event) => {
         const data: SystemStats = JSON.parse(event.data);
-        setStats((prev) => [...prev.slice(-30), data]); // Keep last 30 data points
+        setStats((prev) => [...prev.slice(-30), data]);
       };
 
       wsRef.current.onerror = (error) => {
@@ -113,11 +113,13 @@ export const Home = () => {
   };
 
   if (loading || stats.length === 0) {
-    return <Loading />;
+    return <div className="flex h-full w-full items-center justify-center">
+      <Loading />
+    </div>;
   }
 
   return (
-    <div className="min-h-screen bg-[#0D1117] p-6 space-y-6 w-full">
+    <div className="min-h-screen bg-[#0D1117] space-y-6 w-full">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-[#161B22] p-6 rounded-lg border border-[#30363D]">
           <h2 className="text-[#C9D1D9] text-xl font-semibold mb-4">

@@ -2,7 +2,7 @@
 set -e
 
 REPO="https://github.com/corecollectives/mist"
-BRANCH="user-crud"
+BRANCH="scripts"
 APP_NAME="mist"
 INSTALL_DIR="/opt/mist"
 GO_BACKEND_DIR="server"

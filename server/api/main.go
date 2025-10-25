@@ -3,18 +3,21 @@ package api
 import (
 	"database/sql"
 	"fmt"
-	"github.com/corecollectives/mist/api/handlers"
-	"github.com/corecollectives/mist/api/handlers/auth"
-	"github.com/corecollectives/mist/api/middleware"
-	"github.com/corecollectives/mist/websockets"
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/corecollectives/mist/api/handlers"
+	"github.com/corecollectives/mist/api/handlers/auth"
+	"github.com/corecollectives/mist/api/handlers/projects"
+	"github.com/corecollectives/mist/api/middleware"
+	"github.com/corecollectives/mist/websockets"
 )
 
 func RegisterRoutes(mux *http.ServeMux, db *sql.DB) {
-	// h := &handlers.Handler{DB: db}
+	h := &handlers.Handler{DB: db}
 	auth := &auth.Handler{DB: db}
+	proj := &projects.Handler{DB: db}
 	mux.HandleFunc("/api/ws/stats", websockets.StatWsHandler)
 	mux.HandleFunc("/api/health", handlers.HealthCheckHandler)
 	mux.HandleFunc("/api/auth/signup", auth.SignUpHandler)
@@ -22,6 +25,8 @@ func RegisterRoutes(mux *http.ServeMux, db *sql.DB) {
 	mux.HandleFunc("/api/auth/me", auth.MeHandler)
 	mux.HandleFunc("/api/auth/logout", auth.LogoutHandler)
 	mux.HandleFunc("/api/auth/check-setup-status", auth.SetupStatusHandler)
+
+	mux.Handle("/api/projects/create", middleware.AuthMiddleware(h)(http.HandlerFunc(proj.CreateProject)))
 }
 
 func InitApiServer(db *sql.DB) {

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/corecollectives/mist/api/middleware"
+	"github.com/corecollectives/mist/api/utils"
 	"github.com/corecollectives/mist/models"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -19,13 +20,13 @@ func (h *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	db := h.DB
 	if err := json.NewDecoder(r.Body).Decode(&cred); err != nil {
-		ErrorResponse(w, "Invalid request payload", http.StatusBadRequest)
+		utils.ErrorResponse(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
 	cred.Email = strings.ToLower(strings.TrimSpace(cred.Email))
 
 	if cred.Email == "" || cred.Password == "" {
-		ErrorResponse(w, "Email and password are required", http.StatusBadRequest)
+		utils.ErrorResponse(w, "Email and password are required", http.StatusBadRequest)
 		return
 	}
 	var user models.User
@@ -33,23 +34,23 @@ func (h *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		`SELECT id, username, password_hash, email,  role FROM users WHERE LOWER(email) = ?`,
 		cred.Email).Scan(&user.ID, &user.Username, &user.PasswordHash, &user.Email, &user.Role)
 	if err == sql.ErrNoRows {
-		ErrorResponse(w, "User doesn't exist", http.StatusUnauthorized)
+		utils.ErrorResponse(w, "User doesn't exist", http.StatusUnauthorized)
 		return
 	} else if err != nil {
 		log.Printf("db query error: %v", err)
-		ErrorResponse(w, "Internal server error", http.StatusInternalServerError)
+		utils.ErrorResponse(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(cred.Password)); err != nil {
-		ErrorResponse(w, "Invalid email or password", http.StatusUnauthorized)
+		utils.ErrorResponse(w, "Invalid email or password", http.StatusUnauthorized)
 		return
 	}
 
 	token, err := middleware.GenerateJWT(user.ID, user.Email, user.Role)
 	if err != nil {
 		log.Printf("Error generating token: %v", err)
-		ErrorResponse(w, "Error generating token", http.StatusInternalServerError)
+		utils.ErrorResponse(w, "Error generating token", http.StatusInternalServerError)
 		return
 	}
 

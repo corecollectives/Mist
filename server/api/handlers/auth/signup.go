@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/corecollectives/mist/api/middleware"
+	"github.com/corecollectives/mist/api/utils"
 	"github.com/corecollectives/mist/models"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -28,16 +29,16 @@ func (h *Handler) SignUpHandler(w http.ResponseWriter, r *http.Request) {
 	var count int
 	if err := row.Scan(&count); err != nil {
 		log.Printf("Error checking user count: %v", err)
-		ErrorResponse(w, "Internal server error", http.StatusInternalServerError)
+		utils.ErrorResponse(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 	if count > 0 {
-		ErrorResponse(w, "Signup is disabled after initial setup", http.StatusForbidden)
+		utils.ErrorResponse(w, "Signup is disabled after initial setup", http.StatusForbidden)
 		return
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		ErrorResponse(w, "Invalid request payload", http.StatusBadRequest)
+		utils.ErrorResponse(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
 
@@ -45,7 +46,7 @@ func (h *Handler) SignUpHandler(w http.ResponseWriter, r *http.Request) {
 	req.Username = strings.TrimSpace(req.Username)
 
 	if req.Username == "" || req.Email == "" || req.Password == "" {
-		ErrorResponse(w, "All fields are required", http.StatusBadRequest)
+		utils.ErrorResponse(w, "All fields are required", http.StatusBadRequest)
 		return
 	}
 
@@ -53,7 +54,7 @@ func (h *Handler) SignUpHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(req.Password)
 	if err != nil {
 		log.Printf("Error hashing password: %v", err)
-		ErrorResponse(w, "Error processing password", http.StatusInternalServerError)
+		utils.ErrorResponse(w, "Error processing password", http.StatusInternalServerError)
 		return
 	}
 
@@ -63,14 +64,14 @@ func (h *Handler) SignUpHandler(w http.ResponseWriter, r *http.Request) {
 	)
 	if err != nil {
 		log.Printf("Error inserting user: %v", err)
-		ErrorResponse(w, "Error creating user", http.StatusInternalServerError)
+		utils.ErrorResponse(w, "Error creating user", http.StatusInternalServerError)
 		return
 	}
 
 	userId, err := result.LastInsertId()
 	if err != nil {
 		log.Printf("Error getting last insert ID: %v", err)
-		ErrorResponse(w, "Error creating user", http.StatusInternalServerError)
+		utils.ErrorResponse(w, "Error creating user", http.StatusInternalServerError)
 		return
 	}
 
@@ -84,7 +85,7 @@ func (h *Handler) SignUpHandler(w http.ResponseWriter, r *http.Request) {
 	token, err := middleware.GenerateJWT(userId, user.Email, user.Role)
 	if err != nil {
 		log.Printf("Error generating token: %v", err)
-		ErrorResponse(w, "Error generating token", http.StatusInternalServerError)
+		utils.ErrorResponse(w, "Error generating token", http.StatusInternalServerError)
 		return
 	}
 

@@ -27,6 +27,10 @@ func RegisterRoutes(mux *http.ServeMux, db *sql.DB) {
 	mux.HandleFunc("/api/auth/check-setup-status", auth.SetupStatusHandler)
 
 	mux.Handle("/api/projects/create", middleware.AuthMiddleware(h)(http.HandlerFunc(proj.CreateProject)))
+	mux.Handle("/api/projects/getAll", middleware.AuthMiddleware(h)(http.HandlerFunc(proj.GetProjects)))
+	mux.Handle("/api/projects/getFromId", middleware.AuthMiddleware(h)(http.HandlerFunc(proj.GetProjectFromId)))
+	mux.Handle("/api/projects/update", middleware.AuthMiddleware(h)(http.HandlerFunc(proj.UpdateProject)))
+	mux.Handle("/api/projects/delete", middleware.AuthMiddleware(h)(http.HandlerFunc(proj.DeleteProject)))
 }
 
 func InitApiServer(db *sql.DB) {

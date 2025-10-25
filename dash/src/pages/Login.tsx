@@ -41,6 +41,7 @@ export const LoginPage: React.FC = () => {
         setUser({ ...data.data, isAdmin: data.data.role === "owner" || data.data.role === "admin" });
       } else {
         setUser(null);
+        setError(data.error || 'Login failed');
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
@@ -82,6 +83,7 @@ export const LoginPage: React.FC = () => {
           />
         </div>
         <div className="mb-6">
+
           <label
             className="block text-[#C9D1D9] mb-2"
             htmlFor="password"

@@ -15,7 +15,6 @@ import { SettingsPage } from "./pages/Settings";
 export default function App() {
   const { setupRequired, user } = useAuth();
 
-
   if (setupRequired === null) {
     return <div className="flex h-screen w-screen items-center justify-center">
       <Loading />

@@ -21,7 +21,6 @@ func RegisterRoutes(mux *http.ServeMux, db *sql.DB) {
 	mux.HandleFunc("/api/auth/login", auth.LoginHandler)
 	mux.HandleFunc("/api/auth/me", auth.MeHandler)
 	mux.HandleFunc("/api/auth/logout", auth.LogoutHandler)
-	mux.HandleFunc("/api/auth/check-setup-status", auth.SetupStatusHandler)
 }
 
 func InitApiServer(db *sql.DB) {

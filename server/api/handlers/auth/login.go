@@ -3,7 +3,6 @@ package auth
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -24,7 +23,6 @@ func (h *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	cred.Email = strings.ToLower(strings.TrimSpace(cred.Email))
-	fmt.Println(cred.Password)
 
 	if cred.Email == "" || cred.Password == "" {
 		ErrorResponse(w, "Email and password are required", http.StatusBadRequest)
@@ -35,7 +33,7 @@ func (h *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		`SELECT id, username, password_hash, email,  role FROM users WHERE LOWER(email) = ?`,
 		cred.Email).Scan(&user.ID, &user.Username, &user.PasswordHash, &user.Email, &user.Role)
 	if err == sql.ErrNoRows {
-		ErrorResponse(w, "User not found", http.StatusUnauthorized)
+		ErrorResponse(w, "User doesn't exist", http.StatusUnauthorized)
 		return
 	} else if err != nil {
 		log.Printf("db query error: %v", err)
@@ -44,7 +42,7 @@ func (h *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(cred.Password)); err != nil {
-		ErrorResponse(w, "Invalid password", http.StatusUnauthorized)
+		ErrorResponse(w, "Invalid email or password", http.StatusUnauthorized)
 		return
 	}
 

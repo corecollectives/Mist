@@ -3,7 +3,6 @@ package db
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"sort"
@@ -51,7 +50,6 @@ func runMigrations(db *sql.DB) error {
 		if appliedMigrations[filename] {
 			continue
 		}
-		log.Printf("applying migration: %s\n", filename)
 
 		filepath := filepath.Join(migrationsDir, filename)
 		content, err := os.ReadFile(filepath)
@@ -79,6 +77,5 @@ func runMigrations(db *sql.DB) error {
 		}
 
 	}
-	log.Println("All migrations applied successfully.")
 	return nil
 }

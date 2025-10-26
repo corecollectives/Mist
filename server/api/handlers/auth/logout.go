@@ -11,8 +11,8 @@ func (h *Handler) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 		Value:    "",
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   false, // set true in production (HTTPS)
-		MaxAge:   -1,    // expire immediately
+		Secure:   false,
+		MaxAge:   -1,
 	})
 
 	w.WriteHeader(http.StatusOK)

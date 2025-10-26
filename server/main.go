@@ -5,6 +5,7 @@ import (
 
 	"github.com/corecollectives/mist/api"
 	"github.com/corecollectives/mist/db"
+	"github.com/corecollectives/mist/store"
 )
 
 func main() {
@@ -14,5 +15,10 @@ func main() {
 		return
 	}
 	defer dbInstance.Close()
+	err = store.InitStore(dbInstance)
+	if err != nil {
+		fmt.Println("Error initializing store:", err)
+		return
+	}
 	api.InitApiServer(dbInstance)
 }

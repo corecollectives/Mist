@@ -5,13 +5,13 @@ import (
 
 	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/api/middleware"
-	"github.com/corecollectives/mist/api/utils"
 	"github.com/corecollectives/mist/models"
+	"github.com/corecollectives/mist/store"
 )
 
 func (h *Handler) MeHandler(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("mist_token")
-	setupRequired, _ := utils.IsSetupRequired(h.DB)
+	setupRequired := store.SetupRequired
 	if err != nil {
 		handlers.SendResponse(w, http.StatusOK, true, map[string]interface{}{"setupRequired": setupRequired, "user": nil}, "No auth cookie", "")
 		return

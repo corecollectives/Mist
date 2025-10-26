@@ -16,16 +16,15 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userRole := userData.Role
-	if userRole != "owner" || userRole != "admin" {
+	if userData.Role != "owner" && userData.Role != "admin" {
 		handlers.SendResponse(w, http.StatusForbidden, false, nil, "Not authorized", "Forbidden")
 		return
 	}
+
 	var input struct {
 		Name        string `json:"name"`
 		Description string `json:"description"`
 	}
-
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		handlers.SendResponse(w, http.StatusBadRequest, false, nil, "Invalid request body", err.Error())
 		return
@@ -43,29 +42,39 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 	}
 	defer tx.Rollback()
 
-	res, err := tx.Exec(`INSERT INTO projects(name,description,owner_id) VALUES(?,?,?)`, input.Name, input.Description, userData.ID)
+	var project models.Project
+
+	err = tx.QueryRow(`
+		INSERT INTO projects(name, description, owner_id)
+		VALUES (?, ?, ?)
+		RETURNING id, name, description, owner_id, created_at, updated_at
+	`, input.Name, input.Description, userData.ID).
+		Scan(&project.ID, &project.Name, &project.Description, &project.OwnerID, &project.CreatedAt, &project.UpdatedAt)
+
 	if err != nil {
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to create project", err.Error())
 		return
 	}
-	projectId, _ := res.LastInsertId()
-	_, err = tx.Exec(`INSERT INTO project_members(user_id,project_id,role) VALUES(?,?,?)`, userData.ID, projectId, "owner")
+
+	_, err = tx.Exec(`INSERT INTO project_members(user_id, project_id) VALUES(?, ?)`, userData.ID, project.ID)
 	if err != nil {
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to add project owner", err.Error())
 		return
 	}
+
 	if err := tx.Commit(); err != nil {
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to commit transaction", err.Error())
 		return
 	}
 
-	var project models.Project
-	err = h.DB.QueryRow(`SELECT id, name, description, owner_id, created_at, updated_at FROM projects WHERE id = ?`, projectId).
-		Scan(&project.ID, &project.Name, &project.Description, &project.OwnerID, &project.CreatedAt, &project.UpdatedAt)
-	if err != nil {
-		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to fetch created project", err.Error())
-		return
-	}
-	project.ProjectMembers = append(project.ProjectMembers, *userData)
+	project.ProjectMembers = []models.User{{
+		ID:        userData.ID,
+		Username:  userData.Username,
+		Email:     userData.Email,
+		Role:      userData.Role,
+		CreatedAt: userData.CreatedAt,
+		UpdatedAt: userData.UpdatedAt,
+	}}
+
 	handlers.SendResponse(w, http.StatusCreated, true, project, "Project created successfully", "")
 }

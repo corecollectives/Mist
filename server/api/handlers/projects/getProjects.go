@@ -19,7 +19,7 @@ func (h *Handler) GetProjects(w http.ResponseWriter, r *http.Request) {
 	rows, err := h.DB.Query(`
 		SELECT 
 			p.id, p.name, p.description, p.owner_id, p.created_at, p.updated_at,
-			u.id, u.username, u.email, u.password_hash, u.role, u.created_at, u.updated_at
+			u.id, u.username, u.email,  u.role, u.created_at, u.updated_at
 		FROM projects p
 		JOIN project_members pm ON pm.project_id = p.id
 		JOIN users u ON u.id = pm.user_id
@@ -40,7 +40,7 @@ func (h *Handler) GetProjects(w http.ResponseWriter, r *http.Request) {
 
 		if err := rows.Scan(
 			&p.ID, &p.Name, &p.Description, &p.OwnerID, &p.CreatedAt, &p.UpdatedAt,
-			&u.ID, &u.Username, &u.Email, &u.PasswordHash, &u.Role, &u.CreatedAt, &u.UpdatedAt,
+			&u.ID, &u.Username, &u.Email, &u.Role, &u.CreatedAt, &u.UpdatedAt,
 		); err != nil {
 			handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to scan row", err.Error())
 			return

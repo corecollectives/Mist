@@ -20,11 +20,11 @@ func RegisterRoutes(mux *http.ServeMux, db *sql.DB) {
 	proj := &projects.Handler{DB: db}
 	mux.HandleFunc("/api/ws/stats", websockets.StatWsHandler)
 	mux.HandleFunc("/api/health", handlers.HealthCheckHandler)
+
 	mux.HandleFunc("/api/auth/signup", auth.SignUpHandler)
 	mux.HandleFunc("/api/auth/login", auth.LoginHandler)
 	mux.HandleFunc("/api/auth/me", auth.MeHandler)
 	mux.HandleFunc("/api/auth/logout", auth.LogoutHandler)
-	mux.HandleFunc("/api/auth/check-setup-status", auth.SetupStatusHandler)
 
 	mux.Handle("/api/projects/create", middleware.AuthMiddleware(h)(http.HandlerFunc(proj.CreateProject)))
 	mux.Handle("/api/projects/getAll", middleware.AuthMiddleware(h)(http.HandlerFunc(proj.GetProjects)))

@@ -6,6 +6,8 @@ services:
     env:
       ENV: dev
     watch: true
+    ignore: 
+      - "*.db*"
 
   - name: dash
     dir: ./dash

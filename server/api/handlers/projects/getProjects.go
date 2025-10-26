@@ -15,61 +15,49 @@ func (h *Handler) GetProjects(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	userId := userData.ID
-	projectRows, err := h.DB.Query(`
-            SELECT DISTINCT p.id, p.name, p.description, p.owner_id, p.created_at, p.updated_at
-            FROM projects p
-            JOIN project_members pm ON pm.project_id = p.id
-            WHERE pm.user_id = ?`, userId)
+
+	rows, err := h.DB.Query(`
+		SELECT 
+			p.id, p.name, p.description, p.owner_id, p.created_at, p.updated_at,
+			u.id, u.username, u.email, u.password_hash, u.role, u.created_at, u.updated_at
+		FROM projects p
+		JOIN project_members pm ON pm.project_id = p.id
+		JOIN users u ON u.id = pm.user_id
+		WHERE pm.user_id = ? OR p.owner_id = ?
+		ORDER BY p.id;
+	`, userId, userId)
 	if err != nil {
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Database query failed", err.Error())
 		return
 	}
-	defer projectRows.Close()
+	defer rows.Close()
 
-	var projects []models.Project
+	projectMap := make(map[int]*models.Project)
 
-	for projectRows.Next() {
+	for rows.Next() {
 		var p models.Project
-		if err := projectRows.Scan(&p.ID, &p.Name, &p.Description, &p.OwnerID, &p.CreatedAt, &p.UpdatedAt); err != nil {
-			handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "failed to scan data", err.Error())
-		}
+		var u models.User
 
-		memberRows, err := h.DB.Query(`
-                SELECT u.id, u.username, u.email, u.password_hash, u.role, u.created_at, u.updated_at
-                FROM users u
-                JOIN project_members pm ON pm.user_id = u.id
-                WHERE pm.project_id = ?`, p.ID)
-		if err != nil {
-			handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to fetch project members", err.Error())
-			return
-		}
-		var members []models.User
-		for memberRows.Next() {
-			var member models.User
-			if err := memberRows.Scan(&member.ID, &member.Username, &member.Email, &member.PasswordHash, &member.Role, &member.CreatedAt, &member.UpdatedAt); err != nil {
-				memberRows.Close()
-				handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to scan member data", err.Error())
-				return
-			}
-			members = append(members, member)
-		}
-		memberRows.Close()
-		if err := memberRows.Err(); err != nil {
-			handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "error itereating members", err.Error())
-		}
-		p.ProjectMembers = members
-		projects = append(projects, p)
-
-		if err := projectRows.Err(); err != nil {
-			handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Error iterating projects", err.Error())
+		if err := rows.Scan(
+			&p.ID, &p.Name, &p.Description, &p.OwnerID, &p.CreatedAt, &p.UpdatedAt,
+			&u.ID, &u.Username, &u.Email, &u.PasswordHash, &u.Role, &u.CreatedAt, &u.UpdatedAt,
+		); err != nil {
+			handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to scan row", err.Error())
 			return
 		}
 
-		if projects == nil {
-			projects = []models.Project{}
+		if _, exists := projectMap[int(p.ID)]; !exists {
+			p.ProjectMembers = []models.User{}
+			projectMap[int(p.ID)] = &p
 		}
 
-		handlers.SendResponse(w, http.StatusOK, true, projects, "Projects retrieved successfully", "")
+		projectMap[int(p.ID)].ProjectMembers = append(projectMap[int(p.ID)].ProjectMembers, u)
 	}
 
+	projects := make([]models.Project, 0, len(projectMap))
+	for _, p := range projectMap {
+		projects = append(projects, *p)
+	}
+
+	handlers.SendResponse(w, http.StatusOK, true, projects, "Projects retrieved successfully", "")
 }

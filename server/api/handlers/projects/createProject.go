@@ -17,7 +17,7 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userRole := userData.Role
-	if userRole != "owner" {
+	if userRole != "owner" || userRole != "admin" {
 		handlers.SendResponse(w, http.StatusForbidden, false, nil, "Not authorized", "Forbidden")
 		return
 	}

@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/corecollectives/mist/api/middleware"
 	"github.com/corecollectives/mist/models"

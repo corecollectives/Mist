@@ -82,7 +82,7 @@ func AuthMiddleware(h *handlers.Handler) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			cookie, err := r.Cookie("mist_token")
 			if err != nil {
-				http.Error(w, "Missing auth cookie", http.StatusUnauthorized)
+				handlers.SendResponse(w, http.StatusUnauthorized, false, nil, "Authentication required", "No token provided")
 				return
 			}
 
@@ -90,18 +90,18 @@ func AuthMiddleware(h *handlers.Handler) func(http.Handler) http.Handler {
 			claims, err := VerifyJWT(tokenString)
 
 			if err != nil {
-				http.Error(w, "Invalid token", http.StatusUnauthorized)
+				handlers.SendResponse(w, http.StatusUnauthorized, false, nil, "Invalid or expired token", err.Error())
 				return
 			}
 
 			user, err := h.GetUserFromId(claims.UserID)
 			if err != nil {
-				http.Error(w, "Server error", http.StatusInternalServerError)
+				handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to retrieve user", err.Error())
 				return
 			}
 
 			if user == nil {
-				http.Error(w, "User not found", http.StatusUnauthorized)
+				handlers.SendResponse(w, http.StatusUnauthorized, false, nil, "User not found", "Invalid token user")
 				return
 			}
 

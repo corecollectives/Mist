@@ -29,6 +29,9 @@ func RegisterRoutes(mux *http.ServeMux, db *sql.DB) {
 	mux.HandleFunc("/api/auth/logout", auth.LogoutHandler)
 
 	mux.Handle("/api/users/create", middleware.AuthMiddleware(h)(http.HandlerFunc(users.CreateUser)))
+	mux.Handle("/api/users/getAll", middleware.AuthMiddleware(h)(http.HandlerFunc(users.GetUsers)))
+	mux.Handle("/api/users/getFromId", middleware.AuthMiddleware(h)(http.HandlerFunc(users.GetUserById)))
+	mux.Handle("/api/users/delete", middleware.AuthMiddleware(h)(http.HandlerFunc(users.DeleteUser)))
 
 	mux.Handle("/api/projects/create", middleware.AuthMiddleware(h)(http.HandlerFunc(proj.CreateProject)))
 	mux.Handle("/api/projects/getAll", middleware.AuthMiddleware(h)(http.HandlerFunc(proj.GetProjects)))

@@ -37,34 +37,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }
 
   useEffect(() => {
-    const checkSetupRequired = async () => {
-      try {
-        const response = await fetch("/api/auth/check-setup-status");
-        const data = await response.json();
-        setSetupRequired(data.setupRequired);
-      } catch (error) {
-        console.error("Error checking setup requirement:", error);
-      }
-    };
-    checkSetupRequired();
-
-    const fetchUser = async () => {
+    const fetchAuth = async () => {
       try {
         const response = await fetch("/api/auth/me", {
+          method: "GET",
           credentials: "include"
         });
         const data = await response.json();
         if (data.success) {
-          setUser({ ...data.data, isAdmin: data.data.role === "owner" || data.data.role === "admin" });
-        } else {
-          setUser(null);
+          if (data.data.setupRequired === true) {
+            setSetupRequired(true);
+          }
+          else {
+            setSetupRequired(false);
+            if (data.data.user) {
+              setUser({ ...data.data.user, isAdmin: data.data.user.role === "owner" || data.data.user.role === "admin" });
+            }
+          }
         }
-      } catch (error) {
-        console.error("Error fetching user:", error);
-        setUser(null);
+      }
+      catch (error) {
+        console.error("Error fetching auth data:", error);
       }
     }
-    fetchUser();
+    fetchAuth();
   }, []);
 
   return (

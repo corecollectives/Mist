@@ -5,16 +5,21 @@ import (
 	"net/http"
 
 	"github.com/corecollectives/mist/api/middleware"
+	"github.com/corecollectives/mist/api/utils"
 	"github.com/corecollectives/mist/models"
 )
 
 func (h *Handler) MeHandler(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("mist_token")
+	setupRequired, _ := utils.IsSetupRequired(h.DB)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"success": false,
-			"data":    nil,
+			"success": true,
+			"data": map[string]interface{}{
+				"setupRequired": setupRequired,
+				"user":          nil,
+			},
 			"message": "Not logged in",
 			"error":   "missing auth cookie",
 		})
@@ -27,8 +32,8 @@ func (h *Handler) MeHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"success": false,
-			"data":    nil,
+			"success": true,
+			"data":    map[string]interface{}{"setupRequired": setupRequired, "user": nil},
 			"message": "Invalid token",
 			"error":   err.Error(),
 		})
@@ -44,8 +49,8 @@ func (h *Handler) MeHandler(w http.ResponseWriter, r *http.Request) {
 	if err := row.Scan(&user.ID, &user.Username, &user.Email, &user.Role); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"success": false,
-			"data":    nil,
+			"success": true,
+			"data":    map[string]interface{}{"setupRequired": setupRequired, "user": nil},
 			"message": "User not found",
 			"error":   err.Error(),
 		})
@@ -55,7 +60,7 @@ func (h *Handler) MeHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"success": true,
-		"data":    user,
+		"data":    map[string]interface{}{"setupRequired": setupRequired, "user": user},
 		"message": "User fetched successfully",
 		"error":   "",
 	})

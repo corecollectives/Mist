@@ -6,9 +6,11 @@ services:
     env:
       ENV: dev
     watch: true
+    ignore: 
+      - "*.db*"
 
   - name: dash
     dir: ./dash
-    cmd: bun dev
+    cmd: npm run dev
     env:
       VITE_API_URL: http://localhost:8080

@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/corecollectives/mist/api/middleware"
 	"github.com/corecollectives/mist/models"
@@ -58,9 +57,8 @@ func (h *Handler) SignUpHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	result, err := db.ExecContext(r.Context(),
-		`INSERT INTO users (username,email,password_hash,role,created_at,updated_at) VALUES (?,?,?,?,?,?)`,
-		req.Username, req.Email, string(hashedPassword), "owner", time.Now(), time.Now(),
-	)
+		`INSERT INTO users (username,email,password_hash,role) VALUES (?,?,?,?)`,
+		req.Username, req.Email, string(hashedPassword), "owner")
 	if err != nil {
 		log.Printf("Error inserting user: %v", err)
 		ErrorResponse(w, "Error creating user", http.StatusInternalServerError)

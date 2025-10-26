@@ -33,7 +33,7 @@ func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		http.Redirect(w, r, "/api/auth/logout", http.StatusSeeOther)
-		store.SetSetupRequired(h.DB)
+		store.InitSetupRequired(h.DB)
 		return
 	}
 	userToDeleteRole := ""
@@ -60,7 +60,7 @@ func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to delete user", err.Error())
 		return
 	}
-	store.SetSetupRequired(h.DB)
+	store.InitSetupRequired(h.DB)
 	handlers.SendResponse(w, http.StatusOK, true, nil, "User deleted successfully", "")
 
 }

@@ -6,7 +6,7 @@ import (
 
 var SetupRequired bool = true
 
-func SetSetupRequired(db *sql.DB) error {
+func InitSetupRequired(db *sql.DB) error {
 	var count int
 	err := db.QueryRow(`SELECT COUNT(*) FROM users`).Scan(&count)
 	if err != nil {
@@ -14,4 +14,9 @@ func SetSetupRequired(db *sql.DB) error {
 	}
 	SetupRequired = count == 0
 	return nil
+
+}
+
+func SetSetupRequired(setupRequired bool) {
+	SetupRequired = setupRequired
 }

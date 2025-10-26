@@ -48,8 +48,9 @@ func (h *Handler) SignUpHandler(w http.ResponseWriter, r *http.Request) {
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to generate token", "Internal Server Error")
 		return
 	}
-
-	store.SetSetupRequired(db)
+	if setupRequired {
+		store.SetSetupRequired(false)
+	}
 	http.SetCookie(w, &http.Cookie{
 		Name:     "mist_token",
 		Value:    token,

@@ -9,6 +9,7 @@ import (
 	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/api/middleware"
 	"github.com/corecollectives/mist/api/utils"
+	"github.com/corecollectives/mist/store"
 )
 
 func (h *Handler) SignUpHandler(w http.ResponseWriter, r *http.Request) {
@@ -20,16 +21,8 @@ func (h *Handler) SignUpHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	db := h.DB
-
-	// only first user i.e. the owner should be able to sign up rest users will be created by the owner later but not throug signup
-	row := db.QueryRow("SELECT COUNT(*) FROM users")
-	var count int
-	if err := row.Scan(&count); err != nil {
-		log.Printf("Error checking user count: %v", err)
-		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Database error", "Internal Server Error")
-		return
-	}
-	if count > 0 {
+	setupRequired := store.SetupRequired
+	if setupRequired == false {
 		handlers.SendResponse(w, http.StatusForbidden, false, nil, "Sign up not allowed", "Only first user can sign up")
 		return
 	}
@@ -55,7 +48,9 @@ func (h *Handler) SignUpHandler(w http.ResponseWriter, r *http.Request) {
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to generate token", "Internal Server Error")
 		return
 	}
-
+	if setupRequired {
+		store.SetSetupRequired(false)
+	}
 	http.SetCookie(w, &http.Cookie{
 		Name:     "mist_token",
 		Value:    token,

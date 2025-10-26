@@ -1,9 +1,9 @@
 package auth
 
 import (
-	"encoding/json"
 	"net/http"
 
+	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/api/middleware"
 	"github.com/corecollectives/mist/api/utils"
 	"github.com/corecollectives/mist/models"
@@ -13,16 +13,7 @@ func (h *Handler) MeHandler(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("mist_token")
 	setupRequired, _ := utils.IsSetupRequired(h.DB)
 	if err != nil {
-		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"success": true,
-			"data": map[string]interface{}{
-				"setupRequired": setupRequired,
-				"user":          nil,
-			},
-			"message": "Not logged in",
-			"error":   "missing auth cookie",
-		})
+		handlers.SendResponse(w, http.StatusOK, true, map[string]interface{}{"setupRequired": setupRequired, "user": nil}, "No auth cookie", "")
 		return
 	}
 
@@ -30,13 +21,7 @@ func (h *Handler) MeHandler(w http.ResponseWriter, r *http.Request) {
 
 	claims, err := middleware.VerifyJWT(tokenStr)
 	if err != nil {
-		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"success": true,
-			"data":    map[string]interface{}{"setupRequired": setupRequired, "user": nil},
-			"message": "Invalid token",
-			"error":   err.Error(),
-		})
+		handlers.SendResponse(w, http.StatusOK, true, map[string]interface{}{"setupRequired": setupRequired, "user": nil}, "Invalid token", "")
 		return
 	}
 
@@ -47,21 +32,9 @@ func (h *Handler) MeHandler(w http.ResponseWriter, r *http.Request) {
 		userId,
 	)
 	if err := row.Scan(&user.ID, &user.Username, &user.Email, &user.Role); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"success": true,
-			"data":    map[string]interface{}{"setupRequired": setupRequired, "user": nil},
-			"message": "User not found",
-			"error":   err.Error(),
-		})
+		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to fetch user", err.Error())
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"success": true,
-		"data":    map[string]interface{}{"setupRequired": setupRequired, "user": user},
-		"message": "User fetched successfully",
-		"error":   "",
-	})
+	handlers.SendResponse(w, http.StatusOK, true, map[string]interface{}{"setupRequired": setupRequired, "user": user}, "User fetched successfully", "")
 }

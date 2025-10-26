@@ -2,15 +2,13 @@ package auth
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"strings"
 
+	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/api/middleware"
 	"github.com/corecollectives/mist/api/utils"
-	"github.com/corecollectives/mist/models"
-	"golang.org/x/crypto/bcrypt"
 )
 
 func (h *Handler) SignUpHandler(w http.ResponseWriter, r *http.Request) {
@@ -28,16 +26,16 @@ func (h *Handler) SignUpHandler(w http.ResponseWriter, r *http.Request) {
 	var count int
 	if err := row.Scan(&count); err != nil {
 		log.Printf("Error checking user count: %v", err)
-		utils.ErrorResponse(w, "Internal server error", http.StatusInternalServerError)
+		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Database error", "Internal Server Error")
 		return
 	}
 	if count > 0 {
-		utils.ErrorResponse(w, "Signup is disabled after initial setup", http.StatusForbidden)
+		handlers.SendResponse(w, http.StatusForbidden, false, nil, "Sign up not allowed", "Only first user can sign up")
 		return
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.ErrorResponse(w, "Invalid request payload", http.StatusBadRequest)
+		handlers.SendResponse(w, http.StatusBadRequest, false, nil, "Invalid request body", "Could not parse JSON")
 		return
 	}
 
@@ -45,45 +43,16 @@ func (h *Handler) SignUpHandler(w http.ResponseWriter, r *http.Request) {
 	req.Username = strings.TrimSpace(req.Username)
 
 	if req.Username == "" || req.Email == "" || req.Password == "" {
-		utils.ErrorResponse(w, "All fields are required", http.StatusBadRequest)
+		handlers.SendResponse(w, http.StatusBadRequest, false, nil, "All fields are required", "Missing fields")
 		return
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
-	fmt.Println(req.Password)
-	if err != nil {
-		log.Printf("Error hashing password: %v", err)
-		utils.ErrorResponse(w, "Error processing password", http.StatusInternalServerError)
-		return
-	}
+	user, err := utils.InsertUserInDb(db, req.Username, req.Email, req.Password, "owner")
 
-	result, err := db.ExecContext(r.Context(),
-		`INSERT INTO users (username,email,password_hash,role) VALUES (?,?,?,?)`,
-		req.Username, req.Email, string(hashedPassword), "owner")
-	if err != nil {
-		log.Printf("Error inserting user: %v", err)
-		utils.ErrorResponse(w, "Error creating user", http.StatusInternalServerError)
-		return
-	}
-
-	userId, err := result.LastInsertId()
-	if err != nil {
-		log.Printf("Error getting last insert ID: %v", err)
-		utils.ErrorResponse(w, "Error creating user", http.StatusInternalServerError)
-		return
-	}
-
-	user := models.User{
-		ID:       userId,
-		Username: req.Username,
-		Email:    req.Email,
-		Role:     "owner",
-	}
-
-	token, err := middleware.GenerateJWT(userId, user.Email, user.Role)
+	token, err := middleware.GenerateJWT(user.ID, user.Email, user.Role)
 	if err != nil {
 		log.Printf("Error generating token: %v", err)
-		utils.ErrorResponse(w, "Error generating token", http.StatusInternalServerError)
+		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to generate token", "Internal Server Error")
 		return
 	}
 
@@ -96,12 +65,6 @@ func (h *Handler) SignUpHandler(w http.ResponseWriter, r *http.Request) {
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   3600 * 24 * 30,
 	})
+	handlers.SendResponse(w, http.StatusCreated, true, user, "User signed up successfully", "")
 
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]any{
-		"success": true,
-		"data":    user,
-		"message": "User created successfully",
-		"error":   "",
-	})
 }

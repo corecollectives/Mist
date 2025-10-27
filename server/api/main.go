@@ -21,23 +21,23 @@ func RegisterRoutes(mux *http.ServeMux, db *sql.DB) {
 	proj := &projects.Handler{DB: db}
 	users := &users.Handler{DB: db}
 	mux.Handle("/api/ws/stats", middleware.AuthMiddleware(h)(http.HandlerFunc(websockets.StatWsHandler)))
-	mux.HandleFunc("/api/health", handlers.HealthCheckHandler)
+	mux.HandleFunc("GET /api/health", handlers.HealthCheckHandler)
 
-	mux.HandleFunc("/api/auth/signup", auth.SignUpHandler)
-	mux.HandleFunc("/api/auth/login", auth.LoginHandler)
-	mux.HandleFunc("/api/auth/me", auth.MeHandler)
-	mux.HandleFunc("/api/auth/logout", auth.LogoutHandler)
+	mux.HandleFunc("POST /api/auth/signup", auth.SignUpHandler)
+	mux.HandleFunc("POST /api/auth/login", auth.LoginHandler)
+	mux.HandleFunc("GET /api/auth/me", auth.MeHandler)
+	mux.HandleFunc("POST /api/auth/logout", auth.LogoutHandler)
 
-	mux.Handle("/api/users/create", middleware.AuthMiddleware(h)(http.HandlerFunc(users.CreateUser)))
-	mux.Handle("/api/users/getAll", middleware.AuthMiddleware(h)(http.HandlerFunc(users.GetUsers)))
-	mux.Handle("/api/users/getFromId", middleware.AuthMiddleware(h)(http.HandlerFunc(users.GetUserById)))
-	mux.Handle("/api/users/delete", middleware.AuthMiddleware(h)(http.HandlerFunc(users.DeleteUser)))
+	mux.Handle("POST /api/users/create", middleware.AuthMiddleware(h)(http.HandlerFunc(users.CreateUser)))
+	mux.Handle("GET /api/users/getAll", middleware.AuthMiddleware(h)(http.HandlerFunc(users.GetUsers)))
+	mux.Handle("GET /api/users/getFromId", middleware.AuthMiddleware(h)(http.HandlerFunc(users.GetUserById)))
+	mux.Handle("DELETE /api/users/delete", middleware.AuthMiddleware(h)(http.HandlerFunc(users.DeleteUser)))
 
-	mux.Handle("/api/projects/create", middleware.AuthMiddleware(h)(http.HandlerFunc(proj.CreateProject)))
-	mux.Handle("/api/projects/getAll", middleware.AuthMiddleware(h)(http.HandlerFunc(proj.GetProjects)))
-	mux.Handle("/api/projects/getFromId", middleware.AuthMiddleware(h)(http.HandlerFunc(proj.GetProjectFromId)))
-	mux.Handle("/api/projects/update", middleware.AuthMiddleware(h)(http.HandlerFunc(proj.UpdateProject)))
-	mux.Handle("/api/projects/delete", middleware.AuthMiddleware(h)(http.HandlerFunc(proj.DeleteProject)))
+	mux.Handle("POST /api/projects/create", middleware.AuthMiddleware(h)(http.HandlerFunc(proj.CreateProject)))
+	mux.Handle("GET /api/projects/getAll", middleware.AuthMiddleware(h)(http.HandlerFunc(proj.GetProjects)))
+	mux.Handle("GET /api/projects/getFromId", middleware.AuthMiddleware(h)(http.HandlerFunc(proj.GetProjectFromId)))
+	mux.Handle("PUT /api/projects/update", middleware.AuthMiddleware(h)(http.HandlerFunc(proj.UpdateProject)))
+	mux.Handle("DELETE /api/projects/delete", middleware.AuthMiddleware(h)(http.HandlerFunc(proj.DeleteProject)))
 
 }
 

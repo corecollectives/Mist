@@ -2,9 +2,16 @@ package store
 
 import (
 	"database/sql"
+	"sync"
 )
 
-var SetupRequired bool = true
+// var SetupRequired bool = true
+type SetupState struct {
+	setupRequired bool
+	mu            sync.RWMutex
+}
+
+var state = &SetupState{setupRequired: true}
 
 func InitSetupRequired(db *sql.DB) error {
 	var count int
@@ -12,11 +19,22 @@ func InitSetupRequired(db *sql.DB) error {
 	if err != nil {
 		return err
 	}
-	SetupRequired = count == 0
+	state.mu.Lock()
+	state.setupRequired = count == 0
+	state.mu.Unlock()
 	return nil
 
 }
 
 func SetSetupRequired(setupRequired bool) {
-	SetupRequired = setupRequired
+	state.mu.Lock()
+	state.setupRequired = setupRequired
+	state.mu.Unlock()
+
+}
+
+func IsSetupRequired() bool {
+	state.mu.RLock()
+	defer state.mu.RUnlock()
+	return state.setupRequired
 }

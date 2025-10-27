@@ -11,7 +11,7 @@ import (
 
 func (h *Handler) MeHandler(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("mist_token")
-	setupRequired := store.SetupRequired
+	setupRequired := store.IsSetupRequired()
 	if err != nil {
 		handlers.SendResponse(w, http.StatusOK, true, map[string]interface{}{"setupRequired": setupRequired, "user": nil}, "No auth cookie", "")
 		return

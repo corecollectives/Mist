@@ -21,8 +21,8 @@ func (h *Handler) SignUpHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	db := h.DB
-	setupRequired := store.SetupRequired
-	if setupRequired == false {
+	setupRequired := store.IsSetupRequired()
+	if !setupRequired {
 		handlers.SendResponse(w, http.StatusForbidden, false, nil, "Sign up not allowed", "Only first user can sign up")
 		return
 	}
@@ -41,6 +41,11 @@ func (h *Handler) SignUpHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user, err := utils.InsertUserInDb(db, req.Username, req.Email, req.Password, "owner")
+	if err != nil {
+		log.Printf("db insert error: %v", err)
+		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Database error", "Internal Server Error")
+		return
+	}
 
 	token, err := middleware.GenerateJWT(user.ID, user.Email, user.Role)
 	if err != nil {

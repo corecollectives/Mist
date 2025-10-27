@@ -8,6 +8,7 @@ type Project struct {
 	Description    string    `json:"description"`
 	Tags           []string  `json:"tags"`
 	OwnerID        int64     `json:"ownerId"`
+	Owner          *User     `json:"owner,omitempty"`
 	ProjectMembers []User    `json:"projectMembers"`
 	CreatedAt      time.Time `json:"createdAt"`
 	UpdatedAt      time.Time `json:"updatedAt"`

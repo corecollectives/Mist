@@ -5,7 +5,20 @@ export type User = {
   username: string;
   email: string;
   role: "owner" | "admin" | "user";
-  isAdmin: boolean;
+  isAdmin?: boolean;
   createdAt?: string;
   updatedAt?: string;
+}
+
+export type Project = {
+  id: string | number;
+  name: string;
+  description: string;
+  tags?: string[];
+  ownerId: string | number;
+  owner?: User
+  projectMembers: User[];
+  createdAt?: string;
+  updatedAt?: string
+
 }

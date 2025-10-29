@@ -14,15 +14,15 @@
 - [ ] Basic CRUD
   - [ ] user
     - [x] /me route
-    - [ ] user creation by admin
+    - [x] user creation by admin
     - [x] logout
     - [ ] deletion of user by admin
   - [ ] projects
-    - [ ] create project
-    - [ ] get all projects
-    - [ ] get single project
-    - [ ] update project
-    - [ ] delete project
+    - [x] create project
+    - [x] get all projects
+    - [x] get single project
+    - [x] update project
+    - [x] delete project
     - [ ] get apps in that project
   - [ ] apps
 
@@ -38,6 +38,8 @@
 ## Dash
 
 - [ ] make basic pages
-  - [ ] login page
-  - [ ] first user register page
+  - [x] login page
+  - [x] first user register page
   - [x] dashboard page
+  - [x] users page
+  - [x] projects page

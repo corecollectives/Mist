@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import type { User } from "../lib/types";
+import { toast } from "sonner";
 
 
 type AuthContextType = {
@@ -27,6 +28,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const data = await response.json();
       if (data.success) {
         setUser(null);
+        toast.success("Logged out successfully");
       } else {
         console.error("Logout failed:", data.error);
       }

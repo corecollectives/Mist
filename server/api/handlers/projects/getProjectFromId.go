@@ -1,8 +1,10 @@
 package projects
 
 import (
+	"database/sql"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/corecollectives/mist/api/handlers"
@@ -32,11 +34,13 @@ func (h *Handler) GetProjectFromId(w http.ResponseWriter, r *http.Request) {
 
 	rows, err := h.DB.Query(`
 		SELECT 
-			p.id, p.name, p.description, p.owner_id, p.created_at, p.updated_at,
-			u.id, u.username, u.email, u.password_hash, u.role, u.created_at, u.updated_at
+			p.id, p.name, p.description,p.tags, p.owner_id, p.created_at, p.updated_at,
+			u.id, u.username, u.email, u.password_hash, u.role, u.created_at, u.updated_at,
+			o.id, o.username, o.email, o.password_hash, o.role, o.created_at, o.updated_at
 		FROM projects p
 		JOIN project_members pm ON pm.project_id = p.id
 		JOIN users u ON u.id = pm.user_id
+		JOIN users o ON o.id = p.owner_id
 		WHERE p.id = ? AND pm.user_id = ?
 		ORDER BY u.id
 	`, projectId, userID)
@@ -47,18 +51,21 @@ func (h *Handler) GetProjectFromId(w http.ResponseWriter, r *http.Request) {
 	defer rows.Close()
 
 	var project models.Project
+
 	membersMap := make(map[int64]bool)
 	firstRow := true
 
 	for rows.Next() {
 		var member models.User
+		var owner models.User
 		var pID int64
 		var pName, pDescription string
 		var pOwnerID int64
 		var pCreated, pUpdated time.Time
+		var tags sql.NullString
 
-		if err := rows.Scan(&pID, &pName, &pDescription, &pOwnerID, &pCreated, &pUpdated,
-			&member.ID, &member.Username, &member.Email, &member.PasswordHash, &member.Role, &member.CreatedAt, &member.UpdatedAt); err != nil {
+		if err := rows.Scan(&pID, &pName, &pDescription, &tags, &pOwnerID, &pCreated, &pUpdated,
+			&member.ID, &member.Username, &member.Email, &member.PasswordHash, &member.Role, &member.CreatedAt, &member.UpdatedAt, &owner.ID, &owner.Username, &owner.Email, &owner.PasswordHash, &owner.Role, &owner.CreatedAt, &owner.UpdatedAt); err != nil {
 			handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "failed to scan data", err.Error())
 			return
 		}
@@ -70,6 +77,10 @@ func (h *Handler) GetProjectFromId(w http.ResponseWriter, r *http.Request) {
 			project.OwnerID = pOwnerID
 			project.CreatedAt = pCreated
 			project.UpdatedAt = pUpdated
+			if tags.Valid && tags.String != "" {
+				project.Tags = strings.Split(tags.String, ",")
+			}
+			project.Owner = &owner
 			firstRow = false
 		}
 

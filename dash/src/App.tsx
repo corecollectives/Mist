@@ -11,6 +11,7 @@ import { DeploymentsPage } from "./pages/Deployments";
 import { DatabasesPage } from "./pages/Databases";
 import { LogsPage } from "./pages/Logs";
 import { SettingsPage } from "./pages/Settings";
+import { ProjectPage } from "./pages/Project";
 
 export default function App() {
   const { setupRequired, user } = useAuth();
@@ -39,6 +40,7 @@ export default function App() {
               <Route path="/" element={<HomePage />} />
               <Route path="/users" element={<UsersPage />} />
               <Route path="/projects" element={<ProjectsPage />} />
+              <Route path="/projects/:projectId" element={<ProjectPage />} />
               <Route path="/deployments" element={<DeploymentsPage />} />
               <Route path="/databases" element={<DatabasesPage />} />
               <Route path="/logs" element={<LogsPage />} />

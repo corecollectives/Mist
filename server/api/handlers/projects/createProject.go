@@ -3,6 +3,7 @@ package projects
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/api/middleware"
@@ -22,8 +23,9 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var input struct {
-		Name        string `json:"name"`
-		Description string `json:"description"`
+		Name        string   `json:"name"`
+		Description string   `json:"description"`
+		Tags        []string `json:"tags"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		handlers.SendResponse(w, http.StatusBadRequest, false, nil, "Invalid request body", err.Error())
@@ -43,14 +45,28 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 	defer tx.Rollback()
 
 	var project models.Project
+	tagsString := ""
+	if len(input.Tags) > 0 {
+		for i, tag := range input.Tags {
+			if i > 0 {
+				tagsString += ","
+			}
+			tagsString += tag
+		}
+	}
 
+	var tags string = ""
 	err = tx.QueryRow(`
-		INSERT INTO projects(name, description, owner_id)
-		VALUES (?, ?, ?)
-		RETURNING id, name, description, owner_id, created_at, updated_at
-	`, input.Name, input.Description, userData.ID).
-		Scan(&project.ID, &project.Name, &project.Description, &project.OwnerID, &project.CreatedAt, &project.UpdatedAt)
+		INSERT INTO projects(name, description,tags, owner_id)
+		VALUES (?, ?, ?,?)
+		RETURNING id, name, description, tags, owner_id, created_at, updated_at
+	`, input.Name, input.Description, tagsString, userData.ID).
+		Scan(&project.ID, &project.Name, &project.Description, &tags, &project.OwnerID, &project.CreatedAt, &project.UpdatedAt)
 
+	if tags != "" {
+		project.Tags = strings.Split(tags, ",")
+
+	}
 	if err != nil {
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to create project", err.Error())
 		return

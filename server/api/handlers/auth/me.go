@@ -1,6 +1,8 @@
 package auth
 
 import (
+	"database/sql"
+	"errors"
 	"net/http"
 
 	"github.com/corecollectives/mist/api/handlers"
@@ -32,7 +34,11 @@ func (h *Handler) MeHandler(w http.ResponseWriter, r *http.Request) {
 		userId,
 	)
 	if err := row.Scan(&user.ID, &user.Username, &user.Email, &user.Role); err != nil {
-		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to fetch user", err.Error())
+		if errors.Is(err, sql.ErrNoRows) {
+			handlers.SendResponse(w, http.StatusOK, true, map[string]interface{}{"setupRequired": setupRequired, "user": nil}, "User not found", "")
+			return
+		}
+		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to fetch user", "database scan error")
 		return
 	}
 

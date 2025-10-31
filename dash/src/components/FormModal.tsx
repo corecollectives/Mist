@@ -76,7 +76,7 @@ export function FormModal<T extends Record<string, any>>({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const finalData = { ...formData, tags }
-    await onSubmit(finalData as T)
+    await onSubmit(finalData as unknown as T)
     onClose()
   }
 

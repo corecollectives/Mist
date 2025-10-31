@@ -10,7 +10,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { FormModal } from "@/components/FormModal"
-
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -93,10 +92,12 @@ export const ProjectsPage = () => {
   return (
     <div className="flex flex-col h-screen bg-background overflow-hidden">
       {/* Header */}
-      <div className="flex justify-between items-center py-6 border-b border-border flex-shrink-0">
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 py-6 border-b border-border flex-shrink-0">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Projects</h1>
-          <p className="text-muted-foreground mt-1">Create and manage your projects</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Projects</h1>
+          <p className="text-sm sm:text-base text-muted-foreground mt-1">
+            Create and manage your projects
+          </p>
         </div>
         {user?.isAdmin && (
           <Button
@@ -104,6 +105,7 @@ export const ProjectsPage = () => {
               setEditingProject(null)
               setIsModalOpen(true)
             }}
+            className="w-full sm:w-auto"
           >
             New Project
           </Button>
@@ -111,10 +113,10 @@ export const ProjectsPage = () => {
       </div>
 
       {/* Scrollable content */}
-      <div className="flex-1 py-6 overflow-y-auto">
+      <div className="flex-1 py-6  overflow-y-auto">
         {error ? (
           <Card className="border-destructive text-destructive">
-            <CardContent className="p-4">{error}</CardContent>
+            <CardContent className="p-4 text-center">{error}</CardContent>
           </Card>
         ) : projects.length === 0 ? (
           <Card className="text-center">
@@ -126,6 +128,7 @@ export const ProjectsPage = () => {
                     setEditingProject(null)
                     setIsModalOpen(true)
                   }}
+                  className="w-full sm:w-auto"
                 >
                   <svg
                     className="w-5 h-5 mr-2"
@@ -146,31 +149,32 @@ export const ProjectsPage = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-16">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-16">
             {projects.map((project) => (
               <Card
                 key={project.id}
-                className="relative transition-colors hover:border-primary"
+                className="relative transition-colors hover:border-primary cursor-pointer"
+                onClick={() => navigate(`/projects/${project.id}`)}
               >
                 <CardHeader className="flex flex-row items-start justify-between space-y-0">
-                  <div
-                    className="cursor-pointer"
-                    onClick={() => navigate(`/projects/${project.id}`)}
-                  >
-                    <CardTitle>{project.name}</CardTitle>
-                    <CardDescription>{project.description}</CardDescription>
+                  <div className="min-w-0">
+                    <CardTitle className="truncate">{project.name}</CardTitle>
+                    <CardDescription className="truncate">
+                      {project.description}
+                    </CardDescription>
                   </div>
 
                   {user?.isAdmin && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
                           <MoreVertical className="w-4 h-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation()
                             setEditingProject(project)
                             setIsModalOpen(true)
                           }}
@@ -179,7 +183,10 @@ export const ProjectsPage = () => {
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           className="text-destructive"
-                          onClick={() => handleDeleteProject(project.id)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDeleteProject(project.id)
+                          }}
                         >
                           Delete
                         </DropdownMenuItem>
@@ -191,7 +198,11 @@ export const ProjectsPage = () => {
                 <CardContent>
                   <div className="flex flex-wrap gap-2 mt-2">
                     {project?.tags?.map((tag) => (
-                      <Badge key={tag} variant="secondary" className="capitalize">
+                      <Badge
+                        key={tag}
+                        variant="default"
+                        className="capitalize text-xs sm:text-sm"
+                      >
                         {tag}
                       </Badge>
                     ))}
@@ -199,16 +210,18 @@ export const ProjectsPage = () => {
 
                   <Separator className="my-4" />
 
-                  <div className="flex items-center justify-between text-sm text-muted-foreground">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs sm:text-sm text-muted-foreground gap-2">
                     <div className="flex items-center gap-2">
                       <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center">
                         <span className="text-xs font-medium text-foreground">
                           {project.owner?.username[0].toUpperCase()}
                         </span>
                       </div>
-                      <span>{project.owner?.username}</span>
+                      <span className="truncate">{project.owner?.username}</span>
                     </div>
-                    <span>{new Date(project.updatedAt || "").toLocaleDateString()}</span>
+                    <span className="shrink-0">
+                      {new Date(project.updatedAt || "").toLocaleDateString()}
+                    </span>
                   </div>
                 </CardContent>
               </Card>
@@ -227,9 +240,24 @@ export const ProjectsPage = () => {
         onSubmit={handleCreateOrUpdateProject}
         title={editingProject ? "Edit Project" : "Create New Project"}
         fields={[
-          { name: "name", label: "Project Name", type: "text", defaultValue: editingProject?.name || "" },
-          { name: "description", label: "Description", type: "textarea", defaultValue: editingProject?.description || "" },
-          { name: "tags", label: "Tags", type: "tags", defaultValue: editingProject?.tags || [] },
+          {
+            name: "name",
+            label: "Project Name",
+            type: "text",
+            defaultValue: editingProject?.name || "",
+          },
+          {
+            name: "description",
+            label: "Description",
+            type: "textarea",
+            defaultValue: editingProject?.description || "",
+          },
+          {
+            name: "tags",
+            label: "Tags",
+            type: "tags",
+            defaultValue: editingProject?.tags || [],
+          },
         ]}
       />
     </div>

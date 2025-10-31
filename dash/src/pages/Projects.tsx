@@ -2,7 +2,6 @@ import { useEffect, useState } from "react"
 import { toast } from "react-toastify"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "../context/AuthContext"
-import { CreateProjectModal } from "../components/CreateProjectModal"
 import Loading from "../components/Loading"
 import type { Project } from "../lib/types"
 
@@ -71,7 +70,7 @@ export const ProjectsPage = () => {
   if (loading) return <Loading />
 
   return (
-    <div className="min-h-screen bg-background p-6">
+    <div className="min-h-screen bg-background ">
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div>

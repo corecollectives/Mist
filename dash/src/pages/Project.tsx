@@ -114,7 +114,7 @@ export const ProjectPage = () => {
   if (!project) return null;
 
   return (
-    <div className="min-h-screen bg-[#0D1117] p-6">
+    <div className="min-h-screen bg-[#0D1117] ">
       <div className="flex justify-between items-start mb-6">
         <div>
           <h1 className="text-[#C9D1D9] text-2xl font-bold">{project.name}</h1>

@@ -13,9 +13,8 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar"
-import { Home } from "lucide-react"
+import { Home, Settings, Users, GitBranch, Book, LifeBuoy, FolderGit2, User, Server } from "lucide-react"
 import { Link, useLocation } from "react-router-dom"
-
 
 const useNavData = () => {
   const location = useLocation()
@@ -35,16 +34,16 @@ const useNavData = () => {
           {
             title: "Projects",
             url: "/projects",
-            icon: Home,
+            icon: FolderGit2,
             isActive: location.pathname.startsWith("/projects"),
           },
           {
             title: "Deployments",
             url: "/deployments",
-            icon: Home,
+            icon: Server,
             isActive: location.pathname === "/deployments",
-          }
-        ]
+          },
+        ],
       },
       {
         title: "Settings",
@@ -52,28 +51,28 @@ const useNavData = () => {
           {
             title: "Users",
             url: "/users",
-            icon: Home,
+            icon: Users,
             isActive: location.pathname === "/users",
           },
           {
             title: "Mist",
             url: "/settings",
-            icon: Home,
+            icon: Settings,
             isActive: location.pathname === "/settings",
           },
           {
             title: "Profile",
             url: "/profile",
-            icon: Home,
+            icon: User,
             isActive: location.pathname === "/profile",
           },
           {
             title: "Git",
             url: "/git",
-            icon: Home,
+            icon: GitBranch,
             isActive: location.pathname === "/git",
-          }
-        ]
+          },
+        ],
       },
       {
         title: "Extras",
@@ -81,53 +80,58 @@ const useNavData = () => {
           {
             title: "Documentation",
             url: "/docs",
-            icon: Home,
+            icon: Book,
             isActive: location.pathname === "/docs",
           },
           {
             title: "Contribute",
             url: "/support",
-            icon: Home,
+            icon: LifeBuoy,
             isActive: location.pathname === "/support",
-          }
-        ]
-      }
-
+          },
+        ],
+      },
     ],
   }
 
-  return { data };
+  return { data }
 }
+
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { data } = useNavData();
+  const { data } = useNavData()
   return (
     <Sidebar {...props} collapsible="icon" variant="floating">
       <SidebarHeader>
         <VersionSwitcher
-          versions={data.versions}
           defaultVersion={data.versions[0]}
         />
       </SidebarHeader>
+
       <SidebarContent>
-        {/* We create a SidebarGroup for each parent. */}
-        {data.navMain.map((item) => (
-          <SidebarGroup key={item.title}>
-            <SidebarGroupLabel>{item.title}</SidebarGroupLabel>
+        {data.navMain.map((group) => (
+          <SidebarGroup key={group.title}>
+            <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {item.items.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild isActive={item.isActive}>
-                      <Link to={item.url}>
-                        {item.title}</Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
+                {group.items.map((item) => {
+                  const Icon = item.icon
+                  return (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton asChild isActive={item.isActive}>
+                        <Link to={item.url} className="flex items-center gap-2">
+                          <Icon className="h-4 w-4" />
+                          <span>{item.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )
+                })}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
         ))}
       </SidebarContent>
+
       <SidebarRail />
     </Sidebar>
   )

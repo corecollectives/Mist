@@ -65,7 +65,6 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 
 	if tags != "" {
 		project.Tags = strings.Split(tags, ",")
-
 	}
 	if err != nil {
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to create project", err.Error())

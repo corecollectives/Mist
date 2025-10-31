@@ -1,31 +1,31 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect } from "react"
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Button } from "@/components/ui/button"
+import { toast } from "sonner"
 
 interface Field {
-  name: string;
-  label: string;
-  type: "text" | "email" | "password" | "textarea" | "select" | "tags";
-  required?: boolean;
-  options?: { label: string; value: string }[];
-  defaultValue?: string;
+  name: string
+  label: string
+  type: "text" | "email" | "password" | "textarea" | "select" | "tags"
+  required?: boolean
+  options?: { label: string; value: string }[]
+  defaultValue?: string | string[] | number
 }
 
 interface FormModalProps<T extends Record<string, any>> {
-  isOpen: boolean;
-  onClose: () => void;
-  title: string;
-  fields: Field[];
-  onSubmit: (data: T) => void | Promise<void>; // allow async
+  isOpen: boolean
+  onClose: () => void
+  title: string
+  fields: Field[]
+  onSubmit: (data: T) => void | Promise<void>
 }
 
 export function FormModal<T extends Record<string, any>>({
@@ -35,41 +35,50 @@ export function FormModal<T extends Record<string, any>>({
   fields,
   onSubmit,
 }: FormModalProps<T>) {
-  const initialState = Object.fromEntries(fields.map((f) => [f.name, f.defaultValue || ""]));
-  const [formData, setFormData] = useState<Record<string, any>>(initialState);
-  const [tagInput, setTagInput] = useState("");
-  const [tags, setTags] = useState<string[]>([]);
+  const initialState = Object.fromEntries(fields.map((f) => [f.name, f.defaultValue ?? ""]))
+  const [formData, setFormData] = useState<Record<string, any>>(initialState)
+  const [tagInput, setTagInput] = useState("")
+  const [tags, setTags] = useState<string[]>([])
 
+  // 🧩 Sync initial state when modal opens or fields change
   useEffect(() => {
-    if (!isOpen) {
-      setFormData(initialState);
-      setTagInput("");
-      setTags([]);
+    if (isOpen) {
+      const state = Object.fromEntries(fields.map((f) => [f.name, f.defaultValue ?? ""]))
+      setFormData(state)
+
+      // If a tags field exists, populate its default value as array
+      const tagsField = fields.find((f) => f.type === "tags")
+      if (tagsField && Array.isArray(tagsField.defaultValue)) {
+        setTags(tagsField.defaultValue)
+      } else {
+        setTags([])
+      }
     }
-  }, [isOpen, initialState]);
+  }, [isOpen, fields])
 
   const handleAddTag = () => {
-    if (!tagInput.trim()) return;
-    if (tags.includes(tagInput.trim())) {
-      toast.error("Tag already exists");
-      return;
+    const newTag = tagInput.trim()
+    if (!newTag) return
+    if (tags.includes(newTag)) {
+      toast.error("Tag already exists")
+      return
     }
-    setTags([...tags, tagInput.trim()]);
-    setTagInput("");
-  };
+    setTags([...tags, newTag])
+    setTagInput("")
+  }
 
-  const handleRemoveTag = (tag: string) => setTags(tags.filter((t) => t !== tag));
+  const handleRemoveTag = (tag: string) => setTags(tags.filter((t) => t !== tag))
 
   const handleChange = (name: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
+    setFormData((prev) => ({ ...prev, [name]: value }))
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const finalData = { ...formData, tags };
-    await onSubmit(finalData as T);
-    onClose();
-  };
+    e.preventDefault()
+    const finalData = { ...formData, tags }
+    await onSubmit(finalData as T)
+    onClose()
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -90,7 +99,7 @@ export function FormModal<T extends Record<string, any>>({
                     className="mt-1"
                   />
                 </div>
-              );
+              )
 
             if (field.type === "select")
               return (
@@ -108,7 +117,7 @@ export function FormModal<T extends Record<string, any>>({
                     ))}
                   </select>
                 </div>
-              );
+              )
 
             if (field.type === "tags")
               return (
@@ -120,8 +129,8 @@ export function FormModal<T extends Record<string, any>>({
                       onChange={(e) => setTagInput(e.target.value)}
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
-                          e.preventDefault();
-                          handleAddTag();
+                          e.preventDefault()
+                          handleAddTag()
                         }
                       }}
                       placeholder="Add a tag"
@@ -148,7 +157,7 @@ export function FormModal<T extends Record<string, any>>({
                     ))}
                   </div>
                 </div>
-              );
+              )
 
             return (
               <div key={field.name}>
@@ -161,7 +170,7 @@ export function FormModal<T extends Record<string, any>>({
                   className="mt-1"
                 />
               </div>
-            );
+            )
           })}
 
           <DialogFooter className="flex justify-end gap-2 pt-4">
@@ -173,5 +182,5 @@ export function FormModal<T extends Record<string, any>>({
         </form>
       </DialogContent>
     </Dialog>
-  );
+  )
 }

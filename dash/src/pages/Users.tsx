@@ -94,7 +94,7 @@ export function UsersPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between py-6 border-b border-border flex-shrink-0">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
             Users
@@ -118,7 +118,7 @@ export function UsersPage() {
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 py-6 md:grid-cols-2 lg:grid-cols-3">
           {users.map((u) => (
             <Card
               key={u.id}

@@ -11,7 +11,7 @@ export type User = {
 }
 
 export type Project = {
-  id: string | number;
+  id: number;
   name: string;
   description: string;
   tags?: string[];

@@ -2,7 +2,6 @@ import { useEffect, useState } from "react"
 import type { User } from "@/lib/types"
 import { useAuth } from "@/context/AuthContext"
 import { toast } from "react-toastify"
-import { CreateUserModal } from "@/components/CreateUserModal"
 import Loading from "@/components/Loading"
 
 import {
@@ -15,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { FormModal } from "@/components/FormModal"
 
 const getRoleStyles = (role: string) => {
   switch (role) {
@@ -92,7 +92,7 @@ export function UsersPage() {
     )
 
   return (
-    <div className="min-h-screen bg-background p-6">
+    <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -157,10 +157,26 @@ export function UsersPage() {
         </div>
       )}
 
-      <CreateUserModal
+      <FormModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleCreateUser}
+        title="Create New User"
+        fields={[
+          { name: "username", label: "Username", type: "text", required: true },
+          { name: "email", label: "Email", type: "email", required: true },
+          { name: "password", label: "Password", type: "password", required: true },
+          {
+            name: "role",
+            label: "Role",
+            type: "select",
+            options: [
+              { label: "User", value: "user" },
+              ...(user?.isAdmin ? [{ label: "Admin", value: "admin" }] : []),
+            ],
+            required: true,
+          },
+        ]}
       />
     </div>
   )

@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import { FormModal } from "@/components/FormModal"
 
 export const ProjectsPage = () => {
   const { user } = useAuth()
@@ -155,10 +156,16 @@ export const ProjectsPage = () => {
         </div>
       )}
 
-      <CreateProjectModal
+      <FormModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleCreateProject}
+        title="Create New Project"
+        fields={[
+          { name: "name", label: "Project Name", type: "text" },
+          { name: "description", label: "Description", type: "textarea" },
+          { name: "tags", label: "Tags", type: "tags" },
+        ]}
       />
     </div>
   )

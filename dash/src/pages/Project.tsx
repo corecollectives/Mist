@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { toast } from "sonner";
+import { toast } from "react-toastify";
 import Loading from "../components/Loading";
 import { FiEdit2, FiTrash2 } from 'react-icons/fi';
 import { useAuth } from "../context/AuthContext";
@@ -114,7 +114,7 @@ export const ProjectPage = () => {
   if (!project) return null;
 
   return (
-    <div className="min-h-screen bg-[#0D1117] ">
+    <div className="min-h-screen bg-[#0D1117] p-6">
       <div className="flex justify-between items-start mb-6">
         <div>
           <h1 className="text-[#C9D1D9] text-2xl font-bold">{project.name}</h1>

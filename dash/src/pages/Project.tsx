@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import Loading from "../components/Loading";
 import { FiEdit2, FiTrash2 } from 'react-icons/fi';
 import { useAuth } from "../context/AuthContext";

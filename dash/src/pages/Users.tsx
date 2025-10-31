@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import type { User } from "@/lib/types"
 import { useAuth } from "@/context/AuthContext"
-import { toast } from "react-toastify"
+import { toast } from "sonner"
 import Loading from "@/components/Loading"
 
 import {

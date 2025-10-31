@@ -1,6 +1,6 @@
-import * as React from "react"
-
 import { VersionSwitcher } from "@/components/version-switcher"
+import { useSidebar } from "@/components/ui/sidebar"
+
 import {
   Sidebar,
   SidebarContent,
@@ -12,9 +12,23 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
+  SidebarFooter,
 } from "@/components/ui/sidebar"
-import { Home, Settings, Users, GitBranch, Book, LifeBuoy, FolderGit2, User, Server } from "lucide-react"
+import {
+  Home,
+  Settings,
+  Users,
+  GitBranch,
+  Book,
+  LifeBuoy,
+  FolderGit2,
+  User,
+  Server,
+  LogOut,
+} from "lucide-react"
 import { Link, useLocation } from "react-router-dom"
+import { useAuth } from "@/context/AuthContext"
+import { Button } from "@/components/ui/button"
 
 const useNavData = () => {
   const location = useLocation()
@@ -97,20 +111,24 @@ const useNavData = () => {
   return { data }
 }
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+
+export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const { data } = useNavData()
+  const { user, logout } = useAuth()
+  const { state } = useSidebar() // <- gives you collapse info
+
+  const isCollapsed = state === "collapsed"
+
   return (
     <Sidebar {...props} collapsible="icon" variant="floating">
       <SidebarHeader>
-        <VersionSwitcher
-          defaultVersion={data.versions[0]}
-        />
+        <VersionSwitcher defaultVersion={data.versions[0]} />
       </SidebarHeader>
 
       <SidebarContent>
         {data.navMain.map((group) => (
           <SidebarGroup key={group.title}>
-            <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
+            {!isCollapsed && <SidebarGroupLabel>{group.title}</SidebarGroupLabel>}
             <SidebarGroupContent>
               <SidebarMenu>
                 {group.items.map((item) => {
@@ -120,7 +138,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                       <SidebarMenuButton asChild isActive={item.isActive}>
                         <Link to={item.url} className="flex items-center gap-2">
                           <Icon className="h-4 w-4" />
-                          <span>{item.title}</span>
+                          {!isCollapsed && <span>{item.title}</span>}
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -131,6 +149,33 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarGroup>
         ))}
       </SidebarContent>
+
+      <SidebarFooter className="border-t border-border/40 p-3 flex flex-row items-center justify-between">
+        {isCollapsed ? (
+          <User className="h-4 w-4 text-muted-foreground mx-auto" />
+        ) : (
+          <>
+            <div className="flex items-center w-full gap-2">
+              <User className="h-4 w-4 text-muted-foreground" />
+              <div className="flex flex-col leading-none">
+                <span className="text-sm font-medium">{user?.username || "Guest"}</span>
+                <span className="text-xs text-muted-foreground truncate max-w-[120px]">
+                  {user?.email || "Not signed in"}
+                </span>
+              </div>
+            </div>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={logout}
+              title="Logout"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </>
+        )}
+      </SidebarFooter>
 
       <SidebarRail />
     </Sidebar>

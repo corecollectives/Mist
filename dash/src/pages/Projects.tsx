@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { toast } from "react-toastify"
+import { toast } from "sonner"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "../context/AuthContext"
 import Loading from "../components/Loading"

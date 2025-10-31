@@ -1,13 +1,15 @@
 import { Outlet } from 'react-router-dom';
-import { Sidebar } from './components/Sidebar';
+import { SidebarProvider, SidebarTrigger } from './components/ui/sidebar';
+import { AppSidebar } from './components/app-sidebar';
 
 export const Layout = () => {
   return (
-    <div className="flex bg-[#0D1117] min-h-screen">
-      <Sidebar />
-      <main className="ml-64 w-full p-6">
+    <SidebarProvider>
+      <AppSidebar />
+      <main className='w-full flex flex-col gap-y-4 pb-6 px-6 pt-4'>
+        <SidebarTrigger />
         <Outlet />
       </main>
-    </div>
+    </SidebarProvider>
   );
 };

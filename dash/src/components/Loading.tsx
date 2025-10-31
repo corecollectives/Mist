@@ -1,17 +1,24 @@
-import React from 'react';
+import { Card, CardContent } from "@/components/ui/card"
+import { cn } from "@/lib/utils"
 
-const Loading: React.FC = () => {
+export function Loading({ className }: { className?: string }) {
   return (
-    <div className="flex w-full flex-col items-center justify-center h-full bg-gray-100 dark:bg-gray-900">
-      <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-      <p className="mt-4 text-xl font-semibold text-gray-700 dark:text-gray-300">
-        Loading...
-      </p>
-      <p className="mt-2 text-lg text-gray-500 dark:text-gray-400">
-        Please wait while we make some api calls
-      </p>
-    </div>
-  );
-};
+    <div
+      className={cn(
+        "flex h-screen w-full flex-col items-center justify-center bg-background text-foreground",
+        className
+      )}
+    >
+      <Card className="flex flex-col items-center justify-center border-none shadow-none bg-transparent">
+        <CardContent className="flex flex-col items-center">
+          <div className="h-16 w-16 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
 
-export default Loading;
+          <p className="mt-6 text-xl font-semibold">Loading...</p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Please wait while we make some API calls
+          </p>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import type { Project } from '../lib/types';
 
 interface EditProjectModalProps {

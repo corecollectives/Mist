@@ -1,9 +1,8 @@
 import Loading from "./components/Loading";
 import { useAuth } from "./context/AuthContext";
 import { Navigate, Route, BrowserRouter as Router, Routes } from "react-router-dom"
-import { SetupPage } from "./pages/Setup";
 import { HomePage } from "./pages/Home";
-import { LoginPage } from "./pages/Login";
+import LoginPage from "./pages/Login";
 import { Layout } from "./Layout";
 import { UsersPage } from "./pages/Users";
 import { ProjectsPage } from "./pages/Projects";
@@ -12,6 +11,9 @@ import { DatabasesPage } from "./pages/Databases";
 import { LogsPage } from "./pages/Logs";
 import { SettingsPage } from "./pages/Settings";
 import { ProjectPage } from "./pages/Project";
+import "./App.css"
+import { Toaster } from "./components/ui/sonner";
+import SetupPage from "./pages/Setup";
 
 export default function App() {
   const { setupRequired, user } = useAuth();
@@ -49,7 +51,9 @@ export default function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </>
         )}
+
       </Routes>
+      <Toaster />
     </Router>
   )
 }

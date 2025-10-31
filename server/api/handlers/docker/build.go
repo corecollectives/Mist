@@ -7,10 +7,14 @@ import (
 	"net/http"
 	"path/filepath"
 
+	"github.com/docker/docker/pkg/archive"
 	"github.com/gorilla/websocket"
-	"github.com/moby/go-archive"
+
+	// "github.com/moby/go-archive"
 	"github.com/moby/moby/api/types/container"
-	"github.com/moby/moby/api/types/strslice"
+	"github.com/moby/moby/api/types/network"
+
+	// "github.com/moby/moby/api/types/strslice"
 	"github.com/moby/moby/client"
 )
 
@@ -37,7 +41,8 @@ func DeployHandler(w http.ResponseWriter, r *http.Request) {
 
 	defer cli.Close()
 
-	repoDir, _ := filepath.Abs("../../../")
+	repoDir, _ := filepath.Abs("../../test/")
+	fmt.Println("repoDir: ", repoDir)
 
 	tar, err := archive.TarWithOptions(repoDir, &archive.TarOptions{})
 	if err != nil {
@@ -77,9 +82,10 @@ func DeployHandler(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := cli.ContainerCreate(ctx, &container.Config{
 		Image: imageTag,
-		Cmd:   strslice.StrSlice{"./myapp"},
 		Tty:   false,
-	}, &container.HostConfig{}, nil, nil, contName)
+	}, &container.HostConfig{
+		PortBindings: map[network.Port][]network.PortBinding{},
+	}, nil, nil, contName)
 
 	if err != nil {
 		ws.WriteMessage(websocket.TextMessage, []byte("error container create failed: "+err.Error()))

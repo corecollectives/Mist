@@ -15,6 +15,7 @@ import "./App.css"
 import { Toaster } from "./components/ui/sonner";
 import SetupPage from "./pages/Setup";
 import { GitPage } from "./pages/Git";
+import { CallbackPage } from "./pages/Callback";
 
 export default function App() {
   const { setupRequired, user } = useAuth();
@@ -49,6 +50,7 @@ export default function App() {
               <Route path="/databases" element={<DatabasesPage />} />
               <Route path="/logs" element={<LogsPage />} />
               <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/callback" element={<CallbackPage />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </>

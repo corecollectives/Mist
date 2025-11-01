@@ -20,7 +20,7 @@ export default function SetupPage() {
       <img
         src="/cloud-computing.png"
         alt="Image"
-        className="absolute inset-0 h-full z-0 w-full object-cover dark:brightness-[0.2] dark:grayscale"
+        className="absolute inset-0 h-full z-0 w-full object-cover dark:brightness-[0.3] dark:grayscale"
       />
     </div>
   )

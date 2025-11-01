@@ -1,182 +1,184 @@
-import { useEffect, useState } from "react";
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
-import { ExternalLink } from "lucide-react";
-import type { GitHubApp } from "@/lib/types";
-import { toast } from "sonner";
-
+import { useEffect, useState } from "react"
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  CardFooter,
+} from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { ExternalLink, Github, Gitlab, GitFork, GitMerge } from "lucide-react"
+import { useAuth } from "@/context/AuthContext"
+import type { GitHubApp } from "@/lib/types"
+import { cn } from "@/lib/utils"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import Loading from "@/components/Loading"
 
 export function GitPage() {
-  const [loading, setLoading] = useState(true);
-  const [app, setApp] = useState<GitHubApp | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true)
+  const [app, setApp] = useState<GitHubApp | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [isInstalled, setIsInstalled] = useState(false)
+  const { user } = useAuth()
+
+  const generateState = (appId: number, userId: number) => {
+    const payload = { appId, userId }
+    return btoa(JSON.stringify(payload))
+  }
 
   const fetchApp = async () => {
-    setLoading(true);
     try {
-      const res = await fetch("/api/github/app");
-      const data = await res.json();
+      const res = await fetch("/api/github/app")
+      const data = await res.json()
       if (data.success) {
-        if (data.data) {
-          setApp(data.data);
-        }
+        setApp(data.data.app)
+        setIsInstalled(data.data.isInstalled)
+      } else {
+        setError(data.error || "Failed to load GitHub App info")
       }
-      else {
-        setError(data.error || null);
-        toast.error(data.error || "An error occurred while fetching the app info");
-      }
-
     } catch (err) {
-      console.error(err);
-      setError("Failed to load app info");
+      console.error(err)
+      setError("Failed to load GitHub App info")
+    } finally {
+      setLoading(false)
     }
-    setLoading(false);
   }
 
   useEffect(() => {
     fetchApp()
-  }, []);
-
-  const manifest = {
-    name: "Mist PaaS",
-    url: window.location.origin,
-    hook_attributes: {
-      url: "https://api.mist.local/api/github/webhook",
-    },
-    redirect_url: "http://localhost:8080/api/github/callback",
-    callback_urls: [window.location.origin],
-    public: false,
-    default_permissions: {
-      contents: "read",
-      metadata: "read",
-      pull_requests: "read",
-      deployments: "read",
-      administration: "write",
-      repository_hooks: "write",
-    },
-    default_events: ["push", "pull_request", "deployment_status"],
-  };
+  }, [])
 
   const handleButtonClick = () => {
-    const githubUrl = `https://github.com/settings/apps/new?state=abc123`;
-    const form = document.createElement("form")
-    form.method = "POST"
-    form.action = githubUrl
-    form.style.display = "none"
-
-    const input = document.createElement("input")
-    input.type = "hidden"
-    input.name = "manifest"
-    input.value = JSON.stringify(manifest)
-    form.appendChild(input)
-
-    document.body.appendChild(form)
-    form.submit()
-
+    window.open("/api/github/app/create")
   }
-  if (loading) {
+
+  if (loading)
     return (
-      <div className="max-w-2xl mx-auto mt-16">
-        <Card>
-          <CardHeader>
-            <CardTitle>GitHub Integration</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Skeleton className="h-8 w-3/4 mb-4" />
-            <Skeleton className="h-6 w-1/2" />
-          </CardContent>
-        </Card>
+      <div className="flex h-screen w-full items-center justify-center">
+        <Loading />
       </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="max-w-2xl mx-auto mt-16">
-        <Card>
-          <CardHeader>
-            <CardTitle>GitHub Integration</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-red-500">{error}</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+    )
 
   return (
-    <div className="max-w-2xl mx-auto mt-16 space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>GitHub Integration</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {app ? (
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm text-muted-foreground">Connected GitHub App</p>
-                <p className="text-lg font-semibold">{app.name}</p>
-                <Badge variant="secondary" className="mt-2">
-                  App ID: {app.app_id}
-                </Badge>
-              </div>
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <div className="flex items-center justify-between py-6 border-b border-border flex-shrink-0">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            Git Integrations
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Connect your Git providers to enable automatic deployments.
+          </p>
+        </div>
+      </div>
 
-              <div className="pt-2">
+      {/* Error */}
+      {error && (
+        <div className="mt-4">
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        </div>
+      )}
+
+      {/* Main Grid */}
+      <div className="grid gap-4 py-6 md:grid-cols-2 lg:grid-cols-3">
+        {/* GitHub Card */}
+        <Card className="border-border bg-card hover:border-primary transition-colors">
+          <CardHeader className="pb-2 flex flex-row items-center gap-2">
+            <Github className="w-5 h-5 text-muted-foreground" />
+            <CardTitle className="text-lg font-semibold">GitHub</CardTitle>
+          </CardHeader>
+
+          <CardContent>
+            {app ? (
+              <div className="space-y-3">
+                <div>
+                  <p className="font-medium text-foreground">{app.name}</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    App ID: {app.app_id}
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap gap-2 pt-2">
+                  <Button
+                    onClick={() => {
+                      const state = generateState(
+                        app.app_id,
+                        parseInt(user!.id.toString())
+                      )
+                      window.open(
+                        `https://github.com/apps/${app.slug}/installations/new?state=${state}`
+                      )
+                    }}
+                    disabled={isInstalled}
+                    className="transition-colors disabled:cursor-not-allowed"
+                  >
+                    {isInstalled ? "Installed" : "Install App"}
+                    <ExternalLink className="w-4 h-4 ml-2" />
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    onClick={() =>
+                      window.open(
+                        `https://github.com/settings/apps/${app.slug}`,
+                        "_blank"
+                      )
+                    }
+                  >
+                    Manage
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
                 <p className="text-sm text-muted-foreground">
-                  Installed App Slug:
+                  No GitHub App connected yet. Create one to enable Git
+                  deployments.
                 </p>
-                <p className="font-medium">{app.slug}</p>
-              </div>
-
-              <div className="flex gap-3 pt-4">
                 <Button
-                  onClick={() =>
-                    window.open(
-                      `https://github.com/apps/${app.slug}/installations/new`,
-                      "_blank"
-                    )
-                  }
+                  onClick={handleButtonClick}
+                  size="default"
+                  className="transition-colors"
                 >
-                  Install App
-                  <ExternalLink className="w-4 h-4 ml-2" />
-                </Button>
-
-                <Button
-                  variant="outline"
-                  onClick={() =>
-                    window.open(`https://github.com/settings/apps/${app.slug}`, "_blank")
-                  }
-                >
-                  Manage App
+                  Create GitHub App
                 </Button>
               </div>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center gap-4">
-              <p className="text-muted-foreground text-center">
-                No GitHub App connected yet. Create one to enable Git deployments.
-              </p>
-              <Button
-                size="lg"
-                onClick={() => {
-                  handleButtonClick()
-                }}
-              >
-                Create GitHub App
-              </Button>
-            </div>
+            )}
+          </CardContent>
+
+          {app && (
+            <CardFooter className="text-xs text-muted-foreground border-t border-border pt-2">
+              Created at: {new Date(app.created_at).toLocaleString()}
+            </CardFooter>
           )}
-        </CardContent>
+        </Card>
 
-        {app && (
-          <CardFooter className="text-sm text-muted-foreground">
-            Created at: {new Date(app.created_at).toLocaleString()}
-          </CardFooter>
-        )}
-      </Card>
+        {/* Other Providers */}
+        {[
+          { name: "GitLab", icon: Gitlab },
+          { name: "Bitbucket", icon: GitFork },
+          { name: "Gitea", icon: GitMerge },
+        ].map(({ name, icon: Icon }) => (
+          <Card
+            key={name}
+            className={cn(
+              "h-full flex flex-col items-center justify-between border border-dashed border-border bg-card hover:border-primary/30 cursor-not-allowed opacity-60 transition-colors"
+            )}
+          >
+            <CardHeader className="flex flex-col items-center space-y-3 pb-4">
+              <Icon className="w-6 h-6 text-muted-foreground" />
+              <CardTitle className="text-base font-medium">{name}</CardTitle>
+            </CardHeader>
+            <CardContent className="pb-6">
+              <Badge variant="secondary">Coming Soon</Badge>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
-  );
+  )
 }

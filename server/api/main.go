@@ -42,7 +42,11 @@ func RegisterRoutes(mux *http.ServeMux, db *sql.DB) {
 	mux.Handle("DELETE /api/projects/delete", middleware.AuthMiddleware(h)(http.HandlerFunc(proj.DeleteProject)))
 
 	mux.Handle("GET /api/github/app", middleware.AuthMiddleware(h)(http.HandlerFunc(github.GetApp)))
+	mux.Handle("GET /api/github/app/create", middleware.AuthMiddleware(h)(http.HandlerFunc(github.CreateGithubApp)))
 	mux.Handle("GET /api/github/callback", http.HandlerFunc(github.CallBackHandler))
+	mux.Handle("GET /api/github/installation/callback", http.HandlerFunc(github.HandleInstallationEvent))
+	mux.Handle("GET /api/github/repositories", middleware.AuthMiddleware(h)(http.HandlerFunc(github.GetRepositories)))
+
 }
 
 func InitApiServer(db *sql.DB) {

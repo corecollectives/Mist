@@ -83,7 +83,7 @@ func (h *Handler) CreateGithubApp(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Failed to determine server IP", http.StatusInternalServerError)
 			return
 		}
-		apiBase = fmt.Sprintf("http://%s", ip)
+		apiBase = fmt.Sprintf("http://%s:8080", ip)
 		hook.URL = fmt.Sprintf("%s/api/github/webhook", apiBase)
 	}
 

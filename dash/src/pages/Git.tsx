@@ -14,12 +14,21 @@ import type { GitHubApp } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import Loading from "@/components/Loading"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog"
 
 export function GitPage() {
   const [loading, setLoading] = useState(true)
   const [app, setApp] = useState<GitHubApp | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isInstalled, setIsInstalled] = useState(false)
+  const [open, setOpen] = useState(false) // 👈 new state for dialog
   const { user } = useAuth()
 
   const generateState = (appId: number, userId: number) => {
@@ -49,8 +58,10 @@ export function GitPage() {
     fetchApp()
   }, [])
 
-  const handleButtonClick = () => {
-    window.open("/api/github/app/create")
+  const handleCreateApp = () => {
+    // Close modal and redirect
+    setOpen(false)
+    window.open("/api/github/app/create", "_blank")
   }
 
   if (loading)
@@ -140,7 +151,7 @@ export function GitPage() {
                   deployments.
                 </p>
                 <Button
-                  onClick={handleButtonClick}
+                  onClick={() => setOpen(true)} // 👈 open popup first
                   size="default"
                   className="transition-colors"
                 >
@@ -179,6 +190,35 @@ export function GitPage() {
           </Card>
         ))}
       </div>
+
+      {/* Confirmation Popup */}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create GitHub App</DialogTitle>
+            <DialogDescription>
+              This will create a new GitHub App in your account with permissions
+              for:
+              <ul className="list-disc list-inside mt-2 text-muted-foreground">
+                <li>Accessing your repositories</li>
+                <li>Receiving push & deployment events</li>
+                <li>Managing webhooks for automation</li>
+                <li>Other users will be able to use this app for deployments</li>
+              </ul>
+              <p className="mt-2">
+                You’ll be redirected to GitHub to complete the process.
+              </p>
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter className="flex justify-end space-x-2">
+            <Button variant="outline" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreateApp}>Continue</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

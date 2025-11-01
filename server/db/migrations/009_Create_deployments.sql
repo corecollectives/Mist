@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS deployments (
     commit_message TEXT,
     triggered_by INTEGER,
     logs TEXT,
+    container_id TEXT,
     status TEXT NOT NULL CHECK(status IN ('pending', 'building', 'deploying', 'success', 'failed', 'stopped')) DEFAULT 'pending',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     finished_at DATETIME,

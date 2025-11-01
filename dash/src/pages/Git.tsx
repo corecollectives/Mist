@@ -56,7 +56,7 @@ export function GitPage() {
 
   const fetchRepos = async () => {
     try {
-      const res = await fetch("/api/github/app/repositories")
+      const res = await fetch("/api/github/repositories")
       const data = await res.json()
       console.log("Fetched repos:", data)
     } catch (err) {

@@ -54,8 +54,19 @@ export function GitPage() {
     }
   }
 
+  const fetchRepos = async () => {
+    try {
+      const res = await fetch("/api/github/app/repositories")
+      const data = await res.json()
+      console.log("Fetched repos:", data)
+    } catch (err) {
+      console.error("Failed to fetch repos:", err)
+    }
+  }
+
   useEffect(() => {
     fetchApp()
+    fetchRepos()
   }, [])
 
   const handleCreateApp = () => {

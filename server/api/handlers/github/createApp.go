@@ -98,7 +98,7 @@ func (h *Handler) CreateGithubApp(w http.ResponseWriter, r *http.Request) {
 		RedirectURL:    fmt.Sprintf("%s/api/github/callback", apiBase),
 		SetupURL:       callbackURL,
 		CallbackURLs:   []string{apiBase},
-		Public:         false,
+		Public:         true,
 		DefaultPermissions: map[string]string{
 			"contents":         "read",
 			"metadata":         "read",

@@ -1,0 +1,23 @@
+CREATE TABLE IF NOT EXISTS apps (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT,
+    git_provider_id INTEGER,
+    git_repository TEXT,
+    git_branch TEXT DEFAULT 'main',
+    deployment_strategy TEXT NOT NULL CHECK(deployment_strategy IN ('auto', 'manual')) DEFAULT 'manual',
+    port INTEGER,
+    root_directory TEXT,
+    build_command TEXT,
+    start_command TEXT,
+    dockerfile_path TEXT,
+    healthcheck_path TEXT,
+    healthcheck_interval INTEGER DEFAULT 30,
+    status TEXT NOT NULL CHECK(status IN ('stopped', 'running', 'error', 'building')) DEFAULT 'stopped',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+    FOREIGN KEY (git_provider_id) REFERENCES git_providers(id) ON DELETE SET NULL,
+    UNIQUE (project_id, name)
+);

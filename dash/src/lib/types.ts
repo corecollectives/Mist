@@ -22,3 +22,13 @@ export type Project = {
   updatedAt?: string
 
 }
+
+
+export type GitHubApp = {
+  id: number;
+  name: string;
+  app_id: number;
+  client_id: string;
+  slug: string;
+  created_at: string;
+};

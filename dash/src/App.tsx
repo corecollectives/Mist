@@ -14,6 +14,7 @@ import { ProjectPage } from "./pages/Project";
 import "./App.css"
 import { Toaster } from "./components/ui/sonner";
 import SetupPage from "./pages/Setup";
+import { GitPage } from "./pages/Git";
 
 export default function App() {
   const { setupRequired, user } = useAuth();
@@ -41,6 +42,7 @@ export default function App() {
             <Route element={<Layout />} >
               <Route path="/" element={<HomePage />} />
               <Route path="/users" element={<UsersPage />} />
+              <Route path="/git" element={<GitPage />} />
               <Route path="/projects" element={<ProjectsPage />} />
               <Route path="/projects/:projectId" element={<ProjectPage />} />
               <Route path="/deployments" element={<DeploymentsPage />} />

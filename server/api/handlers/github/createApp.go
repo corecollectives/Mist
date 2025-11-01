@@ -89,7 +89,7 @@ func (h *Handler) CreateGithubApp(w http.ResponseWriter, r *http.Request) {
 
 	appName := fmt.Sprintf("Mist-%d", rand.Intn(90000)+10000)
 	state := GenerateState(0, int(userInfo.ID))
-	callbackURL := fmt.Sprintf("%s/api/github/installation/callback?state=%s", apiBase, state)
+	callbackURL := fmt.Sprintf("%s/api/github/installation/callback", apiBase)
 
 	manifest := Manifest{
 		Name:           appName,

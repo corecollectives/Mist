@@ -25,8 +25,9 @@ func StopRemoveContainer(containerName string, logfile *os.File) error {
 }
 
 func RunContainer(imageTag, containerName string, args []string, logfile *os.File) error {
-	runArgs := []string{"run", "name", containerName}
+	runArgs := []string{"run","-d"}
 	runArgs = append(runArgs, args...)
+	runArgs = append(runArgs, "--name", containerName)
 	runArgs = append(runArgs, imageTag)
 	cmd := exec.Command("docker", runArgs...)
 	cmd.Stdout = logfile

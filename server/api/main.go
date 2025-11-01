@@ -9,6 +9,8 @@ import (
 
 	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/api/handlers/auth"
+	"github.com/corecollectives/mist/api/handlers/docker"
+
 	// "github.com/corecollectives/mist/api/handlers/docker"
 	"github.com/corecollectives/mist/api/handlers/projects"
 	"github.com/corecollectives/mist/api/handlers/users"
@@ -21,6 +23,7 @@ func RegisterRoutes(mux *http.ServeMux, db *sql.DB) {
 	auth := &auth.Handler{DB: db}
 	proj := &projects.Handler{DB: db}
 	users := &users.Handler{DB: db}
+	d := &docker.Deployer{DB: db, LogDirectory: "../../logs/"}
 	mux.Handle("/api/ws/stats", middleware.AuthMiddleware(h)(http.HandlerFunc(websockets.StatWsHandler)))
 	mux.HandleFunc("GET /api/health", handlers.HealthCheckHandler)
 
@@ -41,6 +44,8 @@ func RegisterRoutes(mux *http.ServeMux, db *sql.DB) {
 	mux.Handle("DELETE /api/projects/delete", middleware.AuthMiddleware(h)(http.HandlerFunc(proj.DeleteProject)))
 
 	// mux.HandleFunc("/api/ws/logs", docker.DeployHandler)
+	mux.HandleFunc(" /api/docker/deploy", d.DeployHandler)
+	mux.HandleFunc("/api/ws/logs", d.LogsHandler)
 
 }
 

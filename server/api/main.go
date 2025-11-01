@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/corecollectives/mist/api/handlers"
@@ -52,6 +54,16 @@ func RegisterRoutes(mux *http.ServeMux, db *sql.DB) {
 func InitApiServer(db *sql.DB) {
 	mux := http.NewServeMux()
 	RegisterRoutes(mux, db)
+	staticDir := "static"
+	fs := http.FileServer(http.Dir(staticDir))
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		path := filepath.Join(staticDir, r.URL.Path)
+		if info, err := os.Stat(path); err == nil && !info.IsDir() {
+			fs.ServeHTTP(w, r)
+			return
+		}
+		http.ServeFile(w, r, filepath.Join(staticDir, "index.html"))
+	})
 	go websockets.BroadcastMetrics()
 	handler := middleware.Logger(mux)
 	server := &http.Server{
@@ -59,8 +71,6 @@ func InitApiServer(db *sql.DB) {
 		Handler:           handler,
 		ReadHeaderTimeout: 5 * time.Second,
 	}
-	fs := http.FileServer(http.Dir("static"))
-	mux.Handle("/", fs)
 	fmt.Println("Server is running on port 8080")
 	log.Fatal(server.ListenAndServe())
 }

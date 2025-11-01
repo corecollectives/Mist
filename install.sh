@@ -74,8 +74,11 @@ echo "🧱 Building frontend..."
 cd $INSTALL_DIR/$VITE_FRONTEND_DIR
 bun install
 bun run build
+cd ..
 
-mkdir -p "$INSTALL_DIR/$GO_BACKEND_DIR/static"
+if [ ! -d "$GO_BACKEND_DIR/static" ]; then
+    mkdir -p "$GO_BACKEND_DIR/static"
+fi
 rm -rf "$INSTALL_DIR/$GO_BACKEND_DIR/static/*"
 cp -r "$VITE_FRONTEND_DIR/dist/"* "$INSTALL_DIR/$GO_BACKEND_DIR/static/"
 

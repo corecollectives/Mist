@@ -83,6 +83,16 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Populate the owner field
+	project.Owner = &models.User{
+		ID:        userData.ID,
+		Username:  userData.Username,
+		Email:     userData.Email,
+		Role:      userData.Role,
+		CreatedAt: userData.CreatedAt,
+		UpdatedAt: userData.UpdatedAt,
+	}
+
 	project.ProjectMembers = []models.User{{
 		ID:        userData.ID,
 		Username:  userData.Username,

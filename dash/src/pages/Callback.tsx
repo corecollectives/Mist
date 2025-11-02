@@ -1,4 +1,4 @@
-import Loading from "@/components/Loading";
+import { FullScreenLoading } from "@/shared/components";
 import { useEffect } from "react";
 import { toast } from "sonner";
 
@@ -18,5 +18,5 @@ export const CallbackPage = () => {
     }
   }, []);
 
-  return <Loading />;
+  return <FullScreenLoading />;
 };

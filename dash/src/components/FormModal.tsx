@@ -40,13 +40,11 @@ export function FormModal<T extends Record<string, any>>({
   const [tagInput, setTagInput] = useState("")
   const [tags, setTags] = useState<string[]>([])
 
-  // 🧩 Sync initial state when modal opens or fields change
   useEffect(() => {
     if (isOpen) {
       const state = Object.fromEntries(fields.map((f) => [f.name, f.defaultValue ?? ""]))
       setFormData(state)
 
-      // If a tags field exists, populate its default value as array
       const tagsField = fields.find((f) => f.type === "tags")
       if (tagsField && Array.isArray(tagsField.defaultValue)) {
         setTags(tagsField.defaultValue)

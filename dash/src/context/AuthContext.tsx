@@ -1,8 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import type { User } from "../lib/types";
+import type { User } from "../types";
 import { toast } from "sonner";
-
-
 type AuthContextType = {
   setupRequired: boolean | null;
   setSetupRequired: React.Dispatch<React.SetStateAction<boolean | null>>;
@@ -12,13 +10,9 @@ type AuthContextType = {
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
-
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [setupRequired, setSetupRequired] = React.useState<boolean | null>(null);
   const [user, setUser] = useState<User | null>(null)
-
-
   const logout = async () => {
     try {
       const response = await fetch("/api/auth/logout", {

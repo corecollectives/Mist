@@ -3,29 +3,22 @@ package dockerdeploy
 import (
 	"database/sql"
 	"fmt"
-	"net/http"
-	"strconv"
 )
 
-func (d *Deployer) DeployHandler(w http.ResponseWriter, r *http.Request) {
-	depIDStr := r.URL.Query().Get("id")
-	depID, err := strconv.ParseInt(depIDStr, 10, 64)
-	if err != nil {
-		http.Error(w, "Invalid deployment ID", 400)
-		return
-	}
+func (d *Deployer) DeployerMain(Id int64) (string, error) {
+
 	var id int64
-	err = d.DB.QueryRow("SELECT id FROM deployments WHERE id = ?", depID).Scan(&id)
+	err := d.DB.QueryRow("SELECT id FROM deployments WHERE id = ?", Id).Scan(&id)
 	if err == sql.ErrNoRows {
-		fmt.Println("No deployment found with id:", depID)
+		fmt.Println("No deployment found with id:", Id)
 	} else if err != nil {
 		fmt.Println("Query error:", err)
 	} else {
 		fmt.Println("Deployment found with id:", id)
 	}
 	// fmt.Println("Rows: ", rows)
-	fmt.Println("Deploying deployment", depID)
-	dep, err := d.loadDeployment(depID)
+	fmt.Println("Deploying deployment", Id)
+	dep, err := d.loadDeployment(Id)
 	// if err != nil {
 	// 	http.Error(w, "Deployment not found", 404)
 	// 	return
@@ -33,14 +26,14 @@ func (d *Deployer) DeployHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		fmt.Printf("Error loading deployment: %v\n", err)
-		http.Error(w, "Deployment not found", 404)
-		return
+
+		return "", err
 	}
 
 	fmt.Printf("Loaded deployment: %+v\n", dep)
 	appContextPath := "../../test"
 	imageTag := dep.CommitHash
-	containerName := fmt.Sprintf("app-%d", depID)
+	containerName := fmt.Sprintf("app-%d", Id)
 
 	go func() {
 		err := d.DeployApp(dep, appContextPath, imageTag, containerName)
@@ -52,6 +45,5 @@ func (d *Deployer) DeployHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	w.WriteHeader(http.StatusAccepted)
-	w.Write([]byte("Deployment started"))
+	return "Deployment started", nil
 }

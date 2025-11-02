@@ -7,18 +7,8 @@ import (
 	"time"
 )
 
-type Job struct {
-	ID         int
-	AppID      int
-	CommitHash string
-	Logs       string
-	Status     string
-	CreatedAt  time.Time
-	FinishedAt time.Time
-}
-
 type Queue struct {
-	jobs chan Job
+	jobs chan int64
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -28,7 +18,7 @@ type Queue struct {
 func NewQueue(buffer int) *Queue {
 	ctx, cancel := context.WithCancel(context.Background())
 	q := &Queue{
-		jobs: make(chan Job, buffer),
+		jobs: make(chan int64, buffer),
 
 		ctx:    ctx,
 		cancel: cancel,
@@ -42,20 +32,20 @@ func (q *Queue) StartWorker() {
 	q.wg.Add(1)
 	go func() {
 		defer q.wg.Done()
-		for job := range q.jobs {
+		for id := range q.jobs {
 
-			fmt.Printf("job with job id %d has started\n", job.ID)
+			fmt.Printf("job with job id %d has started\n", id)
 			time.Sleep(2 * time.Second)
-			fmt.Printf("job with job id %d has finished\n", job.ID)
+			fmt.Printf("job with job id %d has finished\n", id)
 
 		}
 
 	}()
 }
 
-func (q *Queue) AddJob(job Job) error {
+func (q *Queue) AddJob(Id int64) error {
 	select {
-	case q.jobs <- job:
+	case q.jobs <- Id:
 		return nil
 	case <-q.ctx.Done():
 		return fmt.Errorf("queue is closed")

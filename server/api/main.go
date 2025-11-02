@@ -9,7 +9,7 @@ import (
 
 	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/api/handlers/auth"
-	"github.com/corecollectives/mist/api/handlers/docker"
+	"github.com/corecollectives/mist/api/handlers/dockerdeploy"
 
 	// "github.com/corecollectives/mist/api/handlers/docker"
 	"github.com/corecollectives/mist/api/handlers/projects"
@@ -23,7 +23,7 @@ func RegisterRoutes(mux *http.ServeMux, db *sql.DB) {
 	auth := &auth.Handler{DB: db}
 	proj := &projects.Handler{DB: db}
 	users := &users.Handler{DB: db}
-	d := &docker.Deployer{DB: db, LogDirectory: "../../logs/"}
+	d := &dockerdeploy.Deployer{DB: db, LogDirectory: "../../logs/"}
 	mux.Handle("/api/ws/stats", middleware.AuthMiddleware(h)(http.HandlerFunc(websockets.StatWsHandler)))
 	mux.HandleFunc("GET /api/health", handlers.HealthCheckHandler)
 

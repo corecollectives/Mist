@@ -1,4 +1,4 @@
-package docker
+package dockerdeploy
 
 import (
 	"os"
@@ -25,7 +25,7 @@ func StopRemoveContainer(containerName string, logfile *os.File) error {
 }
 
 func RunContainer(imageTag, containerName string, args []string, logfile *os.File) error {
-	runArgs := []string{"run","-d"}
+	runArgs := []string{"run", "-d"}
 	runArgs = append(runArgs, args...)
 	runArgs = append(runArgs, "--name", containerName)
 	runArgs = append(runArgs, imageTag)

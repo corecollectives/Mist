@@ -1,4 +1,4 @@
-package docker
+package dockerdeploy
 
 import (
 	"context"
@@ -16,6 +16,8 @@ var upgrader = websocket.Upgrader{
 		return true
 	},
 }
+
+
 
 // var deployer *Deployer
 

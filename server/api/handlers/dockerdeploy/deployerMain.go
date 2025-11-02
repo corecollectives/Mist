@@ -1,21 +1,20 @@
 package dockerdeploy
 
 import (
-	"database/sql"
 	"fmt"
 )
 
 func (d *Deployer) DeployerMain(Id int64) (string, error) {
 
-	var id int64
-	err := d.DB.QueryRow("SELECT id FROM deployments WHERE id = ?", Id).Scan(&id)
-	if err == sql.ErrNoRows {
-		fmt.Println("No deployment found with id:", Id)
-	} else if err != nil {
-		fmt.Println("Query error:", err)
-	} else {
-		fmt.Println("Deployment found with id:", id)
-	}
+	// var id int64
+	// err := d.DB.QueryRow("SELECT id FROM deployments WHERE id = ?", Id).Scan(&id)
+	// if err == sql.ErrNoRows {
+	// 	fmt.Println("No deployment found with id:", Id)
+	// } else if err != nil {
+	// 	fmt.Println("Query error:", err)
+	// } else {
+	// 	fmt.Println("Deployment found with id:", id)
+	// }
 	// fmt.Println("Rows: ", rows)
 	fmt.Println("Deploying deployment", Id)
 	dep, err := d.loadDeployment(Id)

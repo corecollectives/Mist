@@ -5,10 +5,13 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/api/handlers/auth"
+	"github.com/corecollectives/mist/api/handlers/github"
 	"github.com/corecollectives/mist/api/handlers/dockerdeploy"
 
 	// "github.com/corecollectives/mist/api/handlers/docker"
@@ -23,6 +26,7 @@ func RegisterRoutes(mux *http.ServeMux, db *sql.DB) {
 	auth := &auth.Handler{DB: db}
 	proj := &projects.Handler{DB: db}
 	users := &users.Handler{DB: db}
+	github := &github.Handler{DB: db}
 	d := &dockerdeploy.Deployer{DB: db, LogDirectory: "../../logs/"}
 	mux.Handle("/api/ws/stats", middleware.AuthMiddleware(h)(http.HandlerFunc(websockets.StatWsHandler)))
 	mux.HandleFunc("GET /api/health", handlers.HealthCheckHandler)
@@ -43,6 +47,12 @@ func RegisterRoutes(mux *http.ServeMux, db *sql.DB) {
 	mux.Handle("PUT /api/projects/update", middleware.AuthMiddleware(h)(http.HandlerFunc(proj.UpdateProject)))
 	mux.Handle("DELETE /api/projects/delete", middleware.AuthMiddleware(h)(http.HandlerFunc(proj.DeleteProject)))
 
+	mux.Handle("GET /api/github/app", middleware.AuthMiddleware(h)(http.HandlerFunc(github.GetApp)))
+	mux.Handle("GET /api/github/app/create", middleware.AuthMiddleware(h)(http.HandlerFunc(github.CreateGithubApp)))
+	mux.Handle("GET /api/github/callback", http.HandlerFunc(github.CallBackHandler))
+	mux.Handle("GET /api/github/installation/callback", http.HandlerFunc(github.HandleInstallationEvent))
+	mux.Handle("GET /api/github/repositories", middleware.AuthMiddleware(h)(http.HandlerFunc(github.GetRepositories)))
+
 	// mux.HandleFunc("/api/ws/logs", docker.DeployHandler)
 	mux.HandleFunc(" /api/docker/deploy", d.DeployHandler)
 	mux.HandleFunc("/api/ws/logs", d.LogsHandler)
@@ -52,6 +62,16 @@ func RegisterRoutes(mux *http.ServeMux, db *sql.DB) {
 func InitApiServer(db *sql.DB) {
 	mux := http.NewServeMux()
 	RegisterRoutes(mux, db)
+	staticDir := "static"
+	fs := http.FileServer(http.Dir(staticDir))
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		path := filepath.Join(staticDir, r.URL.Path)
+		if info, err := os.Stat(path); err == nil && !info.IsDir() {
+			fs.ServeHTTP(w, r)
+			return
+		}
+		http.ServeFile(w, r, filepath.Join(staticDir, "index.html"))
+	})
 	go websockets.BroadcastMetrics()
 	handler := middleware.Logger(mux)
 	server := &http.Server{
@@ -59,8 +79,6 @@ func InitApiServer(db *sql.DB) {
 		Handler:           handler,
 		ReadHeaderTimeout: 5 * time.Second,
 	}
-	fs := http.FileServer(http.Dir("static"))
-	mux.Handle("/", fs)
 	fmt.Println("Server is running on port 8080")
 	log.Fatal(server.ListenAndServe())
 }

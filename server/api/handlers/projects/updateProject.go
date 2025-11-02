@@ -29,8 +29,9 @@ func (h *Handler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var input struct {
-		Name        string `json:"name"`
-		Description string `json:"description"`
+		Name        string   `json:"name"`
+		Description string   `json:"description"`
+		Tags        []string `json:"tags"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		handlers.SendResponse(w, http.StatusBadRequest, false, nil, "Invalid request body", err.Error())
@@ -55,7 +56,18 @@ func (h *Handler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 		handlers.SendResponse(w, http.StatusForbidden, false, nil, "Not authorized", "Forbidden")
 		return
 	}
-	_, err = h.DB.Exec("UPDATE projects SET name = ?, description = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", input.Name, input.Description, projectId)
+
+	tagsString := ""
+	if len(input.Tags) > 0 {
+		for i, tag := range input.Tags {
+			if i > 0 {
+				tagsString += ","
+			}
+			tagsString += tag
+		}
+	}
+
+	_, err = h.DB.Exec("UPDATE projects SET name = ?, description = ?, tags = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", input.Name, input.Description, tagsString, projectId)
 	if err != nil {
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to update project", err.Error())
 		return

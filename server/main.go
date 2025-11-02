@@ -7,6 +7,7 @@ import (
 
 	"github.com/corecollectives/mist/api"
 	"github.com/corecollectives/mist/db"
+	"github.com/corecollectives/mist/queue"
 	"github.com/corecollectives/mist/store"
 )
 
@@ -42,5 +43,9 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	//testing queue implementation
+	q := queue.InitQueue()
+	go queue.TestJobs(q)
+	
 	api.InitApiServer(dbInstance)
 }

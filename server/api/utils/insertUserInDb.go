@@ -9,6 +9,7 @@ import (
 
 func InsertUserInDb(db *sql.DB, username, email, password, role string) (models.User, error) {
 	var user models.User
+	id := GenerateRandomId()
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return user, err
@@ -20,10 +21,10 @@ func InsertUserInDb(db *sql.DB, username, email, password, role string) (models.
 	}
 
 	err = tx.QueryRow(`
-		INSERT INTO users (username, email, password_hash, role)
-		VALUES (?, ?, ?, ?)
+		INSERT INTO users (id, username, email, password_hash, role)
+		VALUES (?, ?, ?, ?, ?)
 		RETURNING id, username, email, role, created_at, updated_at
-	`, username, email, passwordHash, role).Scan(
+	`, id, username, email, passwordHash, role).Scan(
 		&user.ID,
 		&user.Username,
 		&user.Email,

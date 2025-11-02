@@ -1,14 +1,22 @@
-package dockerdeploy
+package queuehandlers
 
 import (
+	"database/sql"
 	"encoding/json"
 	"net/http"
 
 	"github.com/corecollectives/mist/api/utils"
 	"github.com/corecollectives/mist/models"
+	"github.com/corecollectives/mist/queue"
 )
 
-func (d *Deployer) AddDeployHandler(w http.ResponseWriter, r *http.Request) {
+type QueueHelper struct {
+	DB           *sql.DB
+	LogDirectory string
+	Queue        *queue.Queue
+}
+
+func (q *QueueHelper) AddDeployHandler(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		AppId int `json:"appId"`
 	}
@@ -16,18 +24,19 @@ func (d *Deployer) AddDeployHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	commitHash, err := GetCommitHash(req.AppId)
-	if err != nil {
-		http.Error(w, "failed to get commit hash", http.StatusInternalServerError)
-		return
-	}
-	commitMessage, err := GetCommitMessage(req.AppId)
-	if err != nil {
-		http.Error(w, "failed to get commit message", http.StatusInternalServerError)
-		return
-	}
+	//below 2 things are hardcoded currently add the getcommithash and msg function along with error on lhs of :=
+	commitHash := 2332
+	// if err != nil {
+	// 	http.Error(w, "failed to get commit hash", http.StatusInternalServerError)
+	// 	return
+	// }
+	commitMessage := "hello hi"
+	// if err != nil {
+	// 	http.Error(w, "failed to get commit message", http.StatusInternalServerError)
+	// 	return
+	// }
 	deploymentId := utils.GenerateRandomId()
-	result, err := d.DB.Exec(
+	result, err := q.DB.Exec(
 		`INSERT INTO deployments (id,app_id, commit_hash, commit_message, status) VALUES (?,?, ?, ?, 'pending')`,
 		deploymentId, req.AppId, commitHash, commitMessage,
 	)
@@ -41,13 +50,13 @@ func (d *Deployer) AddDeployHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := d.Queue.AddJob(int64(id)); err != nil {
+	if err := q.Queue.AddJob(int64(id)); err != nil {
 		http.Error(w, "failed to add job to queue", http.StatusInternalServerError)
 		return
 	}
 
 	var deployment models.Deployment
-	row := d.DB.QueryRow(`SELECT id, app_id, commit_hash, commit_message, triggered_by, logs, status, created_at, finished_at FROM deployments WHERE id = ?`, id)
+	row := q.DB.QueryRow(`SELECT id, app_id, commit_hash, commit_message, triggered_by, logs, status, created_at, finished_at FROM deployments WHERE id = ?`, id)
 	err = row.Scan(
 		&deployment.ID,
 		&deployment.AppID,

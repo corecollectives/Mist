@@ -1,21 +1,16 @@
 package dockerdeploy
 
 import (
-	"database/sql"
 	"fmt"
 	"os"
 	"path/filepath"
 	"time"
 
 	"github.com/corecollectives/mist/models"
-	"github.com/corecollectives/mist/queue"
+
 )
 
-type Deployer struct {
-	DB           *sql.DB
-	LogDirectory string
-	Queue        *queue.Queue
-}
+
 
 // func InitDeployer(db *sql.DB, logDir string) {
 // 	deployer = &Deployer{DB: db, LogDirectory: logDir}

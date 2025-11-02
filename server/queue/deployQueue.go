@@ -4,7 +4,8 @@ import (
 	"context"
 	"fmt"
 	"sync"
-	"time"
+
+	"github.com/corecollectives/mist/api/handlers/dockerdeploy"
 )
 
 type Queue struct {
@@ -15,7 +16,7 @@ type Queue struct {
 	wg     sync.WaitGroup
 }
 
-func NewQueue(buffer int) *Queue {
+func NewQueue(buffer int, d *dockerdeploy.Deployer) *Queue {
 	ctx, cancel := context.WithCancel(context.Background())
 	q := &Queue{
 		jobs: make(chan int64, buffer),
@@ -23,20 +24,18 @@ func NewQueue(buffer int) *Queue {
 		ctx:    ctx,
 		cancel: cancel,
 	}
-	q.StartWorker()
+	q.StartWorker(d)
 	return q
 
 }
 
-func (q *Queue) StartWorker() {
+func (q *Queue) StartWorker(d *dockerdeploy.Deployer) {
 	q.wg.Add(1)
 	go func() {
 		defer q.wg.Done()
 		for id := range q.jobs {
 
-			fmt.Printf("job with job id %d has started\n", id)
-			time.Sleep(2 * time.Second)
-			fmt.Printf("job with job id %d has finished\n", id)
+			d.DeployerMain(id)
 
 		}
 

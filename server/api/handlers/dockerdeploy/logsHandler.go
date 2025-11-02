@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/corecollectives/mist/models"
+	// "github.com/corecollectives/mist/queue"
 	"github.com/corecollectives/mist/websockets"
 	"github.com/gorilla/websocket"
 )
@@ -17,7 +18,10 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-
+type Deployer struct {
+	DB           *sql.DB
+	LogDirectory string
+}
 
 // var deployer *Deployer
 

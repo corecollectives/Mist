@@ -7,6 +7,7 @@ import (
 
 	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/api/middleware"
+	"github.com/corecollectives/mist/api/utils"
 	"github.com/corecollectives/mist/models"
 )
 
@@ -54,13 +55,13 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 			tagsString += tag
 		}
 	}
-
+	id := utils.GenerateRandomId()
 	var tags string = ""
 	err = tx.QueryRow(`
-		INSERT INTO projects(name, description,tags, owner_id)
-		VALUES (?, ?, ?,?)
+		INSERT INTO projects(id,name, description,tags, owner_id)
+		VALUES (?, ?, ?,?,?)
 		RETURNING id, name, description, tags, owner_id, created_at, updated_at
-	`, input.Name, input.Description, tagsString, userData.ID).
+	`, id, input.Name, input.Description, tagsString, userData.ID).
 		Scan(&project.ID, &project.Name, &project.Description, &tags, &project.OwnerID, &project.CreatedAt, &project.UpdatedAt)
 
 	if tags != "" {

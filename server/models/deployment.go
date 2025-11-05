@@ -2,14 +2,14 @@ package models
 
 import "time"
 
-
-
 type Deployment struct {
-	ID         int64     `json:"id"`
-	AppID      int64     `json:"appId"`
-	CommitSHA  string    `json:"commitSha"`
-	Logs       string    `json:"logs"`
-	Status     string    `json:"status"`
-	CreatedAt  time.Time `json:"createdAt"`
-	FinishedAt time.Time `json:"finishedAt"`
+	ID            int64      `json:"id"`
+	AppID         int64      `json:"app_id"`
+	CommitHash    string     `json:"commit_hash"`
+	CommitMessage string     `json:"commit_message"`
+	TriggeredBy   *int64     `json:"triggered_by"`
+	Logs          string     `json:"logs"`
+	Status        string     `json:"status"`
+	CreatedAt     time.Time  `json:"created_at"`
+	FinishedAt    *time.Time `json:"finished_at"`
 }

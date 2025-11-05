@@ -12,7 +12,12 @@ import (
 	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/api/handlers/applications"
 	"github.com/corecollectives/mist/api/handlers/auth"
+	"github.com/corecollectives/mist/api/handlers/dockerdeploy"
 	"github.com/corecollectives/mist/api/handlers/github"
+	"github.com/corecollectives/mist/api/handlers/queuehandlers"
+	"github.com/corecollectives/mist/queue"
+
+	// "github.com/corecollectives/mist/api/handlers/docker"
 	"github.com/corecollectives/mist/api/handlers/projects"
 	"github.com/corecollectives/mist/api/handlers/users"
 	"github.com/corecollectives/mist/api/middleware"
@@ -26,6 +31,8 @@ func RegisterRoutes(mux *http.ServeMux, db *sql.DB) {
 	users := &users.Handler{DB: db}
 	github := &github.Handler{DB: db}
 	apps := &applications.Handler{DB: db}
+	d := &dockerdeploy.Deployer{DB: db, LogDirectory: "../../logs/"}
+	q := queuehandlers.QueueHelper{DB: db, LogDirectory: "../../logs/", Queue: queue.InitQueue(d)}
 	mux.Handle("/api/ws/stats", middleware.AuthMiddleware(h)(http.HandlerFunc(websockets.StatWsHandler)))
 	mux.HandleFunc("GET /api/health", handlers.HealthCheckHandler)
 
@@ -56,6 +63,9 @@ func RegisterRoutes(mux *http.ServeMux, db *sql.DB) {
 	mux.Handle("GET /api/github/callback", http.HandlerFunc(github.CallBackHandler))
 	mux.Handle("GET /api/github/installation/callback", http.HandlerFunc(github.HandleInstallationEvent))
 	mux.Handle("GET /api/github/repositories", middleware.AuthMiddleware(h)(http.HandlerFunc(github.GetRepositories)))
+
+	mux.HandleFunc("/api/ws/logs", d.LogsHandler)
+	mux.HandleFunc("/api/deployments/create", q.AddDeployHandler)
 
 }
 

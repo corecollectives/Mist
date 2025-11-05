@@ -8,6 +8,7 @@ services:
     watch: true
     ignore: 
       - "*.db*"
+      - "*.db-journal"
 
   - name: dash
     dir: ./dash

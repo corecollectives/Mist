@@ -1,13 +1,12 @@
 package projects
 
 import (
+	"database/sql"
 	"encoding/json"
 	"net/http"
-	"strings"
 
 	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/api/middleware"
-	"github.com/corecollectives/mist/api/utils"
 	"github.com/corecollectives/mist/models"
 )
 
@@ -38,69 +37,24 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tx, err := h.DB.Begin()
-	if err != nil {
-		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Internal server error", err.Error())
-		return
+	project := models.Project{
+		Name:    input.Name,
+		OwnerID: userData.ID,
 	}
-	defer tx.Rollback()
-
-	var project models.Project
-	tagsString := ""
-	if len(input.Tags) > 0 {
-		for i, tag := range input.Tags {
-			if i > 0 {
-				tagsString += ","
-			}
-			tagsString += tag
+	if input.Description != "" {
+		project.Description = sql.NullString{String: input.Description, Valid: true}
+	}
+	if input.Tags != nil {
+		for _, tag := range input.Tags {
+			project.Tags = append(project.Tags, sql.NullString{String: tag, Valid: true})
 		}
 	}
-	id := utils.GenerateRandomId()
-	var tags string = ""
-	err = tx.QueryRow(`
-		INSERT INTO projects(id,name, description,tags, owner_id)
-		VALUES (?, ?, ?,?,?)
-		RETURNING id, name, description, tags, owner_id, created_at, updated_at
-	`, id, input.Name, input.Description, tagsString, userData.ID).
-		Scan(&project.ID, &project.Name, &project.Description, &tags, &project.OwnerID, &project.CreatedAt, &project.UpdatedAt)
+	err := project.InsertInDB()
 
-	if tags != "" {
-		project.Tags = strings.Split(tags, ",")
-	}
 	if err != nil {
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to create project", err.Error())
 		return
 	}
 
-	_, err = tx.Exec(`INSERT INTO project_members(user_id, project_id) VALUES(?, ?)`, userData.ID, project.ID)
-	if err != nil {
-		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to add project owner", err.Error())
-		return
-	}
-
-	if err := tx.Commit(); err != nil {
-		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to commit transaction", err.Error())
-		return
-	}
-
-	// Populate the owner field
-	project.Owner = &models.User{
-		ID:        userData.ID,
-		Username:  userData.Username,
-		Email:     userData.Email,
-		Role:      userData.Role,
-		CreatedAt: userData.CreatedAt,
-		UpdatedAt: userData.UpdatedAt,
-	}
-
-	project.ProjectMembers = []models.User{{
-		ID:        userData.ID,
-		Username:  userData.Username,
-		Email:     userData.Email,
-		Role:      userData.Role,
-		CreatedAt: userData.CreatedAt,
-		UpdatedAt: userData.UpdatedAt,
-	}}
-
-	handlers.SendResponse(w, http.StatusCreated, true, project, "Project created successfully", "")
+	handlers.SendResponse(w, http.StatusCreated, true, project.ToJSON(), "Project created successfully", "")
 }

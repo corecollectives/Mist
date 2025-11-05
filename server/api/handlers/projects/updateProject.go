@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/corecollectives/mist/api/handlers"
@@ -99,7 +98,7 @@ func (h *Handler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if tags != "" {
-		project.Tags = strings.Split(tags, ",")
+		// project.Tags = strings.Split(tags, ",")
 	}
 
 	// Populate the owner field

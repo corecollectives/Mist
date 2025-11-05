@@ -14,5 +14,8 @@ func (h *Handler) GetUsers(w http.ResponseWriter, r *http.Request) {
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to retrieve users", err.Error())
 		return
 	}
+	if users == nil {
+		users = []models.User{}
+	}
 	handlers.SendResponse(w, http.StatusOK, true, users, "Users retrieved successfully", "")
 }

@@ -104,7 +104,7 @@ func GetUserByEmail(email string) (*User, error) {
 	return user, nil
 }
 
-func GetAllUsers() ([]*User, error) {
+func GetAllUsers() ([]User, error) {
 	query := `
 		SELECT id, username, email, role, avatar_url, created_at, updated_at
 		FROM users
@@ -115,9 +115,9 @@ func GetAllUsers() ([]*User, error) {
 	}
 	defer rows.Close()
 
-	var users []*User
+	var users []User
 	for rows.Next() {
-		user := &User{}
+		user := User{}
 		err := rows.Scan(&user.ID, &user.Username, &user.Email, &user.Role, &user.AvatarURL, &user.CreatedAt, &user.UpdatedAt)
 		if err != nil {
 			return nil, err

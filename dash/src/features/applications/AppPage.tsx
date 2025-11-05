@@ -6,12 +6,28 @@ import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import type { App } from "@/types/app";
 
+interface GitHubRepo {
+  id: number;
+  name: string;
+  full_name: string;
+  private: boolean;
+  html_url: string;
+}
+
+interface GitHubBranch {
+  name: string;
+}
+
 export const AppPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [app, setApp] = useState<App | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [repositories, setRepositories] = useState<GitHubRepo[]>([]);
+  const [branches, setBranches] = useState<GitHubBranch[]>([]);
+  const [selectedRepo, setSelectedRepo] = useState<string>("");
 
+  console.log(selectedRepo)
   const params = useParams();
   const navigate = useNavigate();
 
@@ -22,7 +38,6 @@ export const AppPage = () => {
     try {
       setLoading(true);
       setError(null);
-
       const response = await fetch(`/api/apps/getById`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -33,6 +48,7 @@ export const AppPage = () => {
       const data = await response.json();
       if (!data.success) throw new Error(data.error || "Failed to fetch app details");
       setApp(data.data);
+      setSelectedRepo(data.data.git_repository || "");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to fetch app details";
       setError(message);
@@ -41,6 +57,48 @@ export const AppPage = () => {
       setLoading(false);
     }
   };
+
+  // Fetch repositories from GitHub
+  const fetchRepositories = async () => {
+    try {
+      const res = await fetch(`/api/github/repositories`, { credentials: "include" });
+      const data = await res.json();
+      setRepositories(data);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to fetch repositories");
+    }
+  };
+
+  // Fetch branches for selected repository
+  const fetchBranches = async (repoFullName: string) => {
+    if (!repoFullName) return;
+    try {
+      const res = await fetch(`/api/github/branches?repo=${repoFullName}`, { credentials: "include" });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || "Failed to fetch branches");
+      setBranches(data.data);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to fetch branches");
+    }
+  };
+
+  const updateApp = async () => {
+    try {
+      const res = await fetch(`/api/apps/update`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ appId, gitRepository: selectedRepo }),
+      })
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || "Failed to update app");
+      toast.success("App updated successfully");
+      await fetchAppDetails();
+    }
+    catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update app");
+    }
+  }
 
   const deleteAppHandler = async () => {
     try {
@@ -52,7 +110,7 @@ export const AppPage = () => {
       if (!data.success) throw new Error(data.error || "Failed to delete app");
 
       toast.success("App deleted successfully");
-      navigate(-1); // Go back to the project page
+      navigate(-1);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to delete app");
     }
@@ -84,7 +142,12 @@ export const AppPage = () => {
 
   useEffect(() => {
     fetchAppDetails();
+    fetchRepositories();
   }, [params.appId]);
+
+  useEffect(() => {
+    if (selectedRepo) fetchBranches(selectedRepo);
+  }, [selectedRepo]);
 
   if (loading) return <FullScreenLoading />;
 
@@ -133,41 +196,52 @@ export const AppPage = () => {
           <Button variant="destructive" onClick={deleteAppHandler}>
             Delete App
           </Button>
-          <Button
-            variant="secondary"
-            onClick={() => navigate(`/projects/${app.project_id}`)}
-          >
+          <Button variant="secondary" onClick={() => navigate(`/projects/${app.project_id}`)}>
             Back to Project
           </Button>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-y-auto py-6 px-4 sm:px-6">
+      {/* App Info */}
+      <main className="flex-1 overflow-y-auto py-6 ">
+
+        <div >
+          <label className="text-sm text-muted-foreground">Select repo</label>
+          <select
+            value={selectedRepo}
+            onChange={(e) => setSelectedRepo(e.target.value)}
+            className="w-full bg-background border rounded-md mt-1 px-3 py-2"
+          >
+            <option value="">Select a repository</option>
+            {repositories.map((repo) => (
+              <option key={repo.id} value={repo.full_name}>
+                {repo.full_name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <Button
+          onClick={() => updateApp()}
+        >
+          Save
+        </Button>
         <h2 className="text-lg font-semibold mb-4">App Details</h2>
 
         <div className="bg-card border border-border rounded-lg p-6 space-y-4">
           <div>
             <h3 className="text-sm text-muted-foreground">Git Repository</h3>
-            <p className="text-foreground font-medium">
-              {app.git_repository || "Not linked"}
-            </p>
+            <p className="text-foreground font-medium">{app.git_repository || "Not linked"}</p>
           </div>
-
           <div>
             <h3 className="text-sm text-muted-foreground">Branch</h3>
-            <p className="text-foreground font-medium">
-              {app.git_branch || "Not specified"}
-            </p>
+            <p className="text-foreground font-medium">{app.git_branch || "Not specified"}</p>
           </div>
-
           <div>
             <h3 className="text-sm text-muted-foreground">Created At</h3>
             <p className="text-foreground font-medium">
               {new Date(app.created_at).toLocaleString()}
             </p>
           </div>
-
           <div>
             <h3 className="text-sm text-muted-foreground">Created By</h3>
             <p className="text-foreground font-medium">{app.created_by}</p>
@@ -183,8 +257,24 @@ export const AppPage = () => {
         fields={[
           { label: "App Name", name: "name", type: "text", defaultValue: app.name },
           { label: "Description", name: "description", type: "textarea", defaultValue: app.description || "" },
-          { label: "Git Repository", name: "git_repository", type: "text", defaultValue: app.git_repository || "" },
-          { label: "Branch", name: "git_branch", type: "text", defaultValue: app.git_branch! },
+          {
+            label: "Git Repository",
+            name: "git_repository",
+            type: "select",
+            options: repositories.map((repo) => ({
+              label: repo.full_name,
+              value: repo.full_name,
+            })),
+            defaultValue: app.git_repository || "",
+            // onChange: (value: string) => setSelectedRepo(valu),
+          },
+          {
+            label: "Branch",
+            name: "git_branch",
+            type: "select",
+            options: branches.map((b) => ({ label: b.name, value: b.name })),
+            defaultValue: app.git_branch || "",
+          },
         ]}
         onSubmit={(data) => handleUpdateApp(data as any)}
       />

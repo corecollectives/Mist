@@ -49,6 +49,7 @@ func RegisterRoutes(mux *http.ServeMux, db *sql.DB) {
 	mux.Handle("POST /api/apps/create", middleware.AuthMiddleware(h)(http.HandlerFunc(apps.CreateApplication)))
 	mux.Handle("POST /api/apps/getByProjectId", middleware.AuthMiddleware(h)(http.HandlerFunc(apps.GetApplicationByProjectID)))
 	mux.Handle("POST /api/apps/getById", middleware.AuthMiddleware(h)(http.HandlerFunc(apps.GetApplicationById)))
+	mux.Handle("PUT /api/apps/update", middleware.AuthMiddleware(h)(http.HandlerFunc(apps.UpdateApplication)))
 
 	mux.Handle("GET /api/github/app", middleware.AuthMiddleware(h)(http.HandlerFunc(github.GetApp)))
 	mux.Handle("GET /api/github/app/create", middleware.AuthMiddleware(h)(http.HandlerFunc(github.CreateGithubApp)))

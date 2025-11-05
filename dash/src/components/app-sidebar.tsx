@@ -110,8 +110,6 @@ const useNavData = () => {
 
   return { data }
 }
-
-
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const { data } = useNavData()
   const { user, logout } = useAuth()

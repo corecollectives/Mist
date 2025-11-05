@@ -5,7 +5,6 @@ services:
     cmd: go run main.go
     env:
       ENV: dev
-      VPS_DOMAIN:  valves-initial-carefully-romantic.trycloudflare.com
     watch: true
     ignore: 
       - "*.db*"

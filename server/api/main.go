@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/corecollectives/mist/api/handlers"
+	"github.com/corecollectives/mist/api/handlers/applications"
 	"github.com/corecollectives/mist/api/handlers/auth"
 	"github.com/corecollectives/mist/api/handlers/dockerdeploy"
 	"github.com/corecollectives/mist/api/handlers/github"
@@ -29,6 +30,7 @@ func RegisterRoutes(mux *http.ServeMux, db *sql.DB) {
 	proj := &projects.Handler{DB: db}
 	users := &users.Handler{DB: db}
 	github := &github.Handler{DB: db}
+	apps := &applications.Handler{DB: db}
 	d := &dockerdeploy.Deployer{DB: db, LogDirectory: "../../logs/"}
 	q := queuehandlers.QueueHelper{DB: db, LogDirectory: "../../logs/", Queue: queue.InitQueue(d)}
 	mux.Handle("/api/ws/stats", middleware.AuthMiddleware(h)(http.HandlerFunc(websockets.StatWsHandler)))
@@ -49,6 +51,12 @@ func RegisterRoutes(mux *http.ServeMux, db *sql.DB) {
 	mux.Handle("GET /api/projects/getFromId", middleware.AuthMiddleware(h)(http.HandlerFunc(proj.GetProjectFromId)))
 	mux.Handle("PUT /api/projects/update", middleware.AuthMiddleware(h)(http.HandlerFunc(proj.UpdateProject)))
 	mux.Handle("DELETE /api/projects/delete", middleware.AuthMiddleware(h)(http.HandlerFunc(proj.DeleteProject)))
+	mux.Handle("POST /api/projects/addMember", middleware.AuthMiddleware(h)(http.HandlerFunc(proj.AddMember)))
+
+	mux.Handle("POST /api/apps/create", middleware.AuthMiddleware(h)(http.HandlerFunc(apps.CreateApplication)))
+	mux.Handle("POST /api/apps/getByProjectId", middleware.AuthMiddleware(h)(http.HandlerFunc(apps.GetApplicationByProjectID)))
+	mux.Handle("POST /api/apps/getById", middleware.AuthMiddleware(h)(http.HandlerFunc(apps.GetApplicationById)))
+	mux.Handle("PUT /api/apps/update", middleware.AuthMiddleware(h)(http.HandlerFunc(apps.UpdateApplication)))
 
 	mux.Handle("GET /api/github/app", middleware.AuthMiddleware(h)(http.HandlerFunc(github.GetApp)))
 	mux.Handle("GET /api/github/app/create", middleware.AuthMiddleware(h)(http.HandlerFunc(github.CreateGithubApp)))

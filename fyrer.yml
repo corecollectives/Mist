@@ -12,6 +12,6 @@ services:
 
   - name: dash
     dir: ./dash
-    cmd: bun dev --host
+    cmd: npm run dev --host
     env:
       VITE_API_URL: http://localhost:8080

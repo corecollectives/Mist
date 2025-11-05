@@ -182,13 +182,13 @@ export const ProjectPage = () => {
 
         {fetchingApps ? (
           <div className="text-muted-foreground text-center py-10">Loading apps...</div>
-        ) : apps.length === 0 ? (
+        ) : apps && apps.length === 0 ? (
           <div className="text-muted-foreground text-center py-10">
             No apps found for this project. Create one to get started.
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {apps.map((app) => (
+            {apps && apps.map((app) => (
               <AppCard
                 key={app.id}
                 app={app}

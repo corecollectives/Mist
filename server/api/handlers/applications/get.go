@@ -1,6 +1,7 @@
 package applications
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -51,13 +52,13 @@ func (h *Handler) GetApplicationByProjectID(w http.ResponseWriter, r *http.Reque
 
 	// query all apps for this project
 	rows, err := h.DB.Query(`
-		SELECT 
-			id, project_id, created_by, name, description, git_provider_id, git_repository, git_branch,
-			deployment_strategy, port, root_directory, build_command, start_command, dockerfile_path,
-			healthcheck_path, healthcheck_interval, status, created_at, updated_at
-		FROM apps
-		WHERE project_id = ?
-	`, req.ProjectID)
+	SELECT 
+		id, project_id, created_by, name, description, git_provider_id, git_repository, git_branch,
+		deployment_strategy, port, root_directory, build_command, start_command, dockerfile_path,
+		healthcheck_path, healthcheck_interval, status, created_at, updated_at
+	FROM apps
+	WHERE project_id = ?
+`, req.ProjectID)
 	if err != nil {
 		fmt.Println("Query error:", err)
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Database error", "Internal Server Error")
@@ -65,26 +66,38 @@ func (h *Handler) GetApplicationByProjectID(w http.ResponseWriter, r *http.Reque
 	}
 	defer rows.Close()
 
-	// scan results
 	var apps []models.App
 	for rows.Next() {
-		var app models.App
+		var (
+			app             models.App
+			description     sql.NullString
+			gitProviderID   sql.NullInt64
+			gitRepository   sql.NullString
+			gitBranch       sql.NullString
+			port            sql.NullInt64
+			rootDirectory   sql.NullString
+			buildCommand    sql.NullString
+			startCommand    sql.NullString
+			dockerfilePath  sql.NullString
+			healthcheckPath sql.NullString
+		)
+
 		err := rows.Scan(
 			&app.ID,
 			&app.ProjectID,
 			&app.CreatedBy,
 			&app.Name,
-			&app.Description,
-			&app.GitProviderID,
-			&app.GitRepository,
-			&app.GitBranch,
+			&description,
+			&gitProviderID,
+			&gitRepository,
+			&gitBranch,
 			&app.DeploymentStrategy,
-			&app.Port,
-			&app.RootDirectory,
-			&app.BuildCommand,
-			&app.StartCommand,
-			&app.DockerfilePath,
-			&app.HealthcheckPath,
+			&port,
+			&rootDirectory,
+			&buildCommand,
+			&startCommand,
+			&dockerfilePath,
+			&healthcheckPath,
 			&app.HealthcheckInterval,
 			&app.Status,
 			&app.CreatedAt,
@@ -92,9 +105,41 @@ func (h *Handler) GetApplicationByProjectID(w http.ResponseWriter, r *http.Reque
 		)
 		if err != nil {
 			fmt.Println("Row scan error:", err)
-			handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to scan apps", "Internal Server Error")
-			return
+			continue
 		}
+
+		// Handle NULLs safely
+		if description.Valid {
+			app.Description = description.String
+		}
+		if gitProviderID.Valid {
+			app.GitProviderID = gitProviderID.Int64
+		}
+		if gitRepository.Valid {
+			app.GitRepository = gitRepository.String
+		}
+		if gitBranch.Valid {
+			app.GitBranch = gitBranch.String
+		}
+		if port.Valid {
+			app.Port = int(port.Int64)
+		}
+		if rootDirectory.Valid {
+			app.RootDirectory = rootDirectory.String
+		}
+		if buildCommand.Valid {
+			app.BuildCommand = buildCommand.String
+		}
+		if startCommand.Valid {
+			app.StartCommand = startCommand.String
+		}
+		if dockerfilePath.Valid {
+			app.DockerfilePath = dockerfilePath.String
+		}
+		if healthcheckPath.Valid {
+			app.HealthcheckPath = healthcheckPath.String
+		}
+
 		apps = append(apps, app)
 	}
 
@@ -106,4 +151,3 @@ func (h *Handler) GetApplicationByProjectID(w http.ResponseWriter, r *http.Reque
 
 	handlers.SendResponse(w, http.StatusOK, true, apps, "Applications retrieved successfully", "")
 }
-

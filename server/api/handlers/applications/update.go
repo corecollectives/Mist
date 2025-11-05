@@ -58,7 +58,7 @@ func (h *Handler) UpdateApplication(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// ✅ Build dynamic update query
+	// ✅ Dynamically build the SET clause
 	setClauses := []string{}
 	args := []interface{}{}
 
@@ -92,14 +92,14 @@ func (h *Handler) UpdateApplication(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.DeploymentStrategy != nil {
 		setClauses = append(setClauses, "deployment_strategy = ?")
-		args = append(args, *req.DeploymentStrategy)
+		args = append(args, strings.TrimSpace(*req.DeploymentStrategy))
 	}
 	if req.Status != nil {
 		setClauses = append(setClauses, "status = ?")
-		args = append(args, *req.Status)
+		args = append(args, strings.TrimSpace(*req.Status))
 	}
 
-	// Always update timestamp
+	// Always update updated_at
 	setClauses = append(setClauses, "updated_at = ?")
 	args = append(args, time.Now())
 
@@ -108,6 +108,7 @@ func (h *Handler) UpdateApplication(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// ✅ Build full query
 	query := `
 		UPDATE apps
 		SET ` + strings.Join(setClauses, ", ") + `
@@ -120,25 +121,43 @@ func (h *Handler) UpdateApplication(w http.ResponseWriter, r *http.Request) {
 	`
 	args = append(args, req.AppID)
 
+	// ✅ Use sql.Null* for nullable fields
+	var (
+		gitProviderID       sql.NullInt64
+		description         sql.NullString
+		gitRepository       sql.NullString
+		gitBranch           sql.NullString
+		deploymentStrategy  sql.NullString
+		port                sql.NullInt64 // <-- fix for nullable port
+		rootDirectory       sql.NullString
+		buildCommand        sql.NullString
+		startCommand        sql.NullString
+		dockerfilePath      sql.NullString
+		healthcheckPath     sql.NullString
+		healthcheckInterval sql.NullInt64
+		status              sql.NullString
+	)
+
 	var app models.App
+
 	err = h.DB.QueryRow(query, args...).Scan(
 		&app.ID,
 		&app.ProjectID,
 		&app.CreatedBy,
 		&app.Name,
-		&app.Description,
-		&app.GitProviderID,
-		&app.GitRepository,
-		&app.GitBranch,
-		&app.DeploymentStrategy,
-		&app.Port,
-		&app.RootDirectory,
-		&app.BuildCommand,
-		&app.StartCommand,
-		&app.DockerfilePath,
-		&app.HealthcheckPath,
-		&app.HealthcheckInterval,
-		&app.Status,
+		&description,
+		&gitProviderID,
+		&gitRepository,
+		&gitBranch,
+		&deploymentStrategy,
+		&port,
+		&rootDirectory,
+		&buildCommand,
+		&startCommand,
+		&dockerfilePath,
+		&healthcheckPath,
+		&healthcheckInterval,
+		&status,
 		&app.CreatedAt,
 		&app.UpdatedAt,
 	)
@@ -151,6 +170,29 @@ func (h *Handler) UpdateApplication(w http.ResponseWriter, r *http.Request) {
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to update app", err.Error())
 		return
 	}
+
+	if port.Valid {
+		app.Port = int(port.Int64)
+	} else {
+		app.Port = 0 // or any default you want
+	}
+	// ✅ Convert sql.Null values
+	app.Description = description.String
+	if gitProviderID.Valid {
+		app.GitProviderID = gitProviderID.Int64
+	}
+	app.GitRepository = gitRepository.String
+	app.GitBranch = gitBranch.String
+	app.DeploymentStrategy = models.DeploymentStrategy(deploymentStrategy.String)
+	app.RootDirectory = rootDirectory.String
+	app.BuildCommand = buildCommand.String
+	app.StartCommand = startCommand.String
+	app.DockerfilePath = dockerfilePath.String
+	app.HealthcheckPath = healthcheckPath.String
+	if healthcheckInterval.Valid {
+		app.HealthcheckInterval = int(healthcheckInterval.Int64)
+	}
+	app.Status = models.AppStatus(status.String)
 
 	handlers.SendResponse(w, http.StatusOK, true, app, "App updated successfully", "")
 }

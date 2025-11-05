@@ -65,7 +65,7 @@ func RegisterRoutes(mux *http.ServeMux, db *sql.DB) {
 	mux.Handle("GET /api/github/repositories", middleware.AuthMiddleware(h)(http.HandlerFunc(github.GetRepositories)))
 
 	mux.HandleFunc("/api/ws/logs", d.LogsHandler)
-	mux.HandleFunc("/api/deployments/create", q.AddDeployHandler)
+	mux.Handle("POST /api/deployments/create", middleware.AuthMiddleware(h)(http.HandlerFunc(q.AddDeployHandler)))
 
 }
 

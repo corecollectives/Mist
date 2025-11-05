@@ -2,13 +2,14 @@ package auth
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"strings"
 
 	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/api/middleware"
-	"github.com/corecollectives/mist/api/utils"
+	"github.com/corecollectives/mist/models"
 	"github.com/corecollectives/mist/store"
 )
 
@@ -20,7 +21,6 @@ func (h *Handler) SignUpHandler(w http.ResponseWriter, r *http.Request) {
 		Role     string `json:"role"`
 	}
 
-	db := h.DB
 	setupRequired := store.IsSetupRequired()
 	if !setupRequired {
 		handlers.SendResponse(w, http.StatusForbidden, false, nil, "Sign up not allowed", "Only first user can sign up")
@@ -40,12 +40,25 @@ func (h *Handler) SignUpHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := utils.InsertUserInDb(db, req.Username, req.Email, req.Password, "owner")
+	user := models.User{
+		Username: req.Username,
+		Email:    req.Email,
+		Role:     "owner",
+	}
+
+	err := user.SetPassword(req.Password)
 	if err != nil {
-		log.Printf("db insert error: %v", err)
-		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Database error", "Internal Server Error")
+		log.Printf("Error hashing password: %v", err)
+		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to process password", "Internal Server Error")
 		return
 	}
+	err = user.Create()
+	if err != nil {
+		println(err.Error())
+		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to create user", "Internal Server Error")
+		return
+	}
+	fmt.Println(user)
 
 	token, err := middleware.GenerateJWT(user.ID, user.Email, user.Role)
 	if err != nil {

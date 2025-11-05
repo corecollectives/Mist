@@ -10,7 +10,6 @@ import (
 	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/api/middleware"
 	"github.com/corecollectives/mist/models"
-	"golang.org/x/crypto/bcrypt"
 )
 
 func (h *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
@@ -18,7 +17,6 @@ func (h *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		Email    string `json:"email"`
 		Password string `json:"password"`
 	}
-	db := h.DB
 	if err := json.NewDecoder(r.Body).Decode(&cred); err != nil {
 		handlers.SendResponse(w, http.StatusBadRequest, false, nil, "Invalid request body", "Could not parse JSON")
 		return
@@ -29,10 +27,7 @@ func (h *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		handlers.SendResponse(w, http.StatusBadRequest, false, nil, "Email and password are required", "Missing fields")
 		return
 	}
-	var user models.User
-	err := db.QueryRowContext(r.Context(),
-		`SELECT id, username, password_hash, email,  role FROM users WHERE LOWER(email) = ?`,
-		cred.Email).Scan(&user.ID, &user.Username, &user.PasswordHash, &user.Email, &user.Role)
+	user, err := models.GetUserByEmail(cred.Email)
 	if err == sql.ErrNoRows {
 		handlers.SendResponse(w, http.StatusUnauthorized, false, nil, "Invalid email or password", "Unauthorized")
 		return
@@ -42,11 +37,11 @@ func (h *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(cred.Password)); err != nil {
+	passwordMatch := user.MatchPassword(cred.Password)
+	if !passwordMatch {
 		handlers.SendResponse(w, http.StatusUnauthorized, false, nil, "Invalid email or password", "Unauthorized")
 		return
 	}
-
 	token, err := middleware.GenerateJWT(user.ID, user.Email, user.Role)
 	if err != nil {
 		log.Printf("Error generating token: %v", err)

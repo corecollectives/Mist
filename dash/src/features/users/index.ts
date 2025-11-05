@@ -1,4 +1,3 @@
-export { useUsersStore } from './store';
 export { default as UsersPage } from './UsersPage';
 export { UserCard } from './components/UserCard';
 export { CreateUserModal } from './components/CreateUserModal';

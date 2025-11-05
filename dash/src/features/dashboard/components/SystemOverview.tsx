@@ -8,7 +8,7 @@ import {
   getSystemHealthStatus,
   getHealthStatusColor 
 } from '../utils';
-import type { SystemStats } from '../store';
+import type { SystemStats } from '../DashboardPage';
 
 interface SystemOverviewProps {
   stats: SystemStats | null;

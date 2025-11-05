@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import { useAuth } from '../../context/AuthContext';
-import { useProjectStore } from '../projects/store';
 
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/card';
@@ -147,17 +146,9 @@ const EmptyState: React.FC<{ onCreateProject: () => void; canCreate: boolean }> 
 export const ProjectsPage: React.FC = () => {
   const { user } = useAuth();
   
-  const { 
-    projects, 
-    isLoading, 
-    error, 
-    fetchProjects, 
-    createProject, 
-    updateProject, 
-    deleteProject,
-    clearError
-  } = useProjectStore();
-
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -171,18 +162,33 @@ export const ProjectsPage: React.FC = () => {
     return sortProjects(filtered, sortBy, sortOrder);
   }, [projects, searchTerm, sortBy, sortOrder]);
 
+  const fetchProjects = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const response = await fetch("/api/projects/getAll", {
+        credentials: 'include'
+      });
+      const data = await response.json();
+      if (!data.success) throw new Error(data.error || "Failed to fetch projects");
+      setProjects(data.data);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to fetch projects";
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    fetchProjects().catch(console.error);
+    fetchProjects();
     
     document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = '';
     };
-  }, [fetchProjects]);
-
-  useEffect(() => {
-    return () => clearError();
-  }, [clearError]);
+  }, []);
 
   const handleCreateOrUpdateProject = async (projectData: ProjectCreateInput) => {
     try {
@@ -194,22 +200,24 @@ export const ProjectsPage: React.FC = () => {
       }
 
       const isEditing = !!editingProject;
-      let success = false;
+      const url = isEditing ? `/api/projects/update?id=${editingProject.id}` : "/api/projects/create";
+      const method = isEditing ? "PUT" : "POST";
 
-      if (isEditing) {
-        success = await updateProject(editingProject.id, projectData);
-      } else {
-        success = await createProject(projectData);
-      }
+      const response = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(projectData),
+        credentials: 'include'
+      });
 
-      if (success) {
-        const message = isEditing ? SUCCESS_MESSAGES.PROJECT_UPDATED : SUCCESS_MESSAGES.PROJECT_CREATED;
-        toast.success(message);
-        setIsModalOpen(false);
-        setEditingProject(null);
-      } else {
-        toast.error(ERROR_MESSAGES.GENERIC_ERROR);
-      }
+      const data = await response.json();
+      if (!data.success) throw new Error(data.error || "Failed to save project");
+
+      const message = isEditing ? SUCCESS_MESSAGES.PROJECT_UPDATED : SUCCESS_MESSAGES.PROJECT_CREATED;
+      toast.success(message);
+      setIsModalOpen(false);
+      setEditingProject(null);
+      fetchProjects(); // Refresh the projects list
     } catch (error) {
       console.error('Error saving project:', error);
       toast.error(error instanceof Error ? error.message : ERROR_MESSAGES.GENERIC_ERROR);
@@ -220,12 +228,15 @@ export const ProjectsPage: React.FC = () => {
     if (!confirm('Are you sure you want to delete this project?')) return;
 
     try {
-      const success = await deleteProject(projectId);
-      if (success) {
-        toast.success(SUCCESS_MESSAGES.PROJECT_DELETED);
-      } else {
-        toast.error(ERROR_MESSAGES.GENERIC_ERROR);
-      }
+      const response = await fetch(`/api/projects/delete?id=${projectId}`, {
+        method: "DELETE",
+        credentials: 'include'
+      });
+      const data = await response.json();
+      if (!data.success) throw new Error(data.error || "Failed to delete project");
+
+      toast.success(SUCCESS_MESSAGES.PROJECT_DELETED);
+      fetchProjects(); // Refresh the projects list
     } catch (error) {
       console.error('Error deleting project:', error);
       toast.error(error instanceof Error ? error.message : ERROR_MESSAGES.GENERIC_ERROR);
@@ -292,7 +303,7 @@ export const ProjectsPage: React.FC = () => {
                 variant="outline" 
                 size="sm" 
                 className="mt-2" 
-                onClick={() => fetchProjects(true)}
+                onClick={() => fetchProjects()}
               >
                 Try Again
               </Button>

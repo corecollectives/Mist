@@ -2,35 +2,64 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FullScreenLoading } from '@/shared/components';
-import { useGitStore } from './store';
 import { GitHubCard, ProviderCard, CreateAppModal } from './components';
 import { useAuth } from '@/context/AuthContext';
+import type { GitHubApp } from '@/types';
 
 export default function GitPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [app, setApp] = useState<GitHubApp | null>(null);
+  const [isInstalled, setIsInstalled] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
 
-  const {
-    app,
-    isInstalled,
-    fetchApp,
-    fetchRepositories,
-    isLoading,
-    error,
-    clearError
-  } = useGitStore();
+  const fetchApp = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const response = await fetch("/api/github/app", {
+        credentials: 'include'
+      });
+      const data = await response.json();
+      if (data.success) {
+        setApp(data.data.app);
+        setIsInstalled(data.data.isInstalled);
+      } else {
+        setError(data.error || "Failed to load GitHub App info");
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to load GitHub App info";
+      setError(errorMessage);
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchRepositories = async () => {
+    try {
+      const response = await fetch("/api/github/repositories", {
+        credentials: 'include'
+      });
+      const data = await response.json();
+      console.log("Fetched repos:", data);
+    } catch (err) {
+      console.error("Failed to fetch repos:", err);
+    }
+  };
 
   useEffect(() => {
     fetchApp();
     fetchRepositories();
-  }, [fetchApp, fetchRepositories]);
+  }, []);
 
   useEffect(() => {
     if (error) {
       toast.error(error);
-      clearError();
+      setError(null);
     }
-  }, [error, clearError]);
+  }, [error]);
 
   const handleCreateApp = async () => {
     try {

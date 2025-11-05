@@ -3,7 +3,6 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FullScreenLoading } from '@/shared/components';
-import { useUsersStore } from './store';
 import { UserCard, CreateUserModal } from './components';
 import { canManageUsers } from './utils';
 import type { CreateUserData, User } from '@/types';
@@ -11,33 +10,60 @@ import { useAuth } from '@/context/AuthContext';
 
 export default function UsersPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const { user } = useAuth()
-  const {
-    users,
-    fetchUsers,
-    createUser,
-    isLoading,
-    error,
-    clearError
-  } = useUsersStore();
+  const [users, setUsers] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
+
+  const fetchUsers = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const response = await fetch("/api/users/getAll", {
+        credentials: 'include'
+      });
+      const data = await response.json();
+      if (!data.success) throw new Error(data.error || "Failed to fetch users");
+      
+      const updatedUsers: User[] = data.data.map((u: User) => ({
+        ...u,
+        isAdmin: u.role === "admin" || u.role === "owner",
+      }));
+      
+      setUsers(updatedUsers);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to fetch users";
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchUsers();
-  }, [fetchUsers]);
-
-  useEffect(() => {
-    if (error) {
-      toast.error(error);
-      clearError();
-    }
-  }, [error, clearError]);
+  }, []);
 
   const handleCreateUser = async (userData: CreateUserData) => {
-    const success = await createUser(userData);
-    if (success) {
+    try {
+      const response = await fetch("/api/users/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(userData),
+        credentials: 'include'
+      });
+
+      const data = await response.json();
+      if (!data.success) throw new Error(data.error || "Failed to create user");
+
       toast.success('User created successfully');
       setIsModalOpen(false);
-    } else {
+      fetchUsers(); // Refresh the users list
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to create user";
+      toast.error(errorMessage);
     }
   };
   const handleUserClick = (selectedUser: User) => {

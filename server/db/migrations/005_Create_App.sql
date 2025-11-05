@@ -1,6 +1,7 @@
 CREATE TABLE IF NOT EXISTS apps (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     project_id INTEGER NOT NULL,
+    created_by INTEGER NOT NULL,
     name TEXT NOT NULL,
     description TEXT,
     git_provider_id INTEGER,
@@ -19,5 +20,6 @@ CREATE TABLE IF NOT EXISTS apps (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
     FOREIGN KEY (git_provider_id) REFERENCES git_providers(id) ON DELETE SET NULL,
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
     UNIQUE (project_id, name)
 );

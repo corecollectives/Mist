@@ -17,7 +17,8 @@ import { DeploymentsPage } from "./pages/Deployments";
 import { DatabasesPage } from "./pages/Databases";
 import { LogsPage } from "./pages/Logs";
 import { SettingsPage } from "./pages/Settings";
-import { ProjectPage } from "./pages/Project";
+import { ProjectPage } from "./features/projects/ProjectPage";
+import { AppPage } from "./features/applications/AppPage";
 
 export default function App() {
   const { setupRequired, user } = useAuth();
@@ -46,6 +47,7 @@ export default function App() {
               <Route path="/git" element={<GitPage />} />
               <Route path="/projects" element={<ProjectsPage />} />
               <Route path="/projects/:projectId" element={<ProjectPage />} />
+              <Route path="/projects/:projectId/apps/:appId" element={<AppPage />} />
               <Route path="/deployments" element={<DeploymentsPage />} />
               <Route path="/databases" element={<DatabasesPage />} />
               <Route path="/logs" element={<LogsPage />} />

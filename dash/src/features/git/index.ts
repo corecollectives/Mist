@@ -1,4 +1,3 @@
-export { useGitStore } from './store';
 export { default as GitPage } from './GitPage';
 export { GitHubCard } from './components/GitHubCard';
 export { ProviderCard } from './components/ProviderCard';

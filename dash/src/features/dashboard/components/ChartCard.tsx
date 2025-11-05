@@ -1,6 +1,6 @@
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import type { SystemStats } from '../store';
+import type { SystemStats } from '../DashboardPage';
 
 interface ChartCardProps {
   title: string;

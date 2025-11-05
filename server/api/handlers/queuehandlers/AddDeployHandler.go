@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/corecollectives/mist/api/middleware"
 	"github.com/corecollectives/mist/api/utils"
+	git_hub "github.com/corecollectives/mist/github"
 	"github.com/corecollectives/mist/models"
 	"github.com/corecollectives/mist/queue"
 )
@@ -24,17 +26,21 @@ func (q *QueueHelper) AddDeployHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	//below 2 things are hardcoded currently add the getcommithash and msg function along with error on lhs of :=
-	commitHash := 2332
-	// if err != nil {
-	// 	http.Error(w, "failed to get commit hash", http.StatusInternalServerError)
-	// 	return
-	// }
-	commitMessage := "hello hi"
-	// if err != nil {
-	// 	http.Error(w, "failed to get commit message", http.StatusInternalServerError)
-	// 	return
-	// }
+	user, ok := middleware.GetUser(r)
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	userId := int64(user.ID)
+
+	commit, err := git_hub.GetLatestCommit(q.DB, int64(req.AppId), userId)
+	if err != nil {
+		http.Error(w, "failed to get latest commit", http.StatusInternalServerError)
+		return
+	}
+	commitHash := commit.SHA
+	commitMessage := commit.Message
+
 	deploymentId := utils.GenerateRandomId()
 	result, err := q.DB.Exec(
 		`INSERT INTO deployments (id,app_id, commit_hash, commit_message, status) VALUES (?,?, ?, ?, 'pending')`,

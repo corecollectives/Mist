@@ -11,19 +11,9 @@ import (
 	"github.com/corecollectives/mist/api/utils"
 )
 
-type Repo struct {
-	ID       int64  `json:"id"`
-	Name     string `json:"name"`
-	FullName string `json:"full_name"`
-	HTMLURL  string `json:"html_url"`
-	SSHURL   string `json:"ssh_url"`
-	CloneURL string `json:"clone_url"`
-	Private  bool   `json:"private"`
-}
-
 type RepoListResponse struct {
-	TotalCount   int    `json:"total_count"`
-	Repositories []Repo `json:"repositories"`
+	TotalCount   int   `json:"total_count"`
+	Repositories []any `json:"repositories"`
 }
 
 func (h *Handler) GetRepositories(w http.ResponseWriter, r *http.Request) {
@@ -86,7 +76,7 @@ func (h *Handler) GetRepositories(w http.ResponseWriter, r *http.Request) {
 		token = newToken
 	}
 
-	allRepos := []Repo{}
+	allRepos := []any{}
 	page := 1
 
 	for {

@@ -7,10 +7,7 @@ import (
 	"time"
 
 	"github.com/corecollectives/mist/models"
-
 )
-
-
 
 // func InitDeployer(db *sql.DB, logDir string) {
 // 	deployer = &Deployer{DB: db, LogDirectory: logDir}

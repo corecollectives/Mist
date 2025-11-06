@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/corecollectives/mist/constants"
+	"github.com/corecollectives/mist/github"
 	"github.com/corecollectives/mist/models"
 )
 
@@ -56,6 +57,7 @@ func (d *Deployer) DeployerMain(Id int64) (string, error) {
 		return "", err
 	}
 
+	err = github.CloneRepo(d.DB, app.ID, app.CreatedBy)
 	appContextPath := constants.Constants["RootPath"] + "/" + fmt.Sprintf("projects/%d/apps/%s", app.ProjectID, app.Name)
 	imageTag := dep.CommitHash
 	containerName := fmt.Sprintf("app-%d", Id)

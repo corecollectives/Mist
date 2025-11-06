@@ -3,6 +3,7 @@ package github
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 )
@@ -30,7 +31,8 @@ func CloneRepo(db *sql.DB, appId int64, userId int64) error {
 	}
 
 	path := fmt.Sprintf("/var/lib/mist/projects/%d/apps/%s", projectId, name)
-	if err := os.MkdirAll(path, 0755); err != nil {
+	if err := os.MkdirAll(path, 0o755); err != nil {
+		log.Printf("Error creating directory %s: %v", path, err)
 		return fmt.Errorf("failed to create directory: %w", err)
 	}
 
@@ -43,4 +45,3 @@ func CloneRepo(db *sql.DB, appId int64, userId int64) error {
 
 	return nil
 }
-

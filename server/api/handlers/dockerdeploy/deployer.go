@@ -22,7 +22,7 @@ func (d *Deployer) DeployApp(dep *models.Deployment, appContextPath, imageTag, c
 	}
 	defer logfile.Close()
 
-	dep.Logs = logPath
+	dep.Logs.String = logPath
 	dep.Status = "building"
 	d.UpdateDeployment(dep)
 

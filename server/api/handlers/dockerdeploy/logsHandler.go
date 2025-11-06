@@ -81,7 +81,7 @@ func (d *Deployer) loadDeployment(depId int64) (*models.Deployment, error) {
 		dep.FinishedAt = &finishedAt.Time
 	}
 	if logs.Valid {
-		dep.Logs = logs.String
+		dep.Logs = logs
 	}
 	return dep, nil
 

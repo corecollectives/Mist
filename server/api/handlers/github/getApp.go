@@ -46,7 +46,10 @@ func (h *Handler) GetApp(w http.ResponseWriter, r *http.Request) {
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			handlers.SendResponse(w, http.StatusNotFound, true, nil, "GitHub App not found", "")
+			handlers.SendResponse(w, http.StatusNotFound, true, map[string]interface{}{
+				"app":         nil,
+				"isInstalled": false,
+			}, "GitHub App not found", "")
 			return
 		}
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Database error", err.Error())

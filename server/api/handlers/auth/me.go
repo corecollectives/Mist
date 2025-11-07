@@ -28,19 +28,13 @@ func (h *Handler) MeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userId := claims.UserID
-	var user models.User
-	row := h.DB.QueryRow(
-		"SELECT id, username, email, role FROM users WHERE id = ?",
-		userId,
-	)
-	if err := row.Scan(&user.ID, &user.Username, &user.Email, &user.Role); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			handlers.SendResponse(w, http.StatusOK, true, map[string]interface{}{"setupRequired": setupRequired, "user": nil}, "User not found", "")
-			return
-		}
-		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to fetch user", "database scan error")
+	user, err := models.GetUserByID(userId)
+	if errors.Is(err, sql.ErrNoRows) {
+		handlers.SendResponse(w, http.StatusOK, true, map[string]interface{}{"setupRequired": setupRequired, "user": nil}, "User not found", "")
+		return
+	} else if err != nil {
+		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Database error", "Internal Server Error")
 		return
 	}
-
 	handlers.SendResponse(w, http.StatusOK, true, map[string]interface{}{"setupRequired": setupRequired, "user": user}, "User fetched successfully", "")
 }

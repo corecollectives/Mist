@@ -17,7 +17,6 @@ import (
 	"github.com/corecollectives/mist/api/handlers/queuehandlers"
 	"github.com/corecollectives/mist/queue"
 
-	// "github.com/corecollectives/mist/api/handlers/docker"
 	"github.com/corecollectives/mist/api/handlers/projects"
 	"github.com/corecollectives/mist/api/handlers/users"
 	"github.com/corecollectives/mist/api/middleware"
@@ -57,15 +56,18 @@ func RegisterRoutes(mux *http.ServeMux, db *sql.DB) {
 	mux.Handle("POST /api/apps/getByProjectId", middleware.AuthMiddleware(h)(http.HandlerFunc(apps.GetApplicationByProjectID)))
 	mux.Handle("POST /api/apps/getById", middleware.AuthMiddleware(h)(http.HandlerFunc(apps.GetApplicationById)))
 	mux.Handle("PUT /api/apps/update", middleware.AuthMiddleware(h)(http.HandlerFunc(apps.UpdateApplication)))
+	mux.Handle("POST /api/apps/getLatestCommit", middleware.AuthMiddleware(h)(http.HandlerFunc(apps.GetLatestCommit)))
 
 	mux.Handle("GET /api/github/app", middleware.AuthMiddleware(h)(http.HandlerFunc(github.GetApp)))
 	mux.Handle("GET /api/github/app/create", middleware.AuthMiddleware(h)(http.HandlerFunc(github.CreateGithubApp)))
 	mux.Handle("GET /api/github/callback", http.HandlerFunc(github.CallBackHandler))
 	mux.Handle("GET /api/github/installation/callback", http.HandlerFunc(github.HandleInstallationEvent))
 	mux.Handle("GET /api/github/repositories", middleware.AuthMiddleware(h)(http.HandlerFunc(github.GetRepositories)))
+	mux.Handle("POST /api/github/branches", middleware.AuthMiddleware(h)(http.HandlerFunc(github.GetBranches)))
 
 	mux.HandleFunc("/api/ws/logs", d.LogsHandler)
 	mux.Handle("POST /api/deployments/create", middleware.AuthMiddleware(h)(http.HandlerFunc(q.AddDeployHandler)))
+	mux.Handle("POST /api/deployments/getByAppId", middleware.AuthMiddleware(h)(http.HandlerFunc(d.GetByApplicationID)))
 
 }
 

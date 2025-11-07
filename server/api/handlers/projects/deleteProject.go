@@ -7,6 +7,7 @@ import (
 
 	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/api/middleware"
+	"github.com/corecollectives/mist/models"
 )
 
 func (h *Handler) DeleteProject(w http.ResponseWriter, r *http.Request) {
@@ -27,52 +28,21 @@ func (h *Handler) DeleteProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var ownerId int64
-	err = h.DB.QueryRow("SELECT owner_id FROM projects WHERE id = ?", projectId).Scan(&ownerId)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			handlers.SendResponse(w, http.StatusNotFound, false, nil, "Project not found", "no such project")
-			return
-		}
+	project, err := models.GetProjectByID(projectId)
+	if err == sql.ErrNoRows {
+		handlers.SendResponse(w, http.StatusNotFound, false, nil, "Project not found", "no project with that ID")
+		return
+	} else if err != nil {
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Database error", err.Error())
 		return
 	}
-	if ownerId != userData.ID {
-		handlers.SendResponse(w, http.StatusForbidden, false, nil, "Not authorized to delete this project", "permission denied")
-		return
-	}
 
-	tx, err := h.DB.Begin()
-	if err != nil {
-		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to begin transaction", err.Error())
-		return
+	if project.OwnerID != userData.ID {
+		handlers.SendResponse(w, http.StatusForbidden, false, nil, "Only the project owner can delete the project", "forbidden")
 	}
-	defer tx.Rollback()
-
-	_, err = tx.Exec("DELETE FROM project_members WHERE project_id = ?", projectId)
-	if err != nil {
-		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to delete project members", err.Error())
-		return
-	}
-
-	res, err := tx.Exec("DELETE FROM projects WHERE id = ?", projectId)
+	err = models.DeleteProjectByID(projectId)
 	if err != nil {
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to delete project", err.Error())
-		return
-	}
-
-	rowsAffected, err := res.RowsAffected()
-	if err != nil {
-		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Error getting affected rows", err.Error())
-		return
-	}
-	if rowsAffected == 0 {
-		handlers.SendResponse(w, http.StatusNotFound, false, nil, "Project not found", "no such project")
-		return
-	}
-
-	if err := tx.Commit(); err != nil {
-		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to commit transaction", err.Error())
 		return
 	}
 

@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS apps (
     git_provider_id INTEGER,
     git_repository TEXT,
     git_branch TEXT DEFAULT 'main',
+    git_clone_url TEXT,
     deployment_strategy TEXT NOT NULL CHECK(deployment_strategy IN ('auto', 'manual')) DEFAULT 'manual',
     port INTEGER,
     root_directory TEXT DEFAULT '.',

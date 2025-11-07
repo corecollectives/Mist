@@ -6,7 +6,7 @@ import (
 
 	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/api/middleware"
-	"github.com/corecollectives/mist/api/utils"
+	"github.com/corecollectives/mist/models"
 )
 
 func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
@@ -48,7 +48,18 @@ func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := utils.InsertUserInDb(h.DB, req.Username, req.Email, req.Password, req.Role)
+	user := models.User{
+		Username: req.Username,
+		Email:    req.Email,
+		Role:     req.Role,
+	}
+	err := user.SetPassword(req.Password)
+	if err != nil {
+		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to process password", err.Error())
+		return
+	}
+
+	err = user.Create()
 	if err != nil {
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to create user", err.Error())
 		return

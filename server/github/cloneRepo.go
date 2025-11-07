@@ -26,6 +26,7 @@ func CloneRepo(db *sql.DB, appId int64, userId int64, logFile *os.File) error {
 		return fmt.Errorf("failed to get github access token: %w", err)
 	}
 
+	// Build repo URL
 	repoURL := fmt.Sprintf("https://github.com/%s.git", repo)
 	if accessToken != "" {
 		repoURL = fmt.Sprintf(
@@ -34,37 +35,27 @@ func CloneRepo(db *sql.DB, appId int64, userId int64, logFile *os.File) error {
 		)
 	}
 
+	// Filesystem path
 	path := fmt.Sprintf("/var/lib/mist/projects/%d/apps/%s", projectId, name)
+
+
+	// ✅ If repo exists → delete it completely
+	if _, err := os.Stat(path + "/.git"); err == nil {
+		fmt.Println("Repository exists → removing directory...")
+
+		if err := os.RemoveAll(path); err != nil {
+			return fmt.Errorf("failed to remove existing repository: %w", err)
+
+		}
+	}
+
+	// ✅ Ensure directory exists
 	if err := os.MkdirAll(path, 0o755); err != nil {
 		return fmt.Errorf("failed to create directory: %w", err)
 	}
 
-	_, err = os.Stat(path + "/.git")
-
-	if err == nil {
-
-		fmt.Println("Repository exists, pulling latest changes...")
-		cmd := exec.Command("git", "-C", path, "pull", "origin", branch)
-		output, err := cmd.CombinedOutput()
-		lines := strings.Split(string(output), "\n")
-		for _, line := range lines {
-			if len(line) > 0 {
-				fmt.Fprintf(logFile, "[GITHUB] %s\n", line)
-			}
-		}
-		fmt.Println(string(output))
-		if err != nil {
-			return fmt.Errorf("error pulling repository: %v\n%s", err, string(output))
-		}
-		return nil
-	}
-
-	if !os.IsNotExist(err) {
-
-		return fmt.Errorf("error checking repo directory: %w", err)
-	}
-
-	fmt.Println("Repository does not exist, cloning...")
+	// ✅ Clone fresh repo
+	fmt.Println("Cloning repository...")
 	cmd := exec.Command("git", "clone", "--branch", branch, repoURL, path)
 	output, err := cmd.CombinedOutput()
 	lines := strings.Split(string(output), "\n")

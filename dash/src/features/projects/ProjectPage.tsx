@@ -192,7 +192,7 @@ export const ProjectPage = () => {
               <AppCard
                 key={app.id}
                 app={app}
-                onClick={() => navigate(`/projects/${app.project_id}/apps/${app.id}`)}
+                onClick={() => navigate(`/projects/${app.projectId}/apps/${app.id}`)}
               />
             ))}
           </div>

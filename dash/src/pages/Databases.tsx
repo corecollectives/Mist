@@ -1,6 +1,4 @@
 
-
-
 export const DatabasesPage = () => {
   return (
     <div>

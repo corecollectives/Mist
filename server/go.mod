@@ -18,3 +18,5 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	golang.org/x/sys v0.37.0 // indirect
 )
+
+replace github.com/docker/docker/api => github.com/moby/moby/api v1.52.0-beta.2

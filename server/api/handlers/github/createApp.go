@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/api/middleware"
 )
 
@@ -56,17 +57,17 @@ func getLocalIP() (string, error) {
 func (h *Handler) CreateGithubApp(w http.ResponseWriter, r *http.Request) {
 	appExists, err := CheckIfAppExists(h.DB)
 	if err != nil {
-		http.Error(w, "Database error", http.StatusInternalServerError)
+		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Database error", err.Error())
 		return
 	}
 	if appExists {
-		http.Error(w, "GitHub App already exists", http.StatusBadRequest)
+		handlers.SendResponse(w, http.StatusBadRequest, false, nil, "GitHub App already exists", "GitHub App already exists")
 		return
 	}
 
 	userInfo, ok := middleware.GetUser(r)
 	if !ok || userInfo == nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		handlers.SendResponse(w, http.StatusUnauthorized, false, nil, "unauthorized", "")
 		return
 	}
 
@@ -80,7 +81,7 @@ func (h *Handler) CreateGithubApp(w http.ResponseWriter, r *http.Request) {
 	} else {
 		ip, err := getLocalIP()
 		if err != nil {
-			http.Error(w, "Failed to determine server IP", http.StatusInternalServerError)
+			handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "failed to determine server IP", err.Error())
 			return
 		}
 		apiBase = fmt.Sprintf("http://%s:8080", ip)

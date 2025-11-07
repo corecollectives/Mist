@@ -5,9 +5,12 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/api/middleware"
+	"github.com/corecollectives/mist/models"
 )
 
 func (h *Handler) UpdateProject(w http.ResponseWriter, r *http.Request) {
@@ -73,6 +76,42 @@ func (h *Handler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	handlers.SendResponse(w, http.StatusOK, true, nil, "Project updated successfully", "")
+	// Fetch the updated project with owner information
+	var project models.Project
+	var tags string = ""
+	var ownerUsername, ownerEmail, ownerRole string
+	var ownerCreatedAt, ownerUpdatedAt time.Time
+
+	err = h.DB.QueryRow(`
+		SELECT p.id, p.name, p.description, p.tags, p.owner_id, p.created_at, p.updated_at,
+		       u.username, u.email, u.role, u.created_at, u.updated_at
+		FROM projects p
+		JOIN users u ON p.owner_id = u.id
+		WHERE p.id = ?
+	`, projectId).Scan(
+		&project.ID, &project.Name, &project.Description, &tags, &project.OwnerID, &project.CreatedAt, &project.UpdatedAt,
+		&ownerUsername, &ownerEmail, &ownerRole, &ownerCreatedAt, &ownerUpdatedAt,
+	)
+
+	if err != nil {
+		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to fetch updated project", err.Error())
+		return
+	}
+
+	if tags != "" {
+		project.Tags = strings.Split(tags, ",")
+	}
+
+	// Populate the owner field
+	project.Owner = &models.User{
+		ID:        project.OwnerID,
+		Username:  ownerUsername,
+		Email:     ownerEmail,
+		Role:      ownerRole,
+		CreatedAt: ownerCreatedAt,
+		UpdatedAt: ownerUpdatedAt,
+	}
+
+	handlers.SendResponse(w, http.StatusOK, true, project, "Project updated successfully", "")
 
 }

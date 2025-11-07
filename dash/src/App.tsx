@@ -1,29 +1,30 @@
-import Loading from "./components/Loading";
+import { FullScreenLoading } from "./shared/components";
 import { useAuth } from "./context/AuthContext";
 import { Navigate, Route, BrowserRouter as Router, Routes } from "react-router-dom"
-import { HomePage } from "./pages/Home";
-import LoginPage from "./pages/Login";
 import { Layout } from "./Layout";
-import { UsersPage } from "./pages/Users";
-import { ProjectsPage } from "./pages/Projects";
+import "./App.css"
+import { Toaster } from "./components/ui/sonner";
+import { CallbackPage } from "./pages/Callback";
+
+import { SetupPage } from "./features/auth";
+import { LoginPage } from "./features/auth";
+import { DashboardPage } from "./features/dashboard";
+import { UsersPage } from "./features/users";
+import { ProjectsPage } from "./features/projects";
+import { GitPage } from "./features/git";
+
 import { DeploymentsPage } from "./pages/Deployments";
 import { DatabasesPage } from "./pages/Databases";
 import { LogsPage } from "./pages/Logs";
 import { SettingsPage } from "./pages/Settings";
-import { ProjectPage } from "./pages/Project";
-import "./App.css"
-import { Toaster } from "./components/ui/sonner";
-import SetupPage from "./pages/Setup";
-import { GitPage } from "./pages/Git";
-import { CallbackPage } from "./pages/Callback";
+import { ProjectPage } from "./features/projects/ProjectPage";
+import { AppPage } from "./features/applications/AppPage";
 
 export default function App() {
   const { setupRequired, user } = useAuth();
 
   if (setupRequired === null) {
-    return <div className="flex h-screen w-screen items-center justify-center">
-      <Loading />
-    </div>;
+    return <FullScreenLoading />;
   }
   return (
     <Router>
@@ -41,11 +42,12 @@ export default function App() {
         ) : (
           <>
             <Route element={<Layout />} >
-              <Route path="/" element={<HomePage />} />
+              <Route path="/" element={<DashboardPage />} />
               <Route path="/users" element={<UsersPage />} />
               <Route path="/git" element={<GitPage />} />
               <Route path="/projects" element={<ProjectsPage />} />
               <Route path="/projects/:projectId" element={<ProjectPage />} />
+              <Route path="/projects/:projectId/apps/:appId" element={<AppPage />} />
               <Route path="/deployments" element={<DeploymentsPage />} />
               <Route path="/databases" element={<DatabasesPage />} />
               <Route path="/logs" element={<LogsPage />} />

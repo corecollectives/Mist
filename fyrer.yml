@@ -5,13 +5,13 @@ services:
     cmd: go run main.go
     env:
       ENV: dev
-      VPS_DOMAIN:  valves-initial-carefully-romantic.trycloudflare.com
     watch: true
     ignore: 
       - "*.db*"
+      - "*.db-journal"
 
   - name: dash
     dir: ./dash
-    cmd: bun dev --host
+    cmd: npm run dev --host
     env:
       VITE_API_URL: http://localhost:8080

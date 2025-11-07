@@ -1,6 +1,4 @@
 
-
-
 export const DeploymentsPage = () => {
   return (
     <div>

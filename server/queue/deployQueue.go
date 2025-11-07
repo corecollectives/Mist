@@ -4,58 +4,47 @@ import (
 	"context"
 	"fmt"
 	"sync"
-	"time"
+
+	"github.com/corecollectives/mist/api/handlers/dockerdeploy"
 )
 
-type Job struct {
-	ID         int
-	AppID      int
-	CommitHash string
-	Logs       string
-	Status     string
-	CreatedAt  time.Time
-	FinishedAt time.Time
-}
-
 type Queue struct {
-	jobs chan Job
+	jobs chan int64
 
 	ctx    context.Context
 	cancel context.CancelFunc
 	wg     sync.WaitGroup
 }
 
-func NewQueue(buffer int) *Queue {
+func NewQueue(buffer int, d *dockerdeploy.Deployer) *Queue {
 	ctx, cancel := context.WithCancel(context.Background())
 	q := &Queue{
-		jobs: make(chan Job, buffer),
+		jobs: make(chan int64, buffer),
 
 		ctx:    ctx,
 		cancel: cancel,
 	}
-	q.StartWorker()
+	q.StartWorker(d)
 	return q
 
 }
 
-func (q *Queue) StartWorker() {
+func (q *Queue) StartWorker(d *dockerdeploy.Deployer) {
 	q.wg.Add(1)
 	go func() {
 		defer q.wg.Done()
-		for job := range q.jobs {
+		for id := range q.jobs {
 
-			fmt.Printf("job with job id %d has started\n", job.ID)
-			time.Sleep(2 * time.Second)
-			fmt.Printf("job with job id %d has finished\n", job.ID)
+			d.DeployerMain(id)
 
 		}
 
 	}()
 }
 
-func (q *Queue) AddJob(job Job) error {
+func (q *Queue) AddJob(Id int64) error {
 	select {
-	case q.jobs <- job:
+	case q.jobs <- Id:
 		return nil
 	case <-q.ctx.Done():
 		return fmt.Errorf("queue is closed")

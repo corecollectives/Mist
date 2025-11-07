@@ -7,29 +7,20 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/api/middleware"
 	"github.com/corecollectives/mist/api/utils"
 )
 
-type Repo struct {
-	ID       int64  `json:"id"`
-	Name     string `json:"name"`
-	FullName string `json:"full_name"`
-	HTMLURL  string `json:"html_url"`
-	SSHURL   string `json:"ssh_url"`
-	CloneURL string `json:"clone_url"`
-	Private  bool   `json:"private"`
-}
-
 type RepoListResponse struct {
-	TotalCount   int    `json:"total_count"`
-	Repositories []Repo `json:"repositories"`
+	TotalCount   int   `json:"total_count"`
+	Repositories []any `json:"repositories"`
 }
 
 func (h *Handler) GetRepositories(w http.ResponseWriter, r *http.Request) {
 	userData, ok := middleware.GetUser(r)
 	if !ok {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		handlers.SendResponse(w, http.StatusUnauthorized, false, nil, "Not logged in", "Unauthorized")
 		return
 	}
 
@@ -39,11 +30,11 @@ func (h *Handler) GetRepositories(w http.ResponseWriter, r *http.Request) {
 		WHERE user_id = ?
 	`, userData.ID).Scan(&installationID)
 	if err == sql.ErrNoRows {
-		http.Error(w, "no installation found for user", http.StatusNotFound)
+		handlers.SendResponse(w, http.StatusNotFound, false, nil, "no installation found for user", "No installation found")
 		return
 	}
 	if err != nil {
-		http.Error(w, fmt.Sprintf("db error: %v", err), http.StatusInternalServerError)
+		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "database error", err.Error())
 		return
 	}
 
@@ -59,7 +50,7 @@ func (h *Handler) GetRepositories(w http.ResponseWriter, r *http.Request) {
 		WHERE i.installation_id = ?
 	`, installationID).Scan(&token, &tokenExpires, &appID)
 	if err != nil {
-		http.Error(w, "failed to fetch installation info", http.StatusInternalServerError)
+		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "failed to fetch installation info", err.Error())
 		return
 	}
 
@@ -67,13 +58,13 @@ func (h *Handler) GetRepositories(w http.ResponseWriter, r *http.Request) {
 	if time.Now().After(expiry) {
 		appJWT, err := utils.GenerateGithubJwt(h.DB, appID)
 		if err != nil {
-			http.Error(w, "failed to generate app jwt", http.StatusInternalServerError)
+			handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "failed to generate app jwt", err.Error())
 			return
 		}
 
 		newToken, newExpiry, err := regenerateInstallationToken(appJWT, installationID)
 		if err != nil {
-			http.Error(w, "failed to refresh token", http.StatusInternalServerError)
+			handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "failed to refresh token", err.Error())
 			return
 		}
 
@@ -86,7 +77,7 @@ func (h *Handler) GetRepositories(w http.ResponseWriter, r *http.Request) {
 		token = newToken
 	}
 
-	allRepos := []Repo{}
+	allRepos := []any{}
 	page := 1
 
 	for {
@@ -97,19 +88,19 @@ func (h *Handler) GetRepositories(w http.ResponseWriter, r *http.Request) {
 
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
-			http.Error(w, fmt.Sprintf("request error: %v", err), http.StatusInternalServerError)
+			handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "request error", err.Error())
 			return
 		}
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
-			http.Error(w, fmt.Sprintf("GitHub API returned %d", resp.StatusCode), resp.StatusCode)
+			handlers.SendResponse(w, resp.StatusCode, false, nil, fmt.Sprintf("GitHub API returned %d", resp.StatusCode), "")
 			return
 		}
 
 		var repoList RepoListResponse
 		if err := json.NewDecoder(resp.Body).Decode(&repoList); err != nil {
-			http.Error(w, "failed to parse GitHub response", http.StatusInternalServerError)
+			handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "failed to parse GitHub response", err.Error())
 			return
 		}
 

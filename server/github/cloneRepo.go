@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 )
 
-func CloneRepo(db *sql.DB, appId int64, userId int64) error {
+func CloneRepo(db *sql.DB, appId int64, userId int64, logFile *os.File) error {
 	var repo, branch string
 	var projectId int64
 	var name string
@@ -38,13 +39,19 @@ func CloneRepo(db *sql.DB, appId int64, userId int64) error {
 		return fmt.Errorf("failed to create directory: %w", err)
 	}
 
-	// ✅ Check if repo already exists
 	_, err = os.Stat(path + "/.git")
+
 	if err == nil {
-		// ✅ Directory exists → pull
+
 		fmt.Println("Repository exists, pulling latest changes...")
 		cmd := exec.Command("git", "-C", path, "pull", "origin", branch)
 		output, err := cmd.CombinedOutput()
+		lines := strings.Split(string(output), "\n")
+		for _, line := range lines {
+			if len(line) > 0 {
+				fmt.Fprintf(logFile, "[GITHUB] %s\n", line)
+			}
+		}
 		fmt.Println(string(output))
 		if err != nil {
 			return fmt.Errorf("error pulling repository: %v\n%s", err, string(output))
@@ -53,14 +60,19 @@ func CloneRepo(db *sql.DB, appId int64, userId int64) error {
 	}
 
 	if !os.IsNotExist(err) {
-		// ✅ Real error, not "doesn't exist"
+
 		return fmt.Errorf("error checking repo directory: %w", err)
 	}
 
-	// ✅ Repo does NOT exist → clone
 	fmt.Println("Repository does not exist, cloning...")
 	cmd := exec.Command("git", "clone", "--branch", branch, repoURL, path)
 	output, err := cmd.CombinedOutput()
+	lines := strings.Split(string(output), "\n")
+	for _, line := range lines {
+		if len(line) > 0 {
+			fmt.Fprintf(logFile, "[GITHUB] %s\n", line)
+		}
+	}
 	fmt.Println(string(output))
 	if err != nil {
 		return fmt.Errorf("error cloning repository: %v\n%s", err, string(output))

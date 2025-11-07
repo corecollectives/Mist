@@ -6,10 +6,11 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/corecollectives/mist/github"
 	"github.com/corecollectives/mist/models"
 )
 
-func (d *Deployer) DeployApp(dep *models.Deployment, appContextPath, imageTag, containerName string) error {
+func (d *Deployer) DeployApp(dep *models.Deployment, appContextPath, imageTag, containerName string, appId int64, createdBy int64) error {
 	logFileName := imageTag + "_build_logs"
 	logPath := filepath.Join(d.LogDirectory, logFileName)
 
@@ -26,6 +27,12 @@ func (d *Deployer) DeployApp(dep *models.Deployment, appContextPath, imageTag, c
 	dep.Logs.String = logPath
 	dep.Status = "building"
 	d.UpdateDeployment(dep)
+
+	err = github.CloneRepo(d.DB, appId, createdBy, logfile)
+	if err != nil {
+		fmt.Println("error:Failed to clone repo:", err.Error())
+		return err
+	}
 
 	if err := BuildImage(imageTag, appContextPath, logfile); err != nil {
 		dep.Status = "failed"

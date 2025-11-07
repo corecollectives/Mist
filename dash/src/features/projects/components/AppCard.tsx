@@ -91,24 +91,24 @@ export const AppCard: React.FC<AppCardProps> = ({
               {app.status}
             </Badge>
           )}
-          {app.deployment_strategy && (
-            <Badge variant="secondary">{app.deployment_strategy}</Badge>
+          {app.deploymentStrategy && (
+            <Badge variant="secondary">{app.deploymentStrategy}</Badge>
           )}
         </div>
 
         {/* Git Info */}
-        {(app.git_repository || app.git_branch) && (
+        {(app.gitRepository || app.gitBranch) && (
           <div className="flex flex-col gap-2 text-xs text-muted-foreground mb-3">
-            {app.git_repository && (
+            {app.gitRepository && (
               <div className="flex items-center gap-2">
                 <Github className="w-4 h-4 text-muted-foreground" />
-                <span className="truncate">{app.git_repository}</span>
+                <span className="truncate">{app.gitRepository}</span>
               </div>
             )}
-            {app.git_branch && (
+            {app.gitBranch && (
               <div className="flex items-center gap-2">
                 <GitBranch className="w-4 h-4 text-muted-foreground" />
-                <span>{app.git_branch}</span>
+                <span>{app.gitBranch}</span>
               </div>
             )}
           </div>
@@ -127,12 +127,12 @@ export const AppCard: React.FC<AppCardProps> = ({
               </span>
             </span>
           </div>
-          {app.created_at && (
+          {app.createdAt && (
             <div className="flex items-center gap-2">
               <Globe className="w-4 h-4 text-muted-foreground" />
               <span>
                 Created:{" "}
-                {new Date(app.created_at).toLocaleDateString(undefined, {
+                {new Date(app.createdAt).toLocaleDateString(undefined, {
                   day: "numeric",
                   month: "short",
                   year: "numeric",

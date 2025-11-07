@@ -54,7 +54,6 @@ export default function DashboardPage() {
           const newStats: SystemStats = JSON.parse(event.data);
           setStats(prevStats => {
             const updatedStats = [...prevStats, newStats];
-            // Keep only last 50 stats to prevent memory issues
             return updatedStats.slice(-50);
           });
         } catch (err) {
@@ -71,11 +70,8 @@ export default function DashboardPage() {
       ws.onclose = () => {
         setIsConnected(false);
         console.log('WebSocket disconnected');
-        // Try to reconnect after 5 seconds
         setTimeout(() => {
-          if (!wsConnection) {
-            connectWebSocket();
-          }
+          if (!wsConnection) connectWebSocket();
         }, 5000);
       };
 
@@ -110,49 +106,39 @@ export default function DashboardPage() {
     return (latestStats.memory.used / latestStats.memory.total) * 100;
   };
 
+  const getDiskUsagePercentage = (disk: DiskInfo): number => {
+    if (!disk.totalSpace) return 0;
+    return (disk.usedSpace / disk.totalSpace) * 100;
+  };
+
   useEffect(() => {
     connectWebSocket();
-    
-    return () => {
-      disconnectWebSocket();
-    };
+    return () => disconnectWebSocket();
   }, []);
 
   useEffect(() => {
-    if (error) {
-      toast.error(error);
-    }
+    if (error) toast.error(error);
   }, [error]);
 
   const latestStats = getLatestStats();
   const averageCpuUsage = getAverageCpuUsage();
   const memoryUsagePercentage = getMemoryUsagePercentage();
 
-  if (isLoading) {
-    return <FullScreenLoading />;
-  }
+  if (isLoading) return <FullScreenLoading />;
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <div className="flex items-center justify-between py-6 border-b border-border shrink-0">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            Dashboard
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            System monitoring and performance overview
-          </p>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Dashboard</h1>
+          <p className="text-muted-foreground mt-1">System monitoring and performance overview</p>
         </div>
         <div className="flex items-center gap-2">
           <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
-          <span className="text-sm text-muted-foreground">
-            {isConnected ? 'Connected' : 'Disconnected'}
-          </span>
+          <span className="text-sm text-muted-foreground">{isConnected ? 'Connected' : 'Disconnected'}</span>
         </div>
       </div>
 
-      {/* Error */}
       {error && (
         <div className="mt-4">
           <Alert variant="destructive">
@@ -161,53 +147,21 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Content */}
       <div className="py-6 space-y-6">
-        {/* System Overview */}
         <SystemOverview stats={latestStats} />
 
-        {/* Charts */}
         {stats.length > 0 && (
           <div className="grid gap-6 md:grid-cols-2">
-            <ChartCard
-              title="CPU Usage"
-              data={stats}
-              dataKey="cpuUsage"
-              color="#8B5CF6"
-              formatter={formatPercentage}
-            />
-            
-            <ChartCard
-              title="Memory Usage"
-              data={stats}
-              dataKey="memory.used"
-              color="#A371F7"
-              formatter={formatMemory}
-            />
+            <ChartCard title="CPU Usage" data={stats} dataKey="cpuUsage" color="#8B5CF6" formatter={formatPercentage} />
+            <ChartCard title="Memory Usage" data={stats} dataKey="memory.used" color="#A371F7" formatter={formatMemory} />
           </div>
         )}
 
-        {/* Summary Stats */}
         {stats.length > 0 && (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <MetricCard
-              title="Current CPU"
-              value={latestStats?.cpuUsage || 0}
-              showUsageColor
-            />
-            
-            <MetricCard
-              title="Average CPU"
-              value={averageCpuUsage}
-              showUsageColor
-            />
-            
-            <MetricCard
-              title="Memory Usage"
-              value={memoryUsagePercentage}
-              showUsageColor
-            />
-            
+            <MetricCard title="Current CPU" value={latestStats?.cpuUsage || 0} showUsageColor />
+            <MetricCard title="Average CPU" value={averageCpuUsage} showUsageColor />
+            <MetricCard title="Memory Usage" value={memoryUsagePercentage} showUsageColor />
             <MetricCard
               title="Load Average"
               value={latestStats?.loadAverage.oneMinute || 0}
@@ -216,7 +170,25 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* No Data State */}
+        {/* Disk Usage */}
+        {latestStats?.disk && latestStats.disk.length > 0 && (
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold tracking-tight text-foreground">Disk Usage</h2>
+
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {latestStats.disk.map((d) => (
+                <MetricCard
+                  key={d.name}
+                  title={`Disk: ${d.name}`}
+                  value={getDiskUsagePercentage(d)}
+                  showUsageColor
+                  formatter={(v: number) => `${v.toFixed(1)}% (${formatMemory(d.usedSpace)} / ${formatMemory(d.totalSpace)})`}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
         {stats.length === 0 && !isLoading && (
           <div className="flex flex-col items-center justify-center py-12">
             <p className="text-muted-foreground text-lg mb-4">

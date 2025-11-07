@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/api/middleware"
 	"github.com/corecollectives/mist/api/utils"
 	"github.com/corecollectives/mist/github"
@@ -24,24 +25,20 @@ func (q *QueueHelper) AddDeployHandler(w http.ResponseWriter, r *http.Request) {
 		AppId int `json:"appId"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		handlers.SendResponse(w, http.StatusBadRequest, false, nil, "invalid request body", err.Error())
 		return
 	}
-	//below 2 things are hardcoded currently add the getcommithash and msg function along with error on lhs of :=
-	// if err != nil {
-	// 	http.Error(w, "failed to get commit message", http.StatusInternalServerError)
-	// 	return
-	// }
+
 	user, ok := middleware.GetUser(r)
 	if !ok {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		handlers.SendResponse(w, http.StatusForbidden, false, nil, "unauthorized", "")
 		return
 	}
 	userId := int64(user.ID)
 	commit, err := github.GetLatestCommit(q.DB, int64(req.AppId), userId)
 	if err != nil {
 		fmt.Println("Error getting latest commit:", err.Error())
-		http.Error(w, "failed to get latest commit", http.StatusInternalServerError)
+		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "failed to get latest commit", err.Error())
 		return
 	}
 	commitHash := commit.SHA
@@ -53,17 +50,17 @@ func (q *QueueHelper) AddDeployHandler(w http.ResponseWriter, r *http.Request) {
 		deploymentId, req.AppId, commitHash, commitMessage,
 	)
 	if err != nil {
-		http.Error(w, "failed to insert deployment", http.StatusInternalServerError)
+		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "failed to insert deployment", err.Error())
 		return
 	}
 	id, err := result.LastInsertId()
 	if err != nil {
-		http.Error(w, "failed to get inserted id", http.StatusInternalServerError)
+		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "failed to get inserted id", err.Error())
 		return
 	}
 
 	if err := q.Queue.AddJob(int64(id)); err != nil {
-		http.Error(w, "failed to add job to queue", http.StatusInternalServerError)
+		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "failed to add job to queue", err.Error())
 		return
 	}
 
@@ -84,7 +81,7 @@ func (q *QueueHelper) AddDeployHandler(w http.ResponseWriter, r *http.Request) {
 	)
 	if err != nil {
 		fmt.Println("Error fetching deployment:", err.Error())
-		http.Error(w, "failed to fetch deployment", http.StatusInternalServerError)
+		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "failed to fetch deployment", err.Error())
 		return
 	}
 

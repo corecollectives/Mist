@@ -58,6 +58,10 @@ func (d *Deployer) DeployerMain(Id int64) (string, error) {
 	}
 
 	err = github.CloneRepo(d.DB, app.ID, app.CreatedBy)
+	if err != nil {
+		fmt.Println("error:Failed to clone repo:", err.Error())
+		return "", err
+	}
 	appContextPath := constants.Constants["RootPath"] + "/" + fmt.Sprintf("projects/%d/apps/%s", app.ProjectID, app.Name)
 	imageTag := dep.CommitHash
 	containerName := fmt.Sprintf("app-%d", app.ID)

@@ -6,7 +6,9 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/models"
+
 	// "github.com/corecollectives/mist/queue"
 	"github.com/corecollectives/mist/websockets"
 	"github.com/gorilla/websocket"
@@ -29,18 +31,20 @@ func (d *Deployer) LogsHandler(w http.ResponseWriter, r *http.Request) {
 	depIdstr := r.URL.Query().Get("id")
 	depId, err := strconv.ParseInt(depIdstr, 10, 64)
 	if err != nil {
-		http.Error(w, "Invalid deployment id", http.StatusBadRequest)
+		handlers.SendResponse(w, http.StatusBadRequest, false, nil, "invalid deployment id", err.Error())
 		return
 	}
 	dep, err := d.loadDeployment(depId)
 	if err != nil {
-		http.Error(w, "Deployment not found", http.StatusNotFound)
+
+		handlers.SendResponse(w, http.StatusNotFound, false, nil, "deployment not found", err.Error())
+
 		return
 	}
 
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		http.Error(w, "Failed to upgrade", http.StatusInternalServerError)
+		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "failed to upgrade to websocket", err.Error())
 		return
 	}
 	defer conn.Close()

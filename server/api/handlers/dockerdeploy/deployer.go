@@ -1,6 +1,7 @@
 package dockerdeploy
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"time"
@@ -22,7 +23,7 @@ func (d *Deployer) DeployApp(dep *models.Deployment, appContextPath, imageTag, c
 	}
 	defer logfile.Close()
 
-	dep.Logs = logPath
+	dep.Logs.String = logPath
 	dep.Status = "building"
 	d.UpdateDeployment(dep)
 
@@ -35,7 +36,13 @@ func (d *Deployer) DeployApp(dep *models.Deployment, appContextPath, imageTag, c
 	dep.Status = "deploying"
 	d.UpdateDeployment(dep)
 
-	_ = StopRemoveContainer(containerName, logfile)
+	err = StopRemoveContainer(containerName, logfile)
+	if err != nil {
+		fmt.Println("Warning: failed to stop/remove existing container:", err.Error())
+		dep.Status = "failed"
+		d.UpdateDeployment(dep)
+		return err
+	}
 
 	if err := RunContainer(imageTag, containerName, []string{"-p", "6124:6124"}, logfile); err != nil {
 		dep.Status = "failed"

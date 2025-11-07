@@ -1,10 +1,14 @@
 import { FormModal } from "@/components/FormModal";
 import { FullScreenLoading } from "@/shared/components";
 import { Button } from "@/components/ui/button";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import type { App } from "@/types/app";
+import { TabsList, Tabs, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { AppInfo } from "./Info";
+import { GitProviderTab } from "./components/Git";
+import { DeploymentsTab } from "./components/Deployments";
 
 interface GitHubRepo {
   id: number;
@@ -23,6 +27,7 @@ export const AppPage = () => {
   const [app, setApp] = useState<App | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [latestCommit, setLatestCommit] = useState();
   const [repositories, setRepositories] = useState<GitHubRepo[]>([]);
   const [branches, setBranches] = useState<GitHubBranch[]>([]);
   const [selectedRepo, setSelectedRepo] = useState<string>("");
@@ -31,7 +36,8 @@ export const AppPage = () => {
   const params = useParams();
   const navigate = useNavigate();
 
-  const appId = parseInt(params.appId!);
+  const appId = useMemo(() => Number(params.appId), [params.appId]);
+  const projectId = parseInt(params.projectId!);
 
   // Fetch app details
   const fetchAppDetails = async () => {
@@ -82,21 +88,22 @@ export const AppPage = () => {
     }
   };
 
-  const updateApp = async () => {
+  const fetchLatestCommit = async () => {
     try {
-      const res = await fetch(`/api/apps/update`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ appId, gitRepository: selectedRepo }),
-      })
+      const res = await fetch(`/api/apps/getLatestCommit`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ appID: appId, projectID: projectId }),
+        }
+      );
       const data = await res.json();
-      if (!data.success) throw new Error(data.error || "Failed to update app");
-      toast.success("App updated successfully");
-      await fetchAppDetails();
+      if (!data.success) throw new Error(data.error || "Failed to fetch latest commit");
+      setLatestCommit(data.data);
     }
     catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to update app");
+      toast.error(err instanceof Error ? err.message : "Failed to fetch latest commit");
     }
   }
 
@@ -141,9 +148,12 @@ export const AppPage = () => {
   };
 
   useEffect(() => {
-    fetchAppDetails();
+    fetchLatestCommit()
+    fetchAppDetails()
     fetchRepositories();
   }, [params.appId]);
+
+
 
   useEffect(() => {
     if (selectedRepo) fetchBranches(selectedRepo);
@@ -169,24 +179,6 @@ export const AppPage = () => {
         <div>
           <h1 className="text-2xl font-semibold">{app.name}</h1>
           <p className="text-muted-foreground mt-1">{app.description}</p>
-
-          <div className="mt-3 flex flex-wrap gap-2 items-center text-sm text-muted-foreground">
-            {app.status && (
-              <span className="bg-secondary text-secondary-foreground px-2 py-1 rounded-full">
-                Status: {app.status}
-              </span>
-            )}
-            {app.deployment_strategy && (
-              <span className="bg-secondary text-secondary-foreground px-2 py-1 rounded-full">
-                Strategy: {app.deployment_strategy}
-              </span>
-            )}
-            {app.port && (
-              <span className="bg-secondary text-secondary-foreground px-2 py-1 rounded-full">
-                Port: {app.port}
-              </span>
-            )}
-          </div>
         </div>
 
         <div className="flex flex-wrap gap-2 sm:flex-nowrap">
@@ -196,57 +188,61 @@ export const AppPage = () => {
           <Button variant="destructive" onClick={deleteAppHandler}>
             Delete App
           </Button>
-          <Button variant="secondary" onClick={() => navigate(`/projects/${app.project_id}`)}>
-            Back to Project
-          </Button>
         </div>
       </header>
 
       {/* App Info */}
-      <main className="flex-1 overflow-y-auto py-6 ">
+      <main className="flex-1 overflow-y-auto py-6">
+        <Tabs defaultValue="info" className="w-full">
+          <TabsList className="grid w-full grid-cols-6 mb-6">
+            <TabsTrigger value="info">Info</TabsTrigger>
+            <TabsTrigger value="git">Git</TabsTrigger>
+            <TabsTrigger value="environment">Environment</TabsTrigger>
+            <TabsTrigger value="deployments">Deployments</TabsTrigger>
+            <TabsTrigger value="logs">Logs</TabsTrigger>
+            <TabsTrigger value="settings">Settings</TabsTrigger>
+          </TabsList>
 
-        <div >
-          <label className="text-sm text-muted-foreground">Select repo</label>
-          <select
-            value={selectedRepo}
-            onChange={(e) => setSelectedRepo(e.target.value)}
-            className="w-full bg-background border rounded-md mt-1 px-3 py-2"
-          >
-            <option value="">Select a repository</option>
-            {repositories.map((repo) => (
-              <option key={repo.id} value={repo.full_name}>
-                {repo.full_name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <Button
-          onClick={() => updateApp()}
-        >
-          Save
-        </Button>
-        <h2 className="text-lg font-semibold mb-4">App Details</h2>
+          {/* ✅ INFO TAB */}
+          <TabsContent value="info" className="space-y-6">
+            <AppInfo app={app} latestCommit={latestCommit} />
+          </TabsContent>
 
-        <div className="bg-card border border-border rounded-lg p-6 space-y-4">
-          <div>
-            <h3 className="text-sm text-muted-foreground">Git Repository</h3>
-            <p className="text-foreground font-medium">{app.git_repository || "Not linked"}</p>
-          </div>
-          <div>
-            <h3 className="text-sm text-muted-foreground">Branch</h3>
-            <p className="text-foreground font-medium">{app.git_branch || "Not specified"}</p>
-          </div>
-          <div>
-            <h3 className="text-sm text-muted-foreground">Created At</h3>
-            <p className="text-foreground font-medium">
-              {new Date(app.created_at).toLocaleString()}
-            </p>
-          </div>
-          <div>
-            <h3 className="text-sm text-muted-foreground">Created By</h3>
-            <p className="text-foreground font-medium">{app.created_by}</p>
-          </div>
-        </div>
+          <TabsContent value="git" className="space-y-6">
+            <GitProviderTab app={app} />
+          </TabsContent>
+
+          {/* ✅ ENVIRONMENT TAB */}
+          <TabsContent value="environment">
+            <div className="bg-card border border-border rounded-lg p-6">
+              <h2 className="text-lg font-semibold mb-3">Environment Variables</h2>
+              <p className="text-muted-foreground">
+                No environment variables added yet.
+              </p>
+            </div>
+          </TabsContent>
+
+          {/* ✅ DEPLOYMENTS TAB */}
+          <TabsContent value="deployments">
+            <DeploymentsTab appId={app.id} />
+          </TabsContent>
+
+          {/* ✅ LOGS TAB */}
+          <TabsContent value="logs">
+            <div className="bg-card border border-border rounded-lg p-6">
+              <h2 className="text-lg font-semibold mb-3">Logs</h2>
+              <p className="text-muted-foreground">Real-time logs will appear here.</p>
+            </div>
+          </TabsContent>
+
+          {/* ✅ SETTINGS TAB */}
+          <TabsContent value="settings">
+            <div className="bg-card border border-border rounded-lg p-6 space-y-3">
+              <h2 className="text-lg font-semibold">Settings</h2>
+              <p className="text-muted-foreground">Modify app-level settings here.</p>
+            </div>
+          </TabsContent>
+        </Tabs>
       </main>
 
       {/* Edit Modal */}
@@ -265,7 +261,7 @@ export const AppPage = () => {
               label: repo.full_name,
               value: repo.full_name,
             })),
-            defaultValue: app.git_repository || "",
+            defaultValue: app.gitRepository || "",
             // onChange: (value: string) => setSelectedRepo(valu),
           },
           {
@@ -273,7 +269,7 @@ export const AppPage = () => {
             name: "git_branch",
             type: "select",
             options: branches.map((b) => ({ label: b.name, value: b.name })),
-            defaultValue: app.git_branch || "",
+            defaultValue: app.gitBranch || "",
           },
         ]}
         onSubmit={(data) => handleUpdateApp(data as any)}

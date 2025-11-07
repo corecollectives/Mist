@@ -59,7 +59,7 @@ func (a *App) ToJson() map[string]interface{} {
 		"rootDirectory":       a.RootDirectory,
 		"buildCommand":        a.BuildCommand.String,
 		"startCommand":        a.StartCommand.String,
-		"dockerfilePath":      a.DockerfilePath,
+		"dockerfilePath":      a.DockerfilePath.String,
 		"healthcheckPath":     a.HealthcheckPath.String,
 		"healthcheckInterval": a.HealthcheckInterval,
 		"status":              a.Status,

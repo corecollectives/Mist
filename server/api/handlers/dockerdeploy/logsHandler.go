@@ -3,6 +3,7 @@ package dockerdeploy
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -45,7 +46,8 @@ func (d *Deployer) LogsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer conn.Close()
 
-	logPath := docker.GetLogsPath(dep.CommitHash)
+	logPath := docker.GetLogsPath(dep.CommitHash, depId)
+	fmt.Println(logPath)
 	ctx, cancel := context.WithCancel(r.Context())
 	defer cancel()
 

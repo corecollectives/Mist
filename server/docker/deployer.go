@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/corecollectives/mist/constants"
@@ -61,6 +62,6 @@ func UpdateDeployment(dep *models.Deployment, db *sql.DB) error {
 	return err
 }
 
-func GetLogsPath(commitHash string) string {
-	return filepath.Join(constants.Constants["LogPath"], commitHash+"_build_logs")
+func GetLogsPath(commitHash string, depId int64) string {
+	return filepath.Join(constants.Constants["LogPath"], commitHash+strconv.FormatInt(depId, 10)+"_build_logs")
 }

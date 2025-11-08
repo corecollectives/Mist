@@ -3,6 +3,7 @@ package fs
 import (
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/corecollectives/mist/constants"
 	"github.com/corecollectives/mist/models"
@@ -16,7 +17,7 @@ func CreateDockerBuildLogFile(depID int64) (*os.File, string, error) {
 		return nil, "", err
 	}
 
-	logFileName := commitHash + string(depID) + "_build_logs"
+	logFileName := commitHash + strconv.FormatInt(depID, 10) + "_build_logs"
 	logPath := filepath.Join(logPath, logFileName)
 
 	logfile, err := os.Create(logPath)

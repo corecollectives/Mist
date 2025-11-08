@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/corecollectives/mist/github"
+	"github.com/corecollectives/mist/queue"
 )
 
 type WebhookPayload struct {
@@ -46,7 +47,13 @@ func (h *Handler) GithubWebhook(w http.ResponseWriter, r *http.Request) {
 		}
 
 		fmt.Printf("Processing push event for repo: %s\n", evt.Repository.FullName)
-		github.HandlePushEvent(evt)
+		depId, err := github.HandlePushEvent(evt)
+		if err != nil {
+			http.Error(w, "Failed to handle push event: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		queue := queue.GetQueue()
+		queue.AddJob(depId)
 	}
 
 	w.WriteHeader(http.StatusOK)

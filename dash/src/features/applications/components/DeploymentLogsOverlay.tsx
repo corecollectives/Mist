@@ -67,9 +67,9 @@ export const DeploymentLogsOverlay = ({ deploymentId, open, onClose }: Props) =>
           bg-background/90
           backdrop-blur-xl
           shadow-2xl
+        gap-0
         "
       >
-        {/* ✅ Header */}
         <DialogHeader className="px-5 py-4 border-b bg-background/60 backdrop-blur flex flex-row justify-between items-center">
           <DialogTitle className="flex items-center gap-2 text-lg">
             <Terminal className="h-5 w-5 text-primary" />
@@ -93,23 +93,19 @@ export const DeploymentLogsOverlay = ({ deploymentId, open, onClose }: Props) =>
           </div>
         </DialogHeader>
 
-        {/* ✅ Terminal */}
         <div
           className="
-            bg-black
             text-white
             font-mono
-            p-4
             h-full
             overflow-auto
+          p-2
             whitespace-pre-wrap
-            leading-relaxed
             relative
           text-sm
-          leading-[1.5]
+          leading-normal
           "
         >
-          <div className="absolute top-0 left-0 right-0 h-10 bg-gradient-to-b from-black/70 to-transparent pointer-events-none" />
 
           {logs.length === 0 ? (
             <div className="text-center text-neutral-500 mt-12">

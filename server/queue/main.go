@@ -1,8 +1,8 @@
 package queue
 
-import "github.com/corecollectives/mist/api/handlers/dockerdeploy"
+import "database/sql"
 
-func InitQueue(d *dockerdeploy.Deployer) *Queue {
-	q := NewQueue(5, d)
+func InitQueue(db *sql.DB) *Queue {
+	q := NewQueue(5, db)
 	return q
 }

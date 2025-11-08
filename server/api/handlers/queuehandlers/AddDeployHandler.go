@@ -17,13 +17,13 @@ import (
 type QueueHelper struct {
 	DB           *sql.DB
 	LogDirectory string
-	Queue        *queue.Queue
 }
 
 func (q *QueueHelper) AddDeployHandler(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		AppId int `json:"appId"`
 	}
+	queue := queue.GetQueue()
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		handlers.SendResponse(w, http.StatusBadRequest, false, nil, "invalid request body", err.Error())
 		return
@@ -59,7 +59,7 @@ func (q *QueueHelper) AddDeployHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := q.Queue.AddJob(int64(id)); err != nil {
+	if err := queue.AddJob(int64(id)); err != nil {
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "failed to add job to queue", err.Error())
 		return
 	}

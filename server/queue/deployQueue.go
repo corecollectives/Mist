@@ -2,21 +2,21 @@ package queue
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"sync"
-
-	"github.com/corecollectives/mist/api/handlers/dockerdeploy"
 )
 
 type Queue struct {
-	jobs chan int64
-
+	jobs   chan int64
 	ctx    context.Context
 	cancel context.CancelFunc
 	wg     sync.WaitGroup
 }
 
-func NewQueue(buffer int, d *dockerdeploy.Deployer) *Queue {
+var queue *Queue
+
+func NewQueue(buffer int, db *sql.DB) *Queue {
 	ctx, cancel := context.WithCancel(context.Background())
 	q := &Queue{
 		jobs: make(chan int64, buffer),
@@ -24,19 +24,22 @@ func NewQueue(buffer int, d *dockerdeploy.Deployer) *Queue {
 		ctx:    ctx,
 		cancel: cancel,
 	}
-	q.StartWorker(d)
+	q.StartWorker(db)
+	queue = q
 	return q
 
 }
 
-func (q *Queue) StartWorker(d *dockerdeploy.Deployer) {
+func GetQueue() *Queue {
+	return queue
+}
+
+func (q *Queue) StartWorker(db *sql.DB) {
 	q.wg.Add(1)
 	go func() {
 		defer q.wg.Done()
 		for id := range q.jobs {
-
-			d.DeployerMain(id)
-
+			q.HandleWork(id, db)
 		}
 
 	}()

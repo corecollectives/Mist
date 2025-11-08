@@ -1,4 +1,4 @@
-package dockerdeploy
+package docker
 
 import (
 	"fmt"

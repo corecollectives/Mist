@@ -1,26 +1,28 @@
-package dockerdeploy
+package docker
 
 import (
+	"database/sql"
 	"fmt"
+	"os"
 
 	"github.com/corecollectives/mist/constants"
 	"github.com/corecollectives/mist/models"
 )
 
-func (d *Deployer) DeployerMain(Id int64) (string, error) {
-	dep, err := d.loadDeployment(Id)
+func DeployerMain(Id int64, db *sql.DB, logFile *os.File) (string, error) {
+	dep, err := LoadDeployment(Id, db)
 	if err != nil {
 		return "", err
 	}
 
 	var appId int64
-	err = d.DB.QueryRow("SELECT app_id FROM deployments WHERE id = ?", Id).Scan(&appId)
+	err = db.QueryRow("SELECT app_id FROM deployments WHERE id = ?", Id).Scan(&appId)
 	if err != nil {
 		return "", err
 	}
 
 	var app models.App
-	err = d.DB.QueryRow(`
+	err = db.QueryRow(`
 		SELECT 
 			id,
 			project_id,
@@ -60,13 +62,12 @@ func (d *Deployer) DeployerMain(Id int64) (string, error) {
 	imageTag := dep.CommitHash
 	containerName := fmt.Sprintf("app-%d", app.ID)
 
-	go func() {
-		err := d.DeployApp(dep, appContextPath, imageTag, containerName, app.ID, app.CreatedBy)
-		if err != nil {
-			dep.Status = "failed"
-			d.UpdateDeployment(dep)
-		}
-	}()
+	err = DeployApp(dep, appContextPath, imageTag, containerName, app.ID, app.CreatedBy, db, logFile)
+	if err != nil {
+		println("Deployment error:", err.Error())
+		dep.Status = "failed"
+		UpdateDeployment(dep, db)
+	}
 
 	return "Deployment started", nil
 }

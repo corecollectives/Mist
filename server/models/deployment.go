@@ -3,6 +3,8 @@ package models
 import (
 	"database/sql"
 	"time"
+
+	"github.com/corecollectives/mist/utils"
 )
 
 type Deployment struct {
@@ -43,4 +45,49 @@ func GetDeploymentsByAppID(appID int64) ([]Deployment, error) {
 	}
 
 	return deployments, nil
+}
+
+func (d *Deployment) CreateDeployment() error {
+	id := utils.GenerateRandomId()
+	query := `INSERT INTO deployments (id, app_id, commit_hash, commit_message,status)
+			  VALUES (?, ?, ?, ?, 'pending')`
+	result, err := db.Exec(query, id, d.AppID, d.CommitHash, d.CommitMessage)
+	if err != nil {
+		return err
+	}
+
+	id, err = result.LastInsertId()
+	if err != nil {
+		return err
+	}
+	d.ID = id
+	return nil
+}
+
+func GetDeploymentByID(depID int64) (*Deployment, error) {
+	query := `SELECT id, app_id, commit_hash, commit_message, triggered_by, logs, status, created_at, finished_at
+			  FROM deployments
+			  WHERE id = ?`
+
+	row := db.QueryRow(query, depID)
+	var d Deployment
+	if err := row.Scan(&d.ID, &d.AppID, &d.CommitHash, &d.CommitMessage, &d.TriggeredBy, &d.Logs, &d.Status, &d.CreatedAt, &d.FinishedAt); err != nil {
+		return nil, err
+	}
+
+	return &d, nil
+}
+
+func GetCommitHashByDeploymentID(depID int64) (string, error) {
+	query := `SELECT commit_hash
+			  FROM deployments
+			  WHERE id = ?`
+
+	var commitHash string
+	err := db.QueryRow(query, depID).Scan(&commitHash)
+	if err != nil {
+		return "", err
+	}
+
+	return commitHash, nil
 }

@@ -1,0 +1,28 @@
+package fs
+
+import (
+	"os"
+	"path/filepath"
+
+	"github.com/corecollectives/mist/constants"
+	"github.com/corecollectives/mist/models"
+)
+
+var logPath string = constants.Constants["LogPath"]
+
+func CreateDockerBuildLogFile(depID int64) (*os.File, string, error) {
+	commitHash, err := models.GetCommitHashByDeploymentID(depID)
+	if err != nil {
+		return nil, "", err
+	}
+
+	logFileName := commitHash + string(depID) + "_build_logs"
+	logPath := filepath.Join(logPath, logFileName)
+
+	logfile, err := os.Create(logPath)
+	if err != nil {
+		return nil, "", err
+	}
+	return logfile, logPath, nil
+
+}

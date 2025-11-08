@@ -200,3 +200,38 @@ func IsUserApplicationOwner(userId int64, appId int64) (bool, error) {
 	}
 	return createdBy == userId, nil
 }
+
+func FindApplicationIDByGitRepoAndBranch(gitRepo string, gitBranch string) (int64, error) {
+	var appId int64
+	err := db.QueryRow(`
+		SELECT id FROM apps WHERE git_repository = ? AND git_branch = ?
+	`, gitRepo, gitBranch).Scan(&appId)
+	if err != nil {
+		return 0, err
+	}
+	return appId, nil
+}
+
+func GetUserIDByAppID(appID int64) (*int64, error) {
+	query := `
+		SELECT created_by FROM apps WHERE id = ?
+	`
+	var userID int64
+	err := db.QueryRow(query, appID).Scan(&userID)
+	if err != nil {
+		return nil, err
+	}
+	return &userID, nil
+}
+
+func GetAppIDByDeploymentID(depID int64) (int64, error) {
+	query := `
+		SELECT app_id FROM deployments WHERE id = ?
+	`
+	var appID int64
+	err := db.QueryRow(query, depID).Scan(&appID)
+	if err != nil {
+		return 0, err
+	}
+	return appID, nil
+}

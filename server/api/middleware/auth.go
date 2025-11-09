@@ -77,7 +77,7 @@ type contextKey string
 
 const userContextKey = contextKey("user-data")
 
-func AuthMiddleware(h *handlers.Handler) func(http.Handler) http.Handler {
+func AuthMiddleware() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			cookie, err := r.Cookie("mist_token")
@@ -94,7 +94,7 @@ func AuthMiddleware(h *handlers.Handler) func(http.Handler) http.Handler {
 				return
 			}
 
-			user, err := h.GetUserFromId(claims.UserID)
+			user, err := models.GetUserByID(claims.UserID)
 			if err != nil {
 				handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to retrieve user", err.Error())
 				return

@@ -17,13 +17,6 @@ import (
 	"github.com/corecollectives/mist/models"
 )
 
-type LatestCommit struct {
-	SHA     string `json:"sha"`
-	Message string `json:"message"`
-	URL     string `json:"html_url"`
-	Author  string `json:"author"`
-}
-
 func GetLatestCommit(appID, userID int64) (*LatestCommit, error) {
 	repoName, branch, err := models.GetAppRepoAndBranch(appID)
 	if err != nil {

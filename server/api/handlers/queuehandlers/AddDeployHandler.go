@@ -15,8 +15,7 @@ import (
 )
 
 type QueueHelper struct {
-	DB           *sql.DB
-	LogDirectory string
+	DB *sql.DB
 }
 
 func (q *QueueHelper) AddDeployHandler(w http.ResponseWriter, r *http.Request) {

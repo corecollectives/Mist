@@ -7,14 +7,14 @@ import (
 
 type GithubApp struct {
 	ID            int64     `json:"id"`
-	AppID         int64     `json:"app_id"`
+	AppID         int64     `json:"appId"`
 	Name          *string   `json:"name"`
 	Slug          string    `json:"slug"`
-	ClientID      string    `json:"client_id"`
-	ClientSecret  string    `json:"client_secret"`
-	WebhookSecret string    `json:"webhook_secret"`
-	PrivateKey    string    `json:"private_key"`
-	CreatedAt     time.Time `json:"created_at"`
+	ClientID      string    `json:"clientId"`
+	ClientSecret  string    `json:"clientSecret"`
+	WebhookSecret string    `json:"webhookSecret"`
+	PrivateKey    string    `json:"privateKey"`
+	CreatedAt     time.Time `json:"createdAt"`
 }
 
 func (app *GithubApp) InsertInDB() error {
@@ -93,19 +93,41 @@ func (i *GithubInstallation) InsertOrReplace() error {
 	return err
 }
 
-func GetInstallationID(userID int) (string, error) {
-	var installationID string
+func GetInstallationID(userID int) (int64, error) {
+	var installationID int64
 	err := db.QueryRow(`
 		SELECT installation_id FROM github_installations
 		WHERE user_id = ?
 	`, userID).Scan(&installationID)
 	if err != nil {
-		return "", err
+		return 0, err
 	}
 	return installationID, nil
 }
 
-func GetInstallationToken(installationID string) (string, string, int, error) {
+func GetInstallationByUserID(userID int) (GithubInstallation, error) {
+	var inst GithubInstallation
+	err := db.QueryRow(`
+		SELECT installation_id, account_login, account_type, access_token, token_expires_at, user_id, created_at, updated_at
+		FROM github_installations
+		WHERE user_id = ?
+	`, userID).Scan(
+		&inst.InstallationID,
+		&inst.AccountLogin,
+		&inst.AccountType,
+		&inst.AccessToken,
+		&inst.TokenExpiresAt,
+		&inst.UserID,
+		&inst.CreatedAt,
+		&inst.UpdatedAt,
+	)
+	if err != nil {
+		return GithubInstallation{}, err
+	}
+	return inst, nil
+}
+
+func GetInstallationToken(installationID int64) (string, string, int, error) {
 	var (
 		token        string
 		tokenExpires string
@@ -123,11 +145,26 @@ func GetInstallationToken(installationID string) (string, string, int, error) {
 	return token, tokenExpires, appID, nil
 }
 
-func UpdateInstallationToken(installationID, token string, newExpiry time.Time) error {
+func UpdateInstallationToken(installationID int64, token string, newExpiry time.Time) error {
 	_, err := db.Exec(`
 		UPDATE github_installations
 		SET access_token = ?, token_expires_at = ?, updated_at = CURRENT_TIMESTAMP
 		WHERE installation_id = ?
 	`, token, newExpiry.Format(time.RFC3339), installationID)
 	return err
+}
+
+func GetGithubAppCredentials(appID int) (string, string, error) {
+	var appNumericId string
+	var appPrivateKeyPEM string
+
+	err := db.QueryRow(`
+		SELECT app_id, private_key FROM github_app WHERE id = 1
+	`).Scan(&appNumericId, &appPrivateKeyPEM)
+
+	if err != nil {
+		return "", "", err
+	}
+
+	return appNumericId, appPrivateKeyPEM, nil
 }

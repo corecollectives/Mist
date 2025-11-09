@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/corecollectives/mist/api/utils"
+	"github.com/corecollectives/mist/github"
 	"github.com/corecollectives/mist/models"
 )
 
@@ -25,7 +25,7 @@ type InstallationInfo struct {
 	} `json:"account"`
 }
 
-func (h *Handler) HandleInstallationEvent(w http.ResponseWriter, r *http.Request) {
+func HandleInstallationEvent(w http.ResponseWriter, r *http.Request) {
 	baseFrontendURL := GetFrontendBaseUrl()
 	installationId := r.URL.Query().Get("installation_id")
 	state := r.URL.Query().Get("state")
@@ -47,7 +47,7 @@ func (h *Handler) HandleInstallationEvent(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	appJWT, err := utils.GenerateGithubJwt(h.DB, stateData.AppId)
+	appJWT, err := github.GenerateGithubJwt(stateData.AppId)
 	if err != nil {
 		http.Redirect(w, r, fmt.Sprintf("%s/callback?error=failed_to_generate_jwt", baseFrontendURL), http.StatusSeeOther)
 		return

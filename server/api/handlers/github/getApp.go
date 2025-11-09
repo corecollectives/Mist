@@ -8,7 +8,7 @@ import (
 	"github.com/corecollectives/mist/models"
 )
 
-func (h *Handler) GetApp(w http.ResponseWriter, r *http.Request) {
+func GetApp(w http.ResponseWriter, r *http.Request) {
 	userInfo, ok := middleware.GetUser(r)
 	if !ok || userInfo == nil {
 		handlers.SendResponse(w, http.StatusUnauthorized, false, nil, "Unauthorized", "user not authenticated")

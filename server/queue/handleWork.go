@@ -15,7 +15,7 @@ func (q *Queue) HandleWork(id int64, db *sql.DB) {
 	if err != nil {
 		return
 	}
-	err = github.CloneRepo(db, appId, logFile)
+	err = github.CloneRepo(appId, logFile)
 	if err != nil {
 		return
 	}

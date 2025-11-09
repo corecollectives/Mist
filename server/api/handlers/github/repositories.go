@@ -9,7 +9,7 @@ import (
 
 	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/api/middleware"
-	"github.com/corecollectives/mist/api/utils"
+	"github.com/corecollectives/mist/github"
 	"github.com/corecollectives/mist/models"
 )
 
@@ -18,7 +18,7 @@ type RepoListResponse struct {
 	Repositories []any `json:"repositories"`
 }
 
-func (h *Handler) GetRepositories(w http.ResponseWriter, r *http.Request) {
+func GetRepositories(w http.ResponseWriter, r *http.Request) {
 	userData, ok := middleware.GetUser(r)
 	if !ok {
 		handlers.SendResponse(w, http.StatusUnauthorized, false, nil, "Not logged in", "Unauthorized")
@@ -43,7 +43,7 @@ func (h *Handler) GetRepositories(w http.ResponseWriter, r *http.Request) {
 
 	expiry, _ := time.Parse(time.RFC3339, tokenExpires)
 	if time.Now().After(expiry) {
-		appJWT, err := utils.GenerateGithubJwt(h.DB, appID)
+		appJWT, err := github.GenerateGithubJwt(appID)
 		if err != nil {
 			handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "failed to generate app jwt", err.Error())
 			return
@@ -55,7 +55,7 @@ func (h *Handler) GetRepositories(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		_ = models.UpdateInstallationToken(installationID, newToken, newExpiry)
+		_ = models.UpdateInstallationToken(int64(installationID), newToken, newExpiry)
 
 		token = newToken
 	}
@@ -99,8 +99,8 @@ func (h *Handler) GetRepositories(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(allRepos)
 }
 
-func regenerateInstallationToken(appJWT, installationID string) (string, time.Time, error) {
-	url := "https://api.github.com/app/installations/" + installationID + "/access_tokens"
+func regenerateInstallationToken(appJWT string, installationID int64) (string, time.Time, error) {
+	url := "https://api.github.com/app/installations/" + string(installationID) + "/access_tokens"
 
 	req, _ := http.NewRequest("POST", url, nil)
 	req.Header.Set("Authorization", "Bearer "+appJWT)

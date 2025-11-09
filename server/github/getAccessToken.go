@@ -2,18 +2,13 @@ package github
 
 import (
 	"bytes"
-	"crypto"
-	"crypto/rand"
-	"crypto/rsa"
-	"crypto/sha256"
-	"crypto/x509"
 	"database/sql"
-	"encoding/base64"
 	"encoding/json"
-	"encoding/pem"
 	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/corecollectives/mist/models"
 )
 
 // Structs for DB and GitHub API
@@ -29,35 +24,26 @@ type GithubInstallation struct {
 }
 
 // Function: GetGitHubAccessToken
-func GetGitHubAccessToken(db *sql.DB, userID int) (string, error) {
-	var app GithubApp
-	var inst GithubInstallation
+func GetGitHubAccessToken(userID int) (string, error) {
 
-	// 1️⃣ Fetch app credentials
-	err := db.QueryRow(`SELECT app_id, private_key FROM github_app LIMIT 1`).Scan(
-		&app.AppID,
-		&app.PrivateKey,
-	)
+	app, _, err := models.GetApp(userID)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch github app credentials: %w", err)
 	}
 
 	// 2️⃣ Fetch installation details for this user
-	err = db.QueryRow(`
-		SELECT installation_id, access_token, token_expires_at
-		FROM github_installations WHERE user_id = ?
-	`, userID).Scan(&inst.InstallationID, &inst.AccessToken, &inst.TokenExpiresAt)
+	inst, err := models.GetInstallationByUserID(userID)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch github installation: %w", err)
 	}
 
 	// 3️⃣ Check if existing token is valid
-	if inst.AccessToken.Valid && inst.TokenExpiresAt.Valid && time.Until(inst.TokenExpiresAt.Time) > 5*time.Minute {
-		return inst.AccessToken.String, nil
+	if time.Until(inst.TokenExpiresAt) > 5*time.Minute {
+		return inst.AccessToken, nil
 	}
 
 	// 4️⃣ Create JWT for GitHub App
-	jwt, err := createGitHubJWT(app.AppID, app.PrivateKey)
+	jwt, err := GenerateGithubJwt(int(app.AppID))
 	if err != nil {
 		return "", fmt.Errorf("failed to create JWT: %w", err)
 	}
@@ -90,40 +76,7 @@ func GetGitHubAccessToken(db *sql.DB, userID int) (string, error) {
 	}
 
 	// 6️⃣ Update DB with new token
-	_, _ = db.Exec(`
-		UPDATE github_installations
-		SET access_token = ?, token_expires_at = ?
-		WHERE user_id = ?
-	`, result.Token, result.ExpiresAt, userID)
+	err = models.UpdateInstallationToken(inst.InstallationID, result.Token, result.ExpiresAt)
 
 	return result.Token, nil
-}
-
-// Helper: Create JWT for GitHub App
-func createGitHubJWT(appID int, privateKeyPEM string) (string, error) {
-	block, _ := pem.Decode([]byte(privateKeyPEM))
-	if block == nil {
-		return "", fmt.Errorf("invalid private key PEM")
-	}
-
-	privKey, err := x509.ParsePKCS1PrivateKey(block.Bytes)
-	if err != nil {
-		return "", fmt.Errorf("parse key: %w", err)
-	}
-
-	header := base64.RawURLEncoding.EncodeToString([]byte(`{"alg":"RS256","typ":"JWT"}`))
-	now := time.Now().Unix()
-	payload := fmt.Sprintf(`{"iat":%d,"exp":%d,"iss":%d}`, now-60, now+540, appID)
-	payloadEnc := base64.RawURLEncoding.EncodeToString([]byte(payload))
-
-	toSign := header + "." + payloadEnc
-	hash := sha256.Sum256([]byte(toSign))
-
-	sig, err := rsa.SignPKCS1v15(rand.Reader, privKey, crypto.SHA256, hash[:])
-	if err != nil {
-		return "", err
-	}
-
-	sigEnc := base64.RawURLEncoding.EncodeToString(sig)
-	return toSign + "." + sigEnc, nil
 }

@@ -1,21 +1,15 @@
-package utils
+package github
 
 import (
-	"database/sql"
 	"encoding/pem"
 	"time"
 
+	"github.com/corecollectives/mist/models"
 	"github.com/golang-jwt/jwt"
 )
 
-func GenerateGithubJwt(db *sql.DB, appID int) (string, error) {
-	var appNumericId string
-	var appPrivateKeyPEM string
-
-	err := db.QueryRow(`
-		SELECT app_id, private_key FROM github_app WHERE id = 1
-	`).Scan(&appNumericId, &appPrivateKeyPEM)
-
+func GenerateGithubJwt(appID int) (string, error) {
+	appNumericId, appPrivateKeyPEM, err := models.GetGithubAppCredentials(appID)
 	if err != nil {
 		return "", err
 	}

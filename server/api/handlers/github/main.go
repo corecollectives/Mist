@@ -1,15 +1,10 @@
 package github
 
 import (
-	"database/sql"
 	"encoding/base64"
 	"encoding/json"
 	"os"
 )
-
-type Handler struct {
-	DB *sql.DB
-}
 
 type StateData struct {
 	AppId  int `json:"appId"`
@@ -32,4 +27,3 @@ func GenerateState(appId int, userId int) string {
 	encoded := base64.StdEncoding.EncodeToString(jsonBytes)
 	return encoded
 }
-

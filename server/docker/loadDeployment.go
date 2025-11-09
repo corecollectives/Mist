@@ -22,9 +22,6 @@ func LoadDeployment(depId int64, db *sql.DB) (*models.Deployment, error) {
 	if finishedAt.Valid {
 		dep.FinishedAt = &finishedAt.Time
 	}
-	if logs.Valid {
-		dep.Logs = logs
-	}
 	return dep, nil
 
 }

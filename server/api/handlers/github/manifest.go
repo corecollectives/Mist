@@ -32,7 +32,7 @@ type GithubAppConversion struct {
 	} `json:"owner"`
 }
 
-func (h *Handler) CallBackHandler(w http.ResponseWriter, r *http.Request) {
+func CallBackHandler(w http.ResponseWriter, r *http.Request) {
 	code := r.URL.Query().Get("code")
 	state := r.URL.Query().Get("state")
 	baseFrontendURL := GetFrontendBaseUrl()

@@ -28,7 +28,7 @@ type Manifest struct {
 	DefaultEvents      []string          `json:"default_events"`
 }
 
-func (h *Handler) CreateGithubApp(w http.ResponseWriter, r *http.Request) {
+func CreateGithubApp(w http.ResponseWriter, r *http.Request) {
 	appExists, err := models.CheckIfAppExists()
 	if err != nil {
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Database error", err.Error())

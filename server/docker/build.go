@@ -42,24 +42,36 @@ func ContainerExists(name string) bool {
 	output, err := cmd.CombinedOutput()
 
 	if err != nil {
-		// "No such object" → container does NOT exist
+
 		if strings.Contains(string(output), "No such object") {
 			return false
 		}
-		// Other errors — treat as non-existent
+
 		return false
 	}
 
 	return true
 }
 
-func RunContainer(imageTag, containerName string, args []string, logfile *os.File) error {
-	runArgs := []string{"run", "-d"}
-	runArgs = append(runArgs, args...)
-	runArgs = append(runArgs, "--name", containerName)
+func RunContainer(imageTag, containerName string, domain string, Port int, logfile *os.File) error {
+
+	runArgs := []string{
+		"run", "-d",
+
+		"--network", "traefik-net",
+
+		"-l", "traefik.enable=true",
+		"-l", fmt.Sprintf("traefik.http.routers.%s.rule=Host(`%s`)", containerName, domain),
+		"-l", fmt.Sprintf("traefik.http.routers.%s.entrypoints=web", containerName),
+		"-l", fmt.Sprintf("traefik.http.services.%s.loadbalancer.server.port=%d", containerName, Port),
+
+		"--name", containerName,
+	}
 	runArgs = append(runArgs, imageTag)
+
 	cmd := exec.Command("docker", runArgs...)
 	cmd.Stdout = logfile
 	cmd.Stderr = logfile
+
 	return cmd.Run()
 }

@@ -35,8 +35,15 @@ func DeployApp(dep *models.Deployment, appContextPath, imageTag, containerName s
 		UpdateDeployment(dep, db)
 		return err
 	}
-
-	if err := RunContainer(imageTag, containerName, []string{"-p", "6124:6124"}, logfile); err != nil {
+	port, domain, err := GetPortAndDomainFromDeployment(dep.ID, db)
+	if err != nil {
+		fmt.Println("Error: failed to get port from deployment:", err.Error())
+		dep.Status = "failed"
+		UpdateDeployment(dep, db)
+		return err
+	}
+	// fmt.Println("Port:", port, "Domain:", domain)
+	if err := RunContainer(imageTag, containerName, domain, port, logfile); err != nil {
 		dep.Status = "failed"
 		UpdateDeployment(dep, db)
 		return err
@@ -64,4 +71,29 @@ func UpdateDeployment(dep *models.Deployment, db *sql.DB) error {
 
 func GetLogsPath(commitHash string, depId int64) string {
 	return filepath.Join(constants.Constants["LogPath"], commitHash+strconv.FormatInt(depId, 10)+"_build_logs")
+}
+
+func GetPortAndDomainFromDeployment(deploymentID int64, db *sql.DB) (int, string, error) {
+	appID, err := models.GetAppIDByDeploymentID(deploymentID)
+	if err != nil {
+		return 0, "", err
+	}
+	var port int
+	var domain string
+	err = db.QueryRow(
+		"SELECT port FROM apps WHERE id = ?",
+		appID,
+	).Scan(&port)
+	if err != nil {
+		return 0, "", err
+	}
+	err = db.QueryRow(
+		"SELECT domain_name FROM domains WHERE id = ?",
+		appID,
+	).Scan(&domain)
+	if err != nil {
+		return 0, "", err
+	}
+
+	return port, domain, nil
 }

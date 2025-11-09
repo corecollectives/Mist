@@ -25,7 +25,7 @@ export function GitHubCard({ app, isInstalled, user, onCreateApp }: GitHubCardPr
             <div>
               <p className="font-medium text-foreground">{app.name}</p>
               <p className="text-sm text-muted-foreground mt-1">
-                App ID: {app.app_id}
+                App ID: {app.appId}
               </p>
             </div>
 
@@ -35,7 +35,7 @@ export function GitHubCard({ app, isInstalled, user, onCreateApp }: GitHubCardPr
                   if (user) {
                     const installUrl = getGitHubInstallUrl(
                       app.slug,
-                      app.app_id,
+                      app.appId,
                       parseInt(user.id.toString())
                     );
                     window.open(installUrl);
@@ -74,7 +74,7 @@ export function GitHubCard({ app, isInstalled, user, onCreateApp }: GitHubCardPr
 
       {app && (
         <CardFooter className="text-xs text-muted-foreground border-t border-border pt-2">
-          Created at: {new Date(app.created_at).toLocaleString()}
+          Created at: {new Date(app.createdAt).toLocaleString()}
         </CardFooter>
       )}
     </Card>

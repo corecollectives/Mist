@@ -47,7 +47,7 @@ func (h *Handler) GithubWebhook(w http.ResponseWriter, r *http.Request) {
 		}
 
 		fmt.Printf("Processing push event for repo: %s\n", evt.Repository.FullName)
-		depId, err := github.HandlePushEvent(evt)
+		depId, err := github.CreateDeploymentFromGithubPushEvent(evt)
 		if err != nil {
 			http.Error(w, "Failed to handle push event: "+err.Error(), http.StatusInternalServerError)
 			return

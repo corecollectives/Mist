@@ -22,6 +22,7 @@ export default function GitPage() {
         credentials: 'include'
       });
       const data = await response.json();
+      console.log("Fetched GitHub App:", data.data.app);
       if (data.success) {
         setApp(data.data.app);
         setIsInstalled(data.data.isInstalled);

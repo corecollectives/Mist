@@ -8,10 +8,10 @@ import (
 
 	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/api/middleware"
-	"github.com/corecollectives/mist/api/utils"
 	"github.com/corecollectives/mist/github"
 	"github.com/corecollectives/mist/models"
 	"github.com/corecollectives/mist/queue"
+	"github.com/corecollectives/mist/utils"
 )
 
 type QueueHelper struct {

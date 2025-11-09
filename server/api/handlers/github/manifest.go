@@ -7,6 +7,8 @@ import (
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/corecollectives/mist/models"
 )
 
 type GithubAppConversion struct {
@@ -79,11 +81,17 @@ func (h *Handler) CallBackHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = h.DB.Exec(`
-		INSERT INTO github_app 
-			(app_id, client_id, client_secret, webhook_secret, private_key, name, slug, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`, app.ID, app.ClientID, app.ClientSecret, app.WebhookSecret, app.PEM, app.Name, app.Slug, time.Now(), time.Now())
+	githubApp := models.GithubApp{
+		AppID:         int64(app.ID),
+		ClientID:      app.ClientID,
+		ClientSecret:  app.ClientSecret,
+		WebhookSecret: app.WebhookSecret,
+		PrivateKey:    app.PEM,
+		Name:          &app.Name,
+		Slug:          app.Slug,
+	}
+
+	err = githubApp.InsertInDB()
 	if err != nil {
 		http.Redirect(w, r, fmt.Sprintf("%s/callback?error=db_insert_failed", baseFrontendURL), http.StatusSeeOther)
 		return

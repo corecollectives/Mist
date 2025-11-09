@@ -11,7 +11,7 @@ import (
 	"github.com/corecollectives/mist/store"
 )
 
-func (h *Handler) MeHandler(w http.ResponseWriter, r *http.Request) {
+func MeHandler(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("mist_token")
 	setupRequired := store.IsSetupRequired()
 	if err != nil {

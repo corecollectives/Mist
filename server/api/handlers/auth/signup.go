@@ -13,7 +13,7 @@ import (
 	"github.com/corecollectives/mist/store"
 )
 
-func (h *Handler) SignUpHandler(w http.ResponseWriter, r *http.Request) {
+func SignUpHandler(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Username string `json:"username"`
 		Email    string `json:"email"`

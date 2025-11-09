@@ -24,7 +24,6 @@ import (
 
 func RegisterRoutes(mux *http.ServeMux, db *sql.DB) {
 	h := &handlers.Handler{DB: db}
-	auth := &auth.Handler{DB: db}
 	proj := &projects.Handler{DB: db}
 	users := &users.Handler{DB: db}
 	github := &github.Handler{DB: db}

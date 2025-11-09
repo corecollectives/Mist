@@ -33,11 +33,3 @@ func GenerateState(appId int, userId int) string {
 	return encoded
 }
 
-func CheckIfAppExists(db *sql.DB) (bool, error) {
-	var count int
-	err := db.QueryRow(`SELECT COUNT(*) FROM github_app`).Scan(&count)
-	if err != nil {
-		return false, err
-	}
-	return count > 0, nil
-}

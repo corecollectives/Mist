@@ -12,6 +12,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2 } from "lucide-react"
 import { useAuth } from "@/context/AuthContext"
 import { toast } from "sonner"
+import { authApi } from "@/api/endpoints/auth"
 
 export function SignupForm({
   className,
@@ -33,27 +34,20 @@ export function SignupForm({
   }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault(); setIsLoading(true); setError(null); try {
-      const response = await fetch('/api/auth/signup', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-        credentials: 'include'
-      });
-      const data = await response.json();
-      if (!data.success) {
-        toast.error(data.error || 'Setup failed');
-        setError(data.error || 'Setup failed');
-      } else {
-        setSetupRequired(false);
-        setUser({ ...data.data, isAdmin: data.data.role === "owner" || data.data.role === "admin" });
-        toast.success('Admin account created successfully!');
-      }
-
-    } catch (error) {
-      console.error('Setup error:', error);
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+    const res = await authApi.signup(
+      formData.email,
+      formData.password,
+      formData.username
+    )
+    if (res.success) {
+      setUser(res.data)
+      setSetupRequired(false)
+      toast.success("Account created successfully!")
+    } else {
+      setError(res.message || "An error occurred during signup.")
     }
     setIsLoading(false);
   };

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import type { User } from "../types";
 import { toast } from "sonner";
+import { authApi } from "@/api/endpoints/auth";
 type AuthContextType = {
   setupRequired: boolean | null;
   setSetupRequired: React.Dispatch<React.SetStateAction<boolean | null>>;
@@ -13,47 +14,37 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [setupRequired, setSetupRequired] = React.useState<boolean | null>(null);
   const [user, setUser] = useState<User | null>(null)
+
   const logout = async () => {
-    try {
-      const response = await fetch("/api/auth/logout", {
-        method: "POST",
-        credentials: "include"
-      });
-      const data = await response.json();
-      if (data.success) {
-        setUser(null);
-        toast.success("Logged out successfully");
-      } else {
-        console.error("Logout failed:", data.error);
-      }
+    const response = await authApi.logout();
+    if (response.success) {
+      setUser(null);
+      toast.success("Logged out successfully");
     }
-    catch (error) {
-      console.error("Error during logout:", error);
+    else {
+      toast.error(response.message || "An error occurred during logout.");
     }
+
   }
 
   useEffect(() => {
     const fetchAuth = async () => {
-      try {
-        const response = await fetch("/api/auth/me", {
-          method: "GET",
-          credentials: "include"
-        });
-        const data = await response.json();
-        if (data.success) {
-          if (data.data.setupRequired === true) {
-            setSetupRequired(true);
-          }
-          else {
-            setSetupRequired(false);
-            if (data.data.user) {
-              setUser({ ...data.data.user, isAdmin: data.data.user.role === "owner" || data.data.user.role === "admin" });
-            }
+      const response = await authApi.getMe();
+      if (response.success) {
+        if (response.data.setupRequired === true) {
+          setSetupRequired(true);
+        }
+        else {
+          setSetupRequired(false);
+          if (response.data.user) {
+            setUser({
+              ...response
+                .data.user, isAdmin: response.data.user.role === "owner" || response.data.user.role === "admin"
+            });
           }
         }
-      }
-      catch (error) {
-        console.error("Error fetching auth data:", error);
+      } else {
+        toast.error(response.message || "An error occurred while fetching authentication status.");
       }
     }
     fetchAuth();

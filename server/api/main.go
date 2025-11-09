@@ -31,6 +31,7 @@ func RegisterRoutes(mux *http.ServeMux, db *sql.DB) {
 	apps := &applications.Handler{DB: db}
 	d := &dockerdeploy.Deployer{DB: db}
 	q := queuehandlers.QueueHelper{DB: db}
+
 	mux.Handle("/api/ws/stats", middleware.AuthMiddleware(h)(http.HandlerFunc(websockets.StatWsHandler)))
 	mux.HandleFunc("GET /api/health", handlers.HealthCheckHandler)
 
@@ -74,6 +75,8 @@ func RegisterRoutes(mux *http.ServeMux, db *sql.DB) {
 func InitApiServer(db *sql.DB) {
 	mux := http.NewServeMux()
 	RegisterRoutes(mux, db)
+
+	// serve static frontend files in prod
 	staticDir := "static"
 	fs := http.FileServer(http.Dir(staticDir))
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -84,6 +87,7 @@ func InitApiServer(db *sql.DB) {
 		}
 		http.ServeFile(w, r, filepath.Join(staticDir, "index.html"))
 	})
+
 	go websockets.BroadcastMetrics()
 	handler := middleware.Logger(mux)
 	server := &http.Server{

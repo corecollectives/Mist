@@ -11,6 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2 } from "lucide-react"
 import { useAuth } from "@/context/AuthContext"
 import { toast } from "sonner"
+import { authApi } from "@/api/endpoints/auth"
 
 export function LoginForm({
   className,
@@ -30,32 +31,16 @@ export function LoginForm({
     event.preventDefault();
     setIsLoading(true);
     setError(null);
-
-    try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-        credentials: 'include'
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        setUser({ ...data.data, isAdmin: data.data.role === "owner" || data.data.role === "admin" });
-        toast.success('Logged in successfully');
-      } else {
-        setUser(null);
-        setError(data.error || 'Login failed');
-        toast.error(data.error || 'Login failed');
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong');
-    } finally {
-      setIsLoading(false);
+    const res = await authApi.login(formData.email, formData.password)
+    if (res.success) {
+      setUser(res.data)
+      toast.success("Logged in successfully!")
+    } else {
+      setError(res.message || "An error occurred during login.")
     }
+    setIsLoading(false);
   };
+
 
   return (
     <form onSubmit={handleSubmit} className={cn("flex flex-col gap-6", className)} {...props}>

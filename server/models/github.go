@@ -168,3 +168,23 @@ func GetGithubAppCredentials(appID int) (string, string, error) {
 
 	return appNumericId, appPrivateKeyPEM, nil
 }
+
+func GetInstallationIDByUserID(userID int64) (int64, error) {
+	var installationID int64
+	err := db.QueryRow(`SELECT installation_id FROM github_installations WHERE user_id = ?`, userID).
+		Scan(&installationID)
+	if err != nil {
+		return 0, err
+	}
+	return installationID, nil
+}
+
+func GetGithubAppIDAndPrivateKey() (int64, string, error) {
+	var appAppID int64
+	var privateKey string
+	err := db.QueryRow(`SELECT app_id, private_key FROM github_app LIMIT 1`).Scan(&appAppID, &privateKey)
+	if err != nil {
+		return 0, "", err
+	}
+	return appAppID, privateKey, nil
+}

@@ -45,7 +45,7 @@ func (h *Handler) GetLatestCommit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	commit, err := github.GetLatestCommit(h.DB, req.AppID, userInfo.ID)
+	commit, err := github.GetLatestCommit(req.AppID, userInfo.ID)
 	if err != nil {
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to get latest commit", err.Error())
 		return

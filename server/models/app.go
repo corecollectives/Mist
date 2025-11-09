@@ -250,3 +250,16 @@ func GetAppRepoInfo(appId int64) (string, string, int64, string, error) {
 
 	return repo, branch, projectId, name, nil
 }
+
+func GetAppRepoAndBranch(appID int64) (string, string, error) {
+	var repoName, branch string
+	err := db.QueryRow(`SELECT git_repository, COALESCE(git_branch, 'main') FROM apps WHERE id = ?`, appID).
+		Scan(&repoName, &branch)
+	if err != nil {
+		return "", "", err
+	}
+	if repoName == "" {
+		return "", "", err
+	}
+	return repoName, branch, nil
+}

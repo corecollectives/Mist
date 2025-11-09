@@ -14,7 +14,6 @@ import (
 	"github.com/corecollectives/mist/api/handlers/auth"
 	"github.com/corecollectives/mist/api/handlers/deployments"
 	"github.com/corecollectives/mist/api/handlers/github"
-	"github.com/corecollectives/mist/api/handlers/queuehandlers"
 
 	"github.com/corecollectives/mist/api/handlers/projects"
 	"github.com/corecollectives/mist/api/handlers/users"
@@ -27,7 +26,6 @@ func RegisterRoutes(mux *http.ServeMux, db *sql.DB) {
 	proj := &projects.Handler{DB: db}
 	users := &users.Handler{DB: db}
 	apps := &applications.Handler{DB: db}
-	q := queuehandlers.QueueHelper{DB: db}
 
 	mux.Handle("/api/ws/stats", middleware.AuthMiddleware(h)(http.HandlerFunc(websockets.StatWsHandler)))
 	mux.HandleFunc("GET /api/health", handlers.HealthCheckHandler)
@@ -64,7 +62,7 @@ func RegisterRoutes(mux *http.ServeMux, db *sql.DB) {
 	mux.HandleFunc("POST /api/github/webhook", github.GithubWebhook)
 
 	mux.HandleFunc("/api/ws/logs", deployments.LogsHandler)
-	mux.Handle("POST /api/deployments/create", middleware.AuthMiddleware(h)(http.HandlerFunc(q.AddDeployHandler)))
+	mux.Handle("POST /api/deployments/create", middleware.AuthMiddleware(h)(http.HandlerFunc(deployments.AddDeployHandler)))
 	mux.Handle("POST /api/deployments/getByAppId", middleware.AuthMiddleware(h)(http.HandlerFunc(deployments.GetByApplicationID)))
 
 }

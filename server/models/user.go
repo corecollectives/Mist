@@ -1,7 +1,6 @@
 package models
 
 import (
-	"database/sql"
 	"time"
 
 	"github.com/corecollectives/mist/utils"
@@ -9,14 +8,14 @@ import (
 )
 
 type User struct {
-	ID           int64          `json:"id"`
-	Username     string         `json:"username"`
-	Email        string         `json:"email"`
-	PasswordHash string         `json:"-"`
-	Role         string         `json:"role"`
-	AvatarURL    sql.NullString `json:"avatarUrl"`
-	CreatedAt    time.Time      `json:"createdAt"`
-	UpdatedAt    time.Time      `json:"updatedAt"`
+	ID           int64     `json:"id"`
+	Username     string    `json:"username"`
+	Email        string    `json:"email"`
+	PasswordHash string    `json:"-"`
+	Role         string    `json:"role"`
+	AvatarURL    *string   `json:"avatarUrl"`
+	CreatedAt    time.Time `json:"createdAt"`
+	UpdatedAt    time.Time `json:"updatedAt"`
 }
 
 func (u *User) Create() error {
@@ -125,4 +124,28 @@ func GetAllUsers() ([]User, error) {
 		users = append(users, user)
 	}
 	return users, nil
+}
+
+func GetUserRole(userID int64) (string, error) {
+	query := `
+		SELECT role
+		FROM users
+		WHERE id = $1
+	`
+	var role string
+	err := db.QueryRow(query, userID).Scan(&role)
+	if err != nil {
+		return "", err
+	}
+	return role, nil
+}
+
+func GetUserCount() (int, error) {
+	query := `SELECT COUNT(*) FROM users`
+	var count int
+	err := db.QueryRow(query).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
 }

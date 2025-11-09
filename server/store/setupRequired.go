@@ -1,11 +1,11 @@
 package store
 
 import (
-	"database/sql"
 	"sync"
+
+	"github.com/corecollectives/mist/models"
 )
 
-// var SetupRequired bool = true
 type SetupState struct {
 	setupRequired bool
 	mu            sync.RWMutex
@@ -13,9 +13,8 @@ type SetupState struct {
 
 var state = &SetupState{setupRequired: true}
 
-func InitSetupRequired(db *sql.DB) error {
-	var count int
-	err := db.QueryRow(`SELECT COUNT(*) FROM users`).Scan(&count)
+func InitSetupRequired() error {
+	count, err := models.GetUserCount()
 	if err != nil {
 		return err
 	}

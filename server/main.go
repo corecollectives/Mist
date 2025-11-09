@@ -19,12 +19,13 @@ func main() {
 		return
 	}
 	defer dbInstance.Close()
-	err = store.InitStore(dbInstance)
+	// make sure models get the db instance before initing the store, bcz store is dependent on models
+	models.SetDB(dbInstance)
+	err = store.InitStore()
 	if err != nil {
 		fmt.Println("Error initializing store:", err)
 		return
 	}
-	models.SetDB(dbInstance)
 
 	api.InitApiServer(dbInstance)
 }

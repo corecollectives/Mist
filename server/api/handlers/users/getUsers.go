@@ -7,7 +7,7 @@ import (
 	"github.com/corecollectives/mist/models"
 )
 
-func (h *Handler) GetUsers(w http.ResponseWriter, r *http.Request) {
+func GetUsers(w http.ResponseWriter, r *http.Request) {
 
 	users, err := models.GetAllUsers()
 	if err != nil {

@@ -23,7 +23,6 @@ import (
 
 func RegisterRoutes(mux *http.ServeMux, db *sql.DB) {
 	proj := &projects.Handler{DB: db}
-	users := &users.Handler{DB: db}
 	apps := &applications.Handler{DB: db}
 
 	mux.Handle("/api/ws/stats", middleware.AuthMiddleware()(http.HandlerFunc(websockets.StatWsHandler)))

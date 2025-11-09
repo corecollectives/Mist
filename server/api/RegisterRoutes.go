@@ -17,7 +17,6 @@ import (
 
 func RegisterRoutes(mux *http.ServeMux, db *sql.DB) {
 	proj := &projects.Handler{DB: db}
-	apps := &applications.Handler{DB: db}
 
 	mux.Handle("/api/ws/stats", middleware.AuthMiddleware()(http.HandlerFunc(websockets.StatWsHandler)))
 	mux.HandleFunc("GET /api/health", handlers.HealthCheckHandler)
@@ -39,11 +38,11 @@ func RegisterRoutes(mux *http.ServeMux, db *sql.DB) {
 	mux.Handle("DELETE /api/projects/delete", middleware.AuthMiddleware()(http.HandlerFunc(proj.DeleteProject)))
 	mux.Handle("POST /api/projects/addMember", middleware.AuthMiddleware()(http.HandlerFunc(proj.AddMember)))
 
-	mux.Handle("POST /api/apps/create", middleware.AuthMiddleware()(http.HandlerFunc(apps.CreateApplication)))
-	mux.Handle("POST /api/apps/getByProjectId", middleware.AuthMiddleware()(http.HandlerFunc(apps.GetApplicationByProjectID)))
-	mux.Handle("POST /api/apps/getById", middleware.AuthMiddleware()(http.HandlerFunc(apps.GetApplicationById)))
-	mux.Handle("PUT /api/apps/update", middleware.AuthMiddleware()(http.HandlerFunc(apps.UpdateApplication)))
-	mux.Handle("POST /api/apps/getLatestCommit", middleware.AuthMiddleware()(http.HandlerFunc(apps.GetLatestCommit)))
+	mux.Handle("POST /api/apps/create", middleware.AuthMiddleware()(http.HandlerFunc(applications.CreateApplication)))
+	mux.Handle("POST /api/apps/getByProjectId", middleware.AuthMiddleware()(http.HandlerFunc(applications.GetApplicationByProjectID)))
+	mux.Handle("POST /api/apps/getById", middleware.AuthMiddleware()(http.HandlerFunc(applications.GetApplicationById)))
+	mux.Handle("PUT /api/apps/update", middleware.AuthMiddleware()(http.HandlerFunc(applications.UpdateApplication)))
+	mux.Handle("POST /api/apps/getLatestCommit", middleware.AuthMiddleware()(http.HandlerFunc(applications.GetLatestCommit)))
 
 	mux.Handle("GET /api/github/app", middleware.AuthMiddleware()(http.HandlerFunc(github.GetApp)))
 	mux.Handle("GET /api/github/app/create", middleware.AuthMiddleware()(http.HandlerFunc(github.CreateGithubApp)))

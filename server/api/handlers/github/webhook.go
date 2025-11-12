@@ -19,7 +19,7 @@ type WebhookPayload struct {
 }
 
 func (h *Handler) GithubWebhook(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("✅ Received GitHub webhook")
+	fmt.Println(" Received GitHub webhook")
 
 	eventType := r.Header.Get("X-GitHub-Event")
 	if eventType == "" {

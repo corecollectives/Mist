@@ -1,7 +1,6 @@
 package applications
 
 import (
-	"database/sql"
 	"encoding/json"
 	"net/http"
 
@@ -49,7 +48,7 @@ func CreateApplication(w http.ResponseWriter, r *http.Request) {
 
 	app := models.App{
 		Name:        req.Name,
-		Description: sql.NullString{String: req.Description, Valid: req.Description != ""},
+		Description: &req.Description,
 		ProjectID:   req.ProjectID,
 		CreatedBy:   userInfo.ID,
 	}

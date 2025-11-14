@@ -2,6 +2,7 @@ package docker
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -78,7 +79,7 @@ func GetPortAndDomainFromDeployment(deploymentID int64, db *sql.DB) (int, string
 	if err != nil {
 		return 0, "", err
 	}
-	var port int
+	var port *int
 	var domain string
 	err = db.QueryRow(
 		"SELECT port FROM apps WHERE id = ?",
@@ -92,8 +93,11 @@ func GetPortAndDomainFromDeployment(deploymentID int64, db *sql.DB) (int, string
 		appID,
 	).Scan(&domain)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return 0, "", errors.New("port not configured")
+		}
 		return 0, "", err
 	}
 
-	return port, domain, nil
+	return *port, domain, nil
 }

@@ -18,8 +18,8 @@ type WebhookPayload struct {
 	Sender       *github.User        `json:"sender,omitempty"`
 }
 
-func GithubWebhook(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("✅ Received GitHub webhook")
+func (h *Handler) GithubWebhook(w http.ResponseWriter, r *http.Request) {
+	fmt.Println(" Received GitHub webhook")
 
 	eventType := r.Header.Get("X-GitHub-Event")
 	if eventType == "" {

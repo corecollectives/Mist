@@ -1,14 +1,13 @@
-package dockerdeploy
+package deployments
 
 import (
 	"context"
-	"database/sql"
-	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/docker"
+	"github.com/corecollectives/mist/models"
 
 	"github.com/corecollectives/mist/websockets"
 	"github.com/gorilla/websocket"
@@ -20,18 +19,14 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-type Deployer struct {
-	DB *sql.DB
-}
-
-func (d *Deployer) LogsHandler(w http.ResponseWriter, r *http.Request) {
+func LogsHandler(w http.ResponseWriter, r *http.Request) {
 	depIdstr := r.URL.Query().Get("id")
 	depId, err := strconv.ParseInt(depIdstr, 10, 64)
 	if err != nil {
 		handlers.SendResponse(w, http.StatusBadRequest, false, nil, "invalid deployment id", err.Error())
 		return
 	}
-	dep, err := docker.LoadDeployment(depId, d.DB)
+	dep, err := models.GetDeploymentByID(depId)
 	if err != nil {
 
 		handlers.SendResponse(w, http.StatusNotFound, false, nil, "deployment not found", err.Error())
@@ -47,7 +42,6 @@ func (d *Deployer) LogsHandler(w http.ResponseWriter, r *http.Request) {
 	defer conn.Close()
 
 	logPath := docker.GetLogsPath(dep.CommitHash, depId)
-	fmt.Println(logPath)
 	ctx, cancel := context.WithCancel(r.Context())
 	defer cancel()
 

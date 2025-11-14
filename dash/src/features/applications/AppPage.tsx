@@ -10,17 +10,6 @@ import { AppInfo } from "./Info";
 import { GitProviderTab } from "./components/Git";
 import { DeploymentsTab } from "./components/Deployments";
 
-interface GitHubRepo {
-  id: number;
-  name: string;
-  full_name: string;
-  private: boolean;
-  html_url: string;
-}
-
-interface GitHubBranch {
-  name: string;
-}
 
 export const AppPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -28,8 +17,6 @@ export const AppPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [latestCommit, setLatestCommit] = useState();
-  const [repositories, setRepositories] = useState<GitHubRepo[]>([]);
-  const [branches, setBranches] = useState<GitHubBranch[]>([]);
   const [selectedRepo, setSelectedRepo] = useState<string>("");
 
   console.log(selectedRepo)
@@ -64,29 +51,6 @@ export const AppPage = () => {
     }
   };
 
-  // Fetch repositories from GitHub
-  const fetchRepositories = async () => {
-    try {
-      const res = await fetch(`/api/github/repositories`, { credentials: "include" });
-      const data = await res.json();
-      setRepositories(data);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to fetch repositories");
-    }
-  };
-
-  // Fetch branches for selected repository
-  const fetchBranches = async (repoFullName: string) => {
-    if (!repoFullName) return;
-    try {
-      const res = await fetch(`/api/github/branches?repo=${repoFullName}`, { credentials: "include" });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error || "Failed to fetch branches");
-      setBranches(data.data);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to fetch branches");
-    }
-  };
 
   const fetchLatestCommit = async () => {
     try {
@@ -124,16 +88,15 @@ export const AppPage = () => {
   };
 
   const handleUpdateApp = async (appData: {
+
     name: string;
     description: string;
-    git_repository?: string;
-    git_branch?: string;
   }) => {
     try {
-      const response = await fetch(`/api/apps/update?id=${appId}`, {
+      const response = await fetch(`/api/apps/update`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(appData),
+        body: JSON.stringify({ appId: appId, ...appData }),
         credentials: "include",
       });
       const data = await response.json();
@@ -150,14 +113,10 @@ export const AppPage = () => {
   useEffect(() => {
     fetchLatestCommit()
     fetchAppDetails()
-    fetchRepositories();
   }, [params.appId]);
 
 
 
-  useEffect(() => {
-    if (selectedRepo) fetchBranches(selectedRepo);
-  }, [selectedRepo]);
 
   if (loading) return <FullScreenLoading />;
 
@@ -253,24 +212,6 @@ export const AppPage = () => {
         fields={[
           { label: "App Name", name: "name", type: "text", defaultValue: app.name },
           { label: "Description", name: "description", type: "textarea", defaultValue: app.description || "" },
-          {
-            label: "Git Repository",
-            name: "git_repository",
-            type: "select",
-            options: repositories.map((repo) => ({
-              label: repo.full_name,
-              value: repo.full_name,
-            })),
-            defaultValue: app.gitRepository || "",
-            // onChange: (value: string) => setSelectedRepo(valu),
-          },
-          {
-            label: "Branch",
-            name: "git_branch",
-            type: "select",
-            options: branches.map((b) => ({ label: b.name, value: b.name })),
-            defaultValue: app.gitBranch || "",
-          },
         ]}
         onSubmit={(data) => handleUpdateApp(data as any)}
       />

@@ -7,14 +7,14 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/corecollectives/mist/api/utils"
+	"github.com/corecollectives/mist/github"
+	"github.com/corecollectives/mist/models"
 )
 
 type InstallationTokenResponse struct {
 	Token     string    `json:"token"`
 	ExpiresAt time.Time `json:"expires_at"`
 }
-
 type InstallationInfo struct {
 	ID      int64 `json:"id"`
 	AppID   int64 `json:"app_id"`
@@ -25,7 +25,7 @@ type InstallationInfo struct {
 	} `json:"account"`
 }
 
-func (h *Handler) HandleInstallationEvent(w http.ResponseWriter, r *http.Request) {
+func HandleInstallationEvent(w http.ResponseWriter, r *http.Request) {
 	baseFrontendURL := GetFrontendBaseUrl()
 	installationId := r.URL.Query().Get("installation_id")
 	state := r.URL.Query().Get("state")
@@ -47,7 +47,7 @@ func (h *Handler) HandleInstallationEvent(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	appJWT, err := utils.GenerateGithubJwt(h.DB, stateData.AppId)
+	appJWT, err := github.GenerateGithubJwt(stateData.AppId)
 	if err != nil {
 		http.Redirect(w, r, fmt.Sprintf("%s/callback?error=failed_to_generate_jwt", baseFrontendURL), http.StatusSeeOther)
 		return
@@ -87,11 +87,16 @@ func (h *Handler) HandleInstallationEvent(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	_, err = h.DB.Exec(`
-		INSERT OR REPLACE INTO github_installations
-		(installation_id, account_login, account_type, access_token, token_expires_at, user_id, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-	`, installInfo.ID, installInfo.Account.Login, installInfo.Account.Type, token.Token, token.ExpiresAt, stateData.UserId)
+	installation := models.GithubInstallation{
+		InstallationID: installInfo.ID,
+		AccountLogin:   installInfo.Account.Login,
+		AccountType:    installInfo.Account.Type,
+		AccessToken:    token.Token,
+		TokenExpiresAt: token.ExpiresAt,
+		UserID:         stateData.UserId,
+	}
+
+	err = installation.InsertOrReplace()
 
 	if err != nil {
 		http.Redirect(w, r, fmt.Sprintf("%s/callback?error=failed_to_store_installation_info", baseFrontendURL), http.StatusSeeOther)

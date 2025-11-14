@@ -1,5 +1,7 @@
 package github
 
+import "database/sql"
+
 type PushEvent struct {
 	Ref          string      `json:"ref"`
 	Before       string      `json:"before"`
@@ -175,4 +177,22 @@ type Commit struct {
 type InstallMini struct {
 	ID     int64  `json:"id"`
 	NodeID string `json:"node_id"`
+}
+
+type GithubApp struct {
+	AppID      int
+	PrivateKey string
+}
+
+type GithubInstallation struct {
+	InstallationID int
+	AccessToken    sql.NullString
+	TokenExpiresAt sql.NullTime
+}
+
+type LatestCommit struct {
+	SHA     string `json:"sha"`
+	Message string `json:"message"`
+	URL     string `json:"html_url"`
+	Author  string `json:"author"`
 }

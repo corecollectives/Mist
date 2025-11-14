@@ -8,7 +8,7 @@ import (
 	"github.com/corecollectives/mist/models"
 )
 
-func HandlePushEvent(evt PushEvent) (int64, error) {
+func CreateDeploymentFromGithubPushEvent(evt PushEvent) (int64, error) {
 	repoName := evt.Repository.FullName
 	branch := evt.Ref
 	commit := evt.After

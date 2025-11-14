@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/corecollectives/mist/fs"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -17,8 +18,9 @@ func InitDB() (*sql.DB, error) {
 		dbPath = "/var/lib/mist/mist.db"
 	}
 	dbDir := filepath.Dir(dbPath)
-	if err := os.MkdirAll(dbDir, os.ModePerm); err != nil {
-		return nil, fmt.Errorf("failed to create db directory: %v", err)
+	err := fs.CreateDirIfNotExists(dbDir, os.ModePerm)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create database directory: %v", err)
 	}
 	db, err := sql.Open("sqlite3", dbPath)
 	if err != nil {

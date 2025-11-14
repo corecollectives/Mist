@@ -10,12 +10,12 @@ import (
 
 	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/api/middleware"
+	"github.com/corecollectives/mist/models"
 )
 
 type HookAttributes struct {
 	URL string `json:"url"`
 }
-
 type Manifest struct {
 	Name               string            `json:"name"`
 	URL                string            `json:"url"`
@@ -28,34 +28,8 @@ type Manifest struct {
 	DefaultEvents      []string          `json:"default_events"`
 }
 
-func getLocalIP() (string, error) {
-	ifaces, err := net.Interfaces()
-	if err != nil {
-		return "", err
-	}
-	for _, iface := range ifaces {
-		if iface.Flags&net.FlagUp == 0 || iface.Flags&net.FlagLoopback != 0 {
-			continue
-		}
-		addrs, _ := iface.Addrs()
-		for _, addr := range addrs {
-			var ip net.IP
-			switch v := addr.(type) {
-			case *net.IPNet:
-				ip = v.IP
-			case *net.IPAddr:
-				ip = v.IP
-			}
-			if ip != nil && !ip.IsLoopback() && ip.To4() != nil {
-				return ip.String(), nil
-			}
-		}
-	}
-	return "", fmt.Errorf("no active network interface found")
-}
-
-func (h *Handler) CreateGithubApp(w http.ResponseWriter, r *http.Request) {
-	appExists, err := CheckIfAppExists(h.DB)
+func CreateGithubApp(w http.ResponseWriter, r *http.Request) {
+	appExists, err := models.CheckIfAppExists()
 	if err != nil {
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Database error", err.Error())
 		return
@@ -121,4 +95,30 @@ func (h *Handler) CreateGithubApp(w http.ResponseWriter, r *http.Request) {
 		</form>
 		<script>document.getElementById('manifestForm').submit();</script>
 	`, githubManifestURL, manifestJSON)
+}
+
+func getLocalIP() (string, error) {
+	ifaces, err := net.Interfaces()
+	if err != nil {
+		return "", err
+	}
+	for _, iface := range ifaces {
+		if iface.Flags&net.FlagUp == 0 || iface.Flags&net.FlagLoopback != 0 {
+			continue
+		}
+		addrs, _ := iface.Addrs()
+		for _, addr := range addrs {
+			var ip net.IP
+			switch v := addr.(type) {
+			case *net.IPNet:
+				ip = v.IP
+			case *net.IPAddr:
+				ip = v.IP
+			}
+			if ip != nil && !ip.IsLoopback() && ip.To4() != nil {
+				return ip.String(), nil
+			}
+		}
+	}
+	return "", fmt.Errorf("no active network interface found")
 }

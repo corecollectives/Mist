@@ -12,7 +12,7 @@ import (
 	"github.com/corecollectives/mist/models"
 )
 
-func (h *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
+func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	var cred struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`

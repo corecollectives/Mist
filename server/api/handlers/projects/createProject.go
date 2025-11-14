@@ -10,7 +10,7 @@ import (
 	"github.com/corecollectives/mist/models"
 )
 
-func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
+func CreateProject(w http.ResponseWriter, r *http.Request) {
 	userData, ok := middleware.GetUser(r)
 	if !ok {
 		handlers.SendResponse(w, http.StatusUnauthorized, false, nil, "Not logged in", "Unauthorized")

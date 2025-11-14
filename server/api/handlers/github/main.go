@@ -1,15 +1,10 @@
 package github
 
 import (
-	"database/sql"
 	"encoding/base64"
 	"encoding/json"
 	"os"
 )
-
-type Handler struct {
-	DB *sql.DB
-}
 
 type StateData struct {
 	AppId  int `json:"appId"`
@@ -31,13 +26,4 @@ func GenerateState(appId int, userId int) string {
 	jsonBytes, _ := json.Marshal(payload)
 	encoded := base64.StdEncoding.EncodeToString(jsonBytes)
 	return encoded
-}
-
-func CheckIfAppExists(db *sql.DB) (bool, error) {
-	var count int
-	err := db.QueryRow(`SELECT COUNT(*) FROM github_app`).Scan(&count)
-	if err != nil {
-		return false, err
-	}
-	return count > 0, nil
 }

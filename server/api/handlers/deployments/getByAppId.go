@@ -1,4 +1,4 @@
-package dockerdeploy
+package deployments
 
 import (
 	"encoding/json"
@@ -9,7 +9,7 @@ import (
 	"github.com/corecollectives/mist/models"
 )
 
-func (d *Deployer) GetByApplicationID(w http.ResponseWriter, r *http.Request) {
+func GetByApplicationID(w http.ResponseWriter, r *http.Request) {
 	_, ok := middleware.GetUser(r)
 	if !ok {
 		handlers.SendResponse(w, http.StatusUnauthorized, false, nil, "Not logged in", "Unauthorized")

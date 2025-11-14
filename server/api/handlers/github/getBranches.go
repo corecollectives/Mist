@@ -9,7 +9,7 @@ import (
 	"github.com/corecollectives/mist/github"
 )
 
-func (h *Handler) GetBranches(w http.ResponseWriter, r *http.Request) {
+func GetBranches(w http.ResponseWriter, r *http.Request) {
 	userInfo, ok := middleware.GetUser(r)
 	if !ok {
 		handlers.SendResponse(w, http.StatusUnauthorized, false, nil, "Not logged in", "Unauthorized")
@@ -30,7 +30,7 @@ func (h *Handler) GetBranches(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := github.GetGitHubAccessToken(h.DB, int(userInfo.ID))
+	token, err := github.GetGitHubAccessToken(int(userInfo.ID))
 	if err != nil {
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to get GitHub access token", err.Error())
 		return

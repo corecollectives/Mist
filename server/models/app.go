@@ -235,3 +235,31 @@ func GetAppIDByDeploymentID(depID int64) (int64, error) {
 	}
 	return appID, nil
 }
+
+func GetAppRepoInfo(appId int64) (string, string, int64, string, error) {
+	var repo, branch, name string
+	var projectId int64
+
+	err := db.QueryRow(`
+		SELECT git_repository, git_branch, project_id, name
+		FROM apps WHERE id = ?
+	`, appId).Scan(&repo, &branch, &projectId, &name)
+	if err != nil {
+		return "", "", 0, "", err
+	}
+
+	return repo, branch, projectId, name, nil
+}
+
+func GetAppRepoAndBranch(appID int64) (string, string, error) {
+	var repoName, branch string
+	err := db.QueryRow(`SELECT git_repository, COALESCE(git_branch, 'main') FROM apps WHERE id = ?`, appID).
+		Scan(&repoName, &branch)
+	if err != nil {
+		return "", "", err
+	}
+	if repoName == "" {
+		return "", "", err
+	}
+	return repoName, branch, nil
+}

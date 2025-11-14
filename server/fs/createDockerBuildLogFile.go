@@ -17,11 +17,11 @@ func CreateDockerBuildLogFile(depID int64) (*os.File, string, error) {
 	if err != nil {
 		return nil, "", err
 	}
-	err = os.MkdirAll(logPath, os.ModePerm)
+	err = CreateDirIfNotExists(logPath, os.ModePerm)
 	if err != nil {
-		fmt.Println("Error creating log directory:", err.Error())
 		return nil, "", err
 	}
+
 	logFileName := commitHash + strconv.FormatInt(depID, 10) + "_build_logs"
 	logPath := filepath.Join(logPath, logFileName)
 

@@ -9,7 +9,8 @@ import (
 
 	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/api/middleware"
-	"github.com/corecollectives/mist/api/utils"
+	"github.com/corecollectives/mist/github"
+	"github.com/corecollectives/mist/models"
 )
 
 type RepoListResponse struct {
@@ -17,18 +18,14 @@ type RepoListResponse struct {
 	Repositories []any `json:"repositories"`
 }
 
-func (h *Handler) GetRepositories(w http.ResponseWriter, r *http.Request) {
+func GetRepositories(w http.ResponseWriter, r *http.Request) {
 	userData, ok := middleware.GetUser(r)
 	if !ok {
 		handlers.SendResponse(w, http.StatusUnauthorized, false, nil, "Not logged in", "Unauthorized")
 		return
 	}
 
-	var installationID string
-	err := h.DB.QueryRow(`
-		SELECT installation_id FROM github_installations
-		WHERE user_id = ?
-	`, userData.ID).Scan(&installationID)
+	installationID, err := models.GetInstallationID(int(userData.ID))
 	if err == sql.ErrNoRows {
 		handlers.SendResponse(w, http.StatusNotFound, false, nil, "no installation found for user", "No installation found")
 		return
@@ -38,17 +35,7 @@ func (h *Handler) GetRepositories(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var (
-		token        string
-		tokenExpires string
-		appID        int
-	)
-	err = h.DB.QueryRow(`
-		SELECT i.access_token, i.token_expires_at, a.app_id
-		FROM github_installations i
-		JOIN github_app a ON a.id = 1
-		WHERE i.installation_id = ?
-	`, installationID).Scan(&token, &tokenExpires, &appID)
+	token, tokenExpires, appID, err := models.GetInstallationToken(installationID)
 	if err != nil {
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "failed to fetch installation info", err.Error())
 		return
@@ -56,7 +43,7 @@ func (h *Handler) GetRepositories(w http.ResponseWriter, r *http.Request) {
 
 	expiry, _ := time.Parse(time.RFC3339, tokenExpires)
 	if time.Now().After(expiry) {
-		appJWT, err := utils.GenerateGithubJwt(h.DB, appID)
+		appJWT, err := github.GenerateGithubJwt(appID)
 		if err != nil {
 			handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "failed to generate app jwt", err.Error())
 			return
@@ -68,11 +55,7 @@ func (h *Handler) GetRepositories(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		_, _ = h.DB.Exec(`
-			UPDATE github_installations
-			SET access_token = ?, token_expires_at = ?, updated_at = CURRENT_TIMESTAMP
-			WHERE installation_id = ?
-		`, newToken, newExpiry.Format(time.RFC3339), installationID)
+		_ = models.UpdateInstallationToken(int64(installationID), newToken, newExpiry)
 
 		token = newToken
 	}
@@ -116,8 +99,8 @@ func (h *Handler) GetRepositories(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(allRepos)
 }
 
-func regenerateInstallationToken(appJWT, installationID string) (string, time.Time, error) {
-	url := "https://api.github.com/app/installations/" + installationID + "/access_tokens"
+func regenerateInstallationToken(appJWT string, installationID int64) (string, time.Time, error) {
+	url := "https://api.github.com/app/installations/" + string(installationID) + "/access_tokens"
 
 	req, _ := http.NewRequest("POST", url, nil)
 	req.Header.Set("Authorization", "Bearer "+appJWT)

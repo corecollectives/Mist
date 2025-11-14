@@ -1,7 +1,6 @@
 package github
 
 import (
-	"database/sql"
 	"fmt"
 	"os"
 	"os/exec"
@@ -10,16 +9,10 @@ import (
 	"github.com/corecollectives/mist/models"
 )
 
-func CloneRepo(db *sql.DB, appId int64, logFile *os.File) error {
+func CloneRepo(appId int64, logFile *os.File) error {
 	println("Cloning repository for app ID:", appId)
-	var repo, branch string
-	var projectId int64
-	var name string
 
-	err := db.QueryRow(`
-		SELECT git_repository, git_branch, project_id, name
-		FROM apps WHERE id = ?
-	`, appId).Scan(&repo, &branch, &projectId, &name)
+	repo, branch, projectId, name, err := models.GetAppRepoInfo(appId)
 	if err != nil {
 		return fmt.Errorf("failed to fetch app: %w", err)
 	}
@@ -28,7 +21,7 @@ func CloneRepo(db *sql.DB, appId int64, logFile *os.File) error {
 	if err != nil {
 		return fmt.Errorf("failed to get user id by app id: %w", err)
 	}
-	accessToken, err := GetGitHubAccessToken(db, int(*userId))
+	accessToken, err := GetGitHubAccessToken(int(*userId))
 	if err != nil {
 		return fmt.Errorf("failed to get github access token: %w", err)
 	}

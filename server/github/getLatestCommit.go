@@ -7,43 +7,28 @@ import (
 	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/x509"
-	"database/sql"
 	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/corecollectives/mist/models"
 )
 
-type LatestCommit struct {
-	SHA     string `json:"sha"`
-	Message string `json:"message"`
-	URL     string `json:"html_url"`
-	Author  string `json:"author"`
-}
-
-func GetLatestCommit(db *sql.DB, appID, userID int64) (*LatestCommit, error) {
-	var repoName, branch string
-	err := db.QueryRow(`SELECT git_repository, COALESCE(git_branch, 'main') FROM apps WHERE id = ?`, appID).
-		Scan(&repoName, &branch)
+func GetLatestCommit(appID, userID int64) (*LatestCommit, error) {
+	repoName, branch, err := models.GetAppRepoAndBranch(appID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch app repo: %w", err)
 	}
-	if repoName == "" {
-		return nil, fmt.Errorf("app has no linked GitHub repository")
-	}
 
-	var installationID int64
-	err = db.QueryRow(`SELECT installation_id FROM github_installations WHERE user_id = ?`, userID).
-		Scan(&installationID)
+	installationID, err := models.GetInstallationIDByUserID(userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch installation: %w", err)
 	}
 
-	var appAppID int64
-	var privateKey string
-	err = db.QueryRow(`SELECT app_id, private_key FROM github_app LIMIT 1`).Scan(&appAppID, &privateKey)
+	appAppID, privateKey, err := models.GetGithubAppIDAndPrivateKey()
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch GitHub App credentials: %w", err)
 	}

@@ -3,13 +3,14 @@ package users
 import (
 	"database/sql"
 	"net/http"
+	"strconv"
 
 	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/api/middleware"
 	"github.com/corecollectives/mist/models"
 )
 
-func (h *Handler) GetUserById(w http.ResponseWriter, r *http.Request) {
+func GetUserById(w http.ResponseWriter, r *http.Request) {
 	_, ok := middleware.GetUser(r)
 	if !ok {
 		handlers.SendResponse(w, http.StatusUnauthorized, false, nil, "Not logged in", "Unauthorized")
@@ -22,20 +23,12 @@ func (h *Handler) GetUserById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var user models.User
-	err := h.DB.QueryRow(`
-        SELECT id, username, email, role, created_at, updated_at
-        FROM users
-        WHERE id = ?`, userIDParam,
-	).Scan(
-		&user.ID,
-		&user.Username,
-		&user.Email,
-		&user.Role,
-		&user.CreatedAt,
-		&user.UpdatedAt,
-	)
-
+	userID, err := strconv.ParseInt(userIDParam, 10, 64)
+	if err != nil {
+		handlers.SendResponse(w, http.StatusBadRequest, false, nil, "Invalid user ID", "User ID must be an integer")
+		return
+	}
+	user, err := models.GetUserByID(userID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			handlers.SendResponse(w, http.StatusNotFound, false, nil, "User not found", "No user exists with the given ID")

@@ -2,10 +2,10 @@
 export interface GitHubApp {
   id: number;
   name: string;
-  app_id: number;
-  client_id: string;
+  appId: number;
+  clientId: string;
   slug: string;
-  created_at: string;
+  createdAt: string;
 }
 
 export interface Repository {

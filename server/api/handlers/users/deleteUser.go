@@ -7,10 +7,11 @@ import (
 
 	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/api/middleware"
+	"github.com/corecollectives/mist/models"
 	"github.com/corecollectives/mist/store"
 )
 
-func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
+func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	userData, ok := middleware.GetUser(r)
 	if !ok {
 		handlers.SendResponse(w, http.StatusUnauthorized, false, nil, "Not logged in", "Unauthorized")
@@ -27,17 +28,21 @@ func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if userIDParam == strconv.FormatInt(userData.ID, 10) {
-		_, err := h.DB.Exec(`DELETE FROM users WHERE id = ?`, userIDParam)
+		err := models.DeleteUserByID(userData.ID)
 		if err != nil {
 			handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to delete user", err.Error())
 			return
 		}
 		http.Redirect(w, r, "/api/auth/logout", http.StatusSeeOther)
-		store.InitSetupRequired(h.DB)
+		store.InitSetupRequired()
 		return
 	}
-	userToDeleteRole := ""
-	err := h.DB.QueryRow(`SELECT role FROM users WHERE id = ?`, userIDParam).Scan(&userToDeleteRole)
+	id, err := strconv.Atoi(userIDParam)
+	if err != nil {
+		handlers.SendResponse(w, http.StatusBadRequest, false, nil, "Invalid user ID", "User ID must be an integer")
+		return
+	}
+	userToDeleteRole, err := models.GetUserRole(int64(id))
 	if err == sql.ErrNoRows {
 		handlers.SendResponse(w, http.StatusNotFound, false, nil, "User not found", "No such user")
 		return
@@ -55,12 +60,12 @@ func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = h.DB.Exec(`DELETE FROM users WHERE id = ?`, userIDParam)
+	err = models.DeleteUserByID(int64(id))
 	if err != nil {
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to delete user", err.Error())
 		return
 	}
-	store.InitSetupRequired(h.DB)
+	store.InitSetupRequired()
 	handlers.SendResponse(w, http.StatusOK, true, nil, "User deleted successfully", "")
 
 }

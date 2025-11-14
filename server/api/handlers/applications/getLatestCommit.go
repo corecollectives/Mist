@@ -10,7 +10,7 @@ import (
 	"github.com/corecollectives/mist/models"
 )
 
-func (h *Handler) GetLatestCommit(w http.ResponseWriter, r *http.Request) {
+func GetLatestCommit(w http.ResponseWriter, r *http.Request) {
 	userInfo, ok := middleware.GetUser(r)
 	if !ok {
 		handlers.SendResponse(w, http.StatusUnauthorized, false, nil, "Not logged in", "Unauthorized")
@@ -45,7 +45,7 @@ func (h *Handler) GetLatestCommit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	commit, err := github.GetLatestCommit(h.DB, req.AppID, userInfo.ID)
+	commit, err := github.GetLatestCommit(req.AppID, userInfo.ID)
 	if err != nil {
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to get latest commit", err.Error())
 		return

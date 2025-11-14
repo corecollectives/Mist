@@ -11,7 +11,7 @@ import (
 	"github.com/corecollectives/mist/models"
 )
 
-func UpdateProject(w http.ResponseWriter, r *http.Request) {
+func UpdateMembers(w http.ResponseWriter, r *http.Request) {
 	userData, ok := middleware.GetUser(r)
 	if !ok {
 		handlers.SendResponse(w, http.StatusUnauthorized, false, nil, "Not logged in", "Unauthorized")
@@ -30,20 +30,14 @@ func UpdateProject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var input struct {
-		Name        string   `json:"name"`
-		Description string   `json:"description"`
-		Tags        []string `json:"tags"`
+		UserIDs []int64 `json:"userIds"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		handlers.SendResponse(w, http.StatusBadRequest, false, nil, "Invalid request body", err.Error())
 		return
 	}
-	if input.Name == "" {
-		handlers.SendResponse(w, http.StatusBadRequest, false, nil, "Project name is required", "name field is empty")
-		return
-	}
 
-	existingProject, err := models.GetProjectByID(projectId)
+	project, err := models.GetProjectByID(projectId)
 	if err == sql.ErrNoRows {
 		handlers.SendResponse(w, http.StatusNotFound, false, nil, "Project not found", "no such project")
 		return
@@ -52,29 +46,14 @@ func UpdateProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if existingProject.OwnerID != userData.ID {
-		handlers.SendResponse(w, http.StatusForbidden, false, nil, "Not authorized", "Forbidden")
+	if project.OwnerID != userData.ID {
+		handlers.SendResponse(w, http.StatusForbidden, false, nil, "Not authorized", "Only the project owner can update members")
 		return
 	}
 
-	tags := make([]sql.NullString, len(input.Tags))
-	for i, tag := range input.Tags {
-		tags[i] = sql.NullString{
-			String: tag,
-			Valid:  true,
-		}
-	}
-
-	project := &models.Project{
-		ID:          projectId,
-		Name:        input.Name,
-		Description: sql.NullString{String: input.Description, Valid: input.Description != ""},
-		Tags:        tags,
-	}
-
-	err = models.UpdateProject(project)
+	err = models.UpdateProjectMembers(projectId, input.UserIDs)
 	if err != nil {
-		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to update project", err.Error())
+		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to update project members", err.Error())
 		return
 	}
 
@@ -84,5 +63,5 @@ func UpdateProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	handlers.SendResponse(w, http.StatusOK, true, updatedProject.ToJSON(), "Project updated successfully", "")
+	handlers.SendResponse(w, http.StatusOK, true, updatedProject.ToJSON(), "Project members updated successfully", "")
 }

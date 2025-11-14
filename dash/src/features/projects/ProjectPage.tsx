@@ -178,7 +178,6 @@ export const ProjectPage = () => {
 
       {/* Apps Section */}
       <main className="flex-1 overflow-y-auto py-6">
-        <h2 className="text-lg font-semibold mb-4">Applications</h2>
 
         {fetchingApps ? (
           <div className="text-muted-foreground text-center py-10">Loading apps...</div>

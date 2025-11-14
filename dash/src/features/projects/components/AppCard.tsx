@@ -2,8 +2,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { MoreVertical, GitBranch, Github, Server, Globe } from "lucide-react";
+import { MoreVertical, GitBranch, Github, Clock, ExternalLink } from "lucide-react";
 import type { App } from "@/types/app";
 
 interface AppCardProps {
@@ -15,6 +14,23 @@ interface AppCardProps {
   canDelete?: boolean;
 }
 
+const getStatusColor = (status: string) => {
+  switch (status.toLowerCase()) {
+    case "running":
+      return "bg-green-500/10 text-green-600 border-green-500/20 dark:text-green-400";
+    case "error":
+    case "failed":
+      return "bg-red-500/10 text-red-600 border-red-500/20 dark:text-red-400";
+    case "deploying":
+    case "building":
+      return "bg-blue-500/10 text-blue-600 border-blue-500/20 dark:text-blue-400";
+    case "stopped":
+      return "bg-gray-500/10 text-gray-600 border-gray-500/20 dark:text-gray-400";
+    default:
+      return "bg-gray-500/10 text-gray-600 border-gray-500/20 dark:text-gray-400";
+  }
+};
+
 export const AppCard: React.FC<AppCardProps> = ({
   app,
   onClick,
@@ -25,13 +41,18 @@ export const AppCard: React.FC<AppCardProps> = ({
 }) => {
   return (
     <Card
-      className="relative transition-colors hover:border-primary cursor-pointer group"
+      className="relative transition-all duration-200 hover:shadow-lg hover:border-foreground/20 cursor-pointer group overflow-hidden border-border/50"
       onClick={onClick}
     >
-      <CardHeader className="flex flex-row items-start justify-between space-y-0">
-        <div className="min-w-0 flex-1">
-          <CardTitle className="truncate">{app.name}</CardTitle>
-          <CardDescription className="truncate">
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+      <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-4">
+        <div className="min-w-0 flex-1 space-y-1">
+          <div className="flex items-center gap-2">
+            <CardTitle className="truncate text-lg font-semibold">{app.name}</CardTitle>
+            <ExternalLink className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+          </div>
+          <CardDescription className="truncate text-sm">
             {app.description || "No description provided"}
           </CardDescription>
         </div>
@@ -42,7 +63,7 @@ export const AppCard: React.FC<AppCardProps> = ({
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity relative z-10"
                 onClick={(e) => e.stopPropagation()}
               >
                 <MoreVertical className="w-4 h-4" />
@@ -75,66 +96,74 @@ export const AppCard: React.FC<AppCardProps> = ({
         )}
       </CardHeader>
 
-      <CardContent>
-        {/* Tags or metadata */}
-        <div className="flex flex-wrap gap-2 mb-3">
+      <CardContent className="space-y-4">
+        {/* Status and Strategy */}
+        <div className="flex flex-wrap items-center gap-2">
           {app.status && (
             <Badge
-              variant={
-                app.status === "running"
-                  ? "default"
-                  : app.status === "error"
-                    ? "destructive"
-                    : "secondary"
-              }
+              variant="outline"
+              className={`${getStatusColor(app.status)} font-medium`}
             >
-              {app.status}
+              <span className="relative flex h-2 w-2 mr-1.5">
+                {app.status === "running" && (
+                  <>
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                  </>
+                )}
+                {app.status !== "running" && (
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-current opacity-75"></span>
+                )}
+              </span>
+              {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
             </Badge>
           )}
           {app.deploymentStrategy && (
-            <Badge variant="secondary">{app.deploymentStrategy}</Badge>
+            <Badge variant="secondary" className="font-mono text-xs">
+              {app.deploymentStrategy}
+            </Badge>
           )}
         </div>
 
         {/* Git Info */}
         {(app.gitRepository || app.gitBranch) && (
-          <div className="flex flex-col gap-2 text-xs text-muted-foreground mb-3">
+          <div className="space-y-2.5 rounded-lg bg-muted/50 p-3 border border-border/50">
             {app.gitRepository && (
-              <div className="flex items-center gap-2">
-                <Github className="w-4 h-4 text-muted-foreground" />
-                <span className="truncate">{app.gitRepository}</span>
+              <div className="flex items-center gap-2 text-sm">
+                <Github className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                <span className="truncate font-mono text-xs text-foreground/80">
+                  {app.gitRepository}
+                </span>
               </div>
             )}
             {app.gitBranch && (
-              <div className="flex items-center gap-2">
-                <GitBranch className="w-4 h-4 text-muted-foreground" />
-                <span>{app.gitBranch}</span>
+              <div className="flex items-center gap-2 text-sm">
+                <GitBranch className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                <span className="font-mono text-xs text-foreground/80">{app.gitBranch}</span>
               </div>
             )}
           </div>
         )}
 
-        <Separator className="my-3" />
-
-        {/* Footer info */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs text-muted-foreground gap-2">
-          <div className="flex items-center gap-2">
-            <Server className="w-4 h-4 text-muted-foreground" />
-            <span>
-              Port:{" "}
-              <span className="text-foreground font-medium">
-                {app.port || "—"}
-              </span>
-            </span>
+        {/* Footer Metadata */}
+        <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-border/50">
+          <div className="flex items-center gap-4">
+            {app.port ?? (
+              <div className="flex items-center gap-1.5">
+                <span className="text-muted-foreground">Port</span>
+                <span className="font-mono text-foreground font-medium">
+                  :8080
+                </span>
+              </div>
+            )}
           </div>
           {app.createdAt && (
-            <div className="flex items-center gap-2">
-              <Globe className="w-4 h-4 text-muted-foreground" />
+            <div className="flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5" />
               <span>
-                Created:{" "}
                 {new Date(app.createdAt).toLocaleDateString(undefined, {
-                  day: "numeric",
                   month: "short",
+                  day: "numeric",
                   year: "numeric",
                 })}
               </span>

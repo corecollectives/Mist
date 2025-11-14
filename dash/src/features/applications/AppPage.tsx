@@ -6,7 +6,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import type { App } from "@/types/app";
 import { TabsList, Tabs, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { AppInfo } from "./Info";
+import { AppInfo } from "./components/Info";
 import { GitProviderTab } from "./components/Git";
 import { DeploymentsTab } from "./components/Deployments";
 
@@ -186,7 +186,6 @@ export const AppPage = () => {
             <DeploymentsTab appId={app.id} />
           </TabsContent>
 
-          {/* ✅ LOGS TAB */}
           <TabsContent value="logs">
             <div className="bg-card border border-border rounded-lg p-6">
               <h2 className="text-lg font-semibold mb-3">Logs</h2>
@@ -194,7 +193,6 @@ export const AppPage = () => {
             </div>
           </TabsContent>
 
-          {/* ✅ SETTINGS TAB */}
           <TabsContent value="settings">
             <div className="bg-card border border-border rounded-lg p-6 space-y-3">
               <h2 className="text-lg font-semibold">Settings</h2>

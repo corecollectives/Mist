@@ -15,7 +15,7 @@ import (
 
 func InitApiServer(db *sql.DB) {
 	mux := http.NewServeMux()
-	RegisterRoutes(mux, db)
+	RegisterRoutes(mux)
 
 	// serve static frontend files in prod
 	staticDir := "static"

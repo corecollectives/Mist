@@ -1,7 +1,6 @@
 package api
 
 import (
-	"database/sql"
 	"net/http"
 
 	"github.com/corecollectives/mist/api/handlers"
@@ -15,7 +14,7 @@ import (
 	"github.com/corecollectives/mist/websockets"
 )
 
-func RegisterRoutes(mux *http.ServeMux, db *sql.DB) {
+func RegisterRoutes(mux *http.ServeMux) {
 
 	mux.Handle("/api/ws/stats", middleware.AuthMiddleware()(http.HandlerFunc(websockets.StatWsHandler)))
 	mux.HandleFunc("GET /api/health", handlers.HealthCheckHandler)

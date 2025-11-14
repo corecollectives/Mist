@@ -16,7 +16,6 @@ import (
 )
 
 func RegisterRoutes(mux *http.ServeMux, db *sql.DB) {
-	proj := &projects.Handler{DB: db}
 
 	mux.Handle("/api/ws/stats", middleware.AuthMiddleware()(http.HandlerFunc(websockets.StatWsHandler)))
 	mux.HandleFunc("GET /api/health", handlers.HealthCheckHandler)
@@ -31,12 +30,12 @@ func RegisterRoutes(mux *http.ServeMux, db *sql.DB) {
 	mux.Handle("GET /api/users/getFromId", middleware.AuthMiddleware()(http.HandlerFunc(users.GetUserById)))
 	mux.Handle("DELETE /api/users/delete", middleware.AuthMiddleware()(http.HandlerFunc(users.DeleteUser)))
 
-	mux.Handle("POST /api/projects/create", middleware.AuthMiddleware()(http.HandlerFunc(proj.CreateProject)))
-	mux.Handle("GET /api/projects/getAll", middleware.AuthMiddleware()(http.HandlerFunc(proj.GetProjects)))
-	mux.Handle("GET /api/projects/getFromId", middleware.AuthMiddleware()(http.HandlerFunc(proj.GetProjectFromId)))
-	mux.Handle("PUT /api/projects/update", middleware.AuthMiddleware()(http.HandlerFunc(proj.UpdateProject)))
-	mux.Handle("DELETE /api/projects/delete", middleware.AuthMiddleware()(http.HandlerFunc(proj.DeleteProject)))
-	mux.Handle("POST /api/projects/addMember", middleware.AuthMiddleware()(http.HandlerFunc(proj.AddMember)))
+	mux.Handle("POST /api/projects/create", middleware.AuthMiddleware()(http.HandlerFunc(projects.CreateProject)))
+	mux.Handle("GET /api/projects/getAll", middleware.AuthMiddleware()(http.HandlerFunc(projects.GetProjects)))
+	mux.Handle("GET /api/projects/getFromId", middleware.AuthMiddleware()(http.HandlerFunc(projects.GetProjectFromId)))
+	mux.Handle("PUT /api/projects/update", middleware.AuthMiddleware()(http.HandlerFunc(projects.UpdateProject)))
+	mux.Handle("DELETE /api/projects/delete", middleware.AuthMiddleware()(http.HandlerFunc(projects.DeleteProject)))
+	mux.Handle("PUT /api/projects/updateMembers", middleware.AuthMiddleware()(http.HandlerFunc(projects.UpdateMembers)))
 
 	mux.Handle("POST /api/apps/create", middleware.AuthMiddleware()(http.HandlerFunc(applications.CreateApplication)))
 	mux.Handle("POST /api/apps/getByProjectId", middleware.AuthMiddleware()(http.HandlerFunc(applications.GetApplicationByProjectID)))

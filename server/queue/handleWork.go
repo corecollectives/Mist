@@ -11,6 +11,9 @@ import (
 
 func (q *Queue) HandleWork(id int64, db *sql.DB) {
 	logFile, _, err := fs.CreateDockerBuildLogFile(id)
+	if err != nil {
+		return
+	}
 	appId, err := models.GetAppIDByDeploymentID(id)
 	if err != nil {
 		return

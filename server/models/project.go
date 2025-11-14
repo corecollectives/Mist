@@ -184,7 +184,7 @@ func DeleteProjectByID(projectID int64) error {
 func UpdateProject(p *Project) error {
 	query := `
 		UPDATE projects
-		SET name = $1, description = $2, tags = $3, updated_at = NOW()
+		SET name = $1, description = $2, tags = $3, updated_at = CURRENT_TIMESTAMP
 		WHERE id = $4
 		RETURNING updated_at
 	`
@@ -274,4 +274,59 @@ func HasUserAccessToProject(userID, projectID int64) (bool, error) {
 		return false, err
 	}
 	return count > 0, nil
+}
+
+func IsUserProjectOwner(userID, projectID int64) (bool, error) {
+	query := `SELECT owner_id FROM projects WHERE id = $1`
+	var ownerID int64
+	err := db.QueryRow(query, projectID).Scan(&ownerID)
+	if err != nil {
+		return false, err
+	}
+	return ownerID == userID, nil
+}
+
+func UpdateProjectMembers(projectID int64, userIDs []int64) error {
+	query := `SELECT owner_id FROM projects WHERE id = $1`
+	var ownerID int64
+	err := db.QueryRow(query, projectID).Scan(&ownerID)
+	if err != nil {
+		return err
+	}
+
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	_, err = tx.Exec(`DELETE FROM project_members WHERE project_id = $1 AND user_id != $2`, projectID, ownerID)
+	if err != nil {
+		return err
+	}
+
+	ownerIncluded := false
+	for _, userID := range userIDs {
+		if userID == ownerID {
+			ownerIncluded = true
+			break
+		}
+	}
+	if !ownerIncluded {
+		userIDs = append(userIDs, ownerID)
+	}
+
+	// Insert all new members (including owner if not already in the list)
+	for _, userID := range userIDs {
+		_, err = tx.Exec(`
+			INSERT INTO project_members (project_id, user_id)
+			VALUES ($1, $2)
+			ON CONFLICT (project_id, user_id) DO NOTHING
+		`, projectID, userID)
+		if err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit()
 }

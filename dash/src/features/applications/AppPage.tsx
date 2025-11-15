@@ -1,14 +1,13 @@
 import { FormModal } from "@/components/FormModal";
-import { FullScreenLoading } from "@/shared/components";
+import { FullScreenLoading } from "@/components/common";
 import { Button } from "@/components/ui/button";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import type { App } from "@/types/app";
 import { TabsList, Tabs, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { AppInfo } from "./components/Info";
-import { GitProviderTab } from "./components/Git";
-import { DeploymentsTab } from "./components/Deployments";
+import { AppInfo, GitProviderTab } from "@/components/applications";
+import { DeploymentsTab } from "@/components/deployments";
 
 
 export const AppPage = () => {
@@ -17,9 +16,7 @@ export const AppPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [latestCommit, setLatestCommit] = useState();
-  const [selectedRepo, setSelectedRepo] = useState<string>("");
 
-  console.log(selectedRepo)
   const params = useParams();
   const navigate = useNavigate();
 
@@ -41,7 +38,6 @@ export const AppPage = () => {
       const data = await response.json();
       if (!data.success) throw new Error(data.error || "Failed to fetch app details");
       setApp(data.data);
-      setSelectedRepo(data.data.git_repository || "");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to fetch app details";
       setError(message);

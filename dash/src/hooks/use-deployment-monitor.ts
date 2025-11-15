@@ -90,7 +90,6 @@ export const useDeploymentMonitor = ({
       wsRef.current = ws;
 
       ws.onopen = () => {
-        console.log('[DeploymentMonitor] WebSocket connected');
         setIsConnected(true);
         setError(null);
         setIsLoading(false);
@@ -140,8 +139,7 @@ export const useDeploymentMonitor = ({
         setIsConnected(false);
       };
 
-      ws.onclose = (event) => {
-        console.log('[DeploymentMonitor] WebSocket closed:', event.code, event.reason);
+      ws.onclose = () => {
         setIsConnected(false);
         wsRef.current = null;
 
@@ -153,7 +151,6 @@ export const useDeploymentMonitor = ({
           const delay = Math.min(1000 * Math.pow(2, reconnectAttemptsRef.current), 30000);
           reconnectAttemptsRef.current++;
 
-          console.log(`[DeploymentMonitor] Reconnecting in ${delay}ms (attempt ${reconnectAttemptsRef.current})...`);
           reconnectTimeoutRef.current = window.setTimeout(() => {
             connectWebSocket();
           }, delay);

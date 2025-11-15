@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { FullScreenLoading } from '@/shared/components';
+import { FullScreenLoading } from '@/components/common';
 import { SystemOverview, ChartCard, MetricCard } from './components';
 import { formatPercentage, formatMemory } from './utils';
 
@@ -46,7 +46,6 @@ export default function DashboardPage() {
         setIsConnected(true);
         setIsLoading(false);
         setError(null);
-        console.log('WebSocket connected');
       };
 
       ws.onmessage = (event) => {
@@ -69,7 +68,6 @@ export default function DashboardPage() {
 
       ws.onclose = () => {
         setIsConnected(false);
-        console.log('WebSocket disconnected');
         setTimeout(() => {
           if (!wsConnection) connectWebSocket();
         }, 5000);

@@ -16,6 +16,11 @@ export interface Deployment {
   duration?: number;
 }
 
+// Request types
+export interface CreateDeploymentRequest {
+  appId: number;
+}
+
 // WebSocket event types
 export interface DeploymentEvent {
   type: 'log' | 'status' | 'progress' | 'error';

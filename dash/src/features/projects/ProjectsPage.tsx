@@ -2,14 +2,14 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { toast } from 'sonner';
 
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '@/providers';
 
 import { Button } from '../../components/ui/button';
 import { Card, CardContent } from '../../components/ui/card';
 import { FormModal } from '../../components/FormModal';
 import { Plus, Search } from 'lucide-react';
 import { Input } from '../../components/ui/input';
-import { FullScreenLoading } from '../../shared/components';
+import { FullScreenLoading } from '@/components/common';
 
 import { canEditProject, canDeleteProject, validateProjectData, filterProjects, sortProjects } from '../projects/utils';
 import type { Project, ProjectCreateInput } from '../../types';

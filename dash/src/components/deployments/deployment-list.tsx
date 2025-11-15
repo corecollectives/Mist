@@ -3,9 +3,10 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
-import { DeploymentMonitor } from "../components/DeploymentMonitor"
-import type { Deployment } from "@/types/deployment"
+import { DeploymentMonitor } from "@/components/deployments"
+import type { Deployment } from "@/types"
 import { Loader2, Clock, CheckCircle2, XCircle, PlayCircle, AlertCircle } from "lucide-react"
+import { deploymentsService } from "@/services"
 
 export const DeploymentsTab = ({ appId }: { appId: number }) => {
   const [deployments, setDeployments] = useState<Deployment[]>([])
@@ -16,19 +17,8 @@ export const DeploymentsTab = ({ appId }: { appId: number }) => {
   const fetchDeployments = async () => {
     try {
       setLoading(true)
-      const res = await fetch("/api/deployments/getByAppId", {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ appId })
-      })
-
-      const data = await res.json()
-      if (!data.success) throw new Error(data.error)
-
-      setDeployments(data.data || [])
+      const data = await deploymentsService.getByAppId(appId)
+      setDeployments(data || [])
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to fetch deployments")
     } finally {
@@ -40,24 +30,11 @@ export const DeploymentsTab = ({ appId }: { appId: number }) => {
     try {
       setDeploying(true)
 
-      const response = await fetch('/api/deployments', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ appId }),
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to create deployment')
-      }
-
-      const data = await response.json()
+      const deployment = await deploymentsService.create(appId)
       toast.success('Deployment started successfully')
 
       // Open the monitor immediately
-      setSelectedDeployment(data.id)
+      setSelectedDeployment(deployment.id)
 
       // Refresh deployments list
       await fetchDeployments()

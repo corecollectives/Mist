@@ -8,7 +8,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Terminal, X, CheckCircle2, XCircle, AlertCircle, Loader2 } from 'lucide-react';
-import { useDeploymentMonitor } from '../hooks/useDeploymentMonitor';
+import { useDeploymentMonitor } from '@/hooks';
 import { cn } from '@/lib/utils';
 
 interface Props {

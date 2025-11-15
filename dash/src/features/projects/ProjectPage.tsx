@@ -1,5 +1,5 @@
 import { FormModal } from "@/components/FormModal";
-import { FullScreenLoading } from "@/shared/components";
+import { FullScreenLoading } from "@/components/common";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";

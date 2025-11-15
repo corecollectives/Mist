@@ -20,8 +20,9 @@ import {
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { useState } from "react"
-import type { App } from "@/types/app"
-import { DeploymentMonitor } from "./DeploymentMonitor"
+import type { App } from "@/types"
+import { DeploymentMonitor } from "@/components/deployments"
+import { deploymentsService } from "@/services"
 
 interface Props {
   app: App
@@ -39,7 +40,7 @@ const InfoItem = ({
   children,
   className = ""
 }: {
-  icon: any
+  icon: React.ComponentType<{ className?: string }>
   label: string
   children: React.ReactNode
   className?: string
@@ -95,22 +96,11 @@ export const AppInfo = ({ app, latestCommit }: Props) => {
     try {
       setDeploying(true)
 
-      const res = await fetch("/api/deployments/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ appId: app.id }),
-      })
-
-      const data = await res.json()
-
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to create deployment")
-      }
+      const deployment = await deploymentsService.create(app.id)
 
       toast.success("Deployment started!")
 
-      setDeploymentId(data.id)
+      setDeploymentId(deployment.id)
       setLogsOpen(true)
 
     } catch (err) {

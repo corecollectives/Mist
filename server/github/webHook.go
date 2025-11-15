@@ -2,10 +2,10 @@ package github
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/corecollectives/mist/models"
+	"github.com/rs/zerolog/log"
 )
 
 func CreateDeploymentFromGithubPushEvent(evt PushEvent) (int64, error) {
@@ -15,18 +15,27 @@ func CreateDeploymentFromGithubPushEvent(evt PushEvent) (int64, error) {
 
 	branch = strings.TrimPrefix(branch, "refs/heads/")
 
-	fmt.Printf("Push event received for repo: %s, branch: %s, commit: %s\n", repoName, branch, commit)
+	log.Info().
+		Str("repo", repoName).
+		Str("branch", branch).
+		Str("commit", commit).
+		Msg("Push event received")
 
 	appID, err := models.FindApplicationIDByGitRepoAndBranch(repoName, branch)
 
 	if err != nil {
-		fmt.Printf("Error finding application: %v\n", err)
+		log.Error().Err(err).
+			Str("repo", repoName).
+			Str("branch", branch).
+			Msg("Error finding application")
 		return 0, err
-
 	}
 
 	if appID == 0 {
-		fmt.Println("No application found for this repository and branch.")
+		log.Warn().
+			Str("repo", repoName).
+			Str("branch", branch).
+			Msg("No application found for this repository and branch")
 		return 0, errors.New("no application found for this repository and branch")
 	}
 
@@ -37,11 +46,16 @@ func CreateDeploymentFromGithubPushEvent(evt PushEvent) (int64, error) {
 	}
 
 	if err := deployment.CreateDeployment(); err != nil {
-		fmt.Printf("Error creating deployment: %v\n", err)
+		log.Error().Err(err).
+			Int64("app_id", appID).
+			Msg("Error creating deployment")
 		return 0, err
 	}
 
-	fmt.Printf("Deployment created with ID: %d for App ID: %d\n", deployment.ID, appID)
+	log.Info().
+		Int64("deployment_id", deployment.ID).
+		Int64("app_id", appID).
+		Msg("Deployment created from GitHub webhook")
 	return deployment.ID, nil
 
 }

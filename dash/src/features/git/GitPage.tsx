@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { FullScreenLoading } from '@/shared/components';
+import { FullScreenLoading } from '@/components/common';
 import { GitHubCard, ProviderCard, CreateAppModal } from './components';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/providers';
 import type { GitHubApp } from '@/types';
 
 export default function GitPage() {
@@ -22,7 +22,6 @@ export default function GitPage() {
         credentials: 'include'
       });
       const data = await response.json();
-      console.log("Fetched GitHub App:", data.data.app);
       if (data.success) {
         setApp(data.data.app);
         setIsInstalled(data.data.isInstalled);
@@ -32,7 +31,6 @@ export default function GitPage() {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to load GitHub App info";
       setError(errorMessage);
-      console.error(err);
     } finally {
       setIsLoading(false);
     }
@@ -43,10 +41,10 @@ export default function GitPage() {
       const response = await fetch("/api/github/repositories", {
         credentials: 'include'
       });
-      const data = await response.json();
-      console.log("Fetched repos:", data);
+      await response.json();
+      // Repositories fetched successfully
     } catch (err) {
-      console.error("Failed to fetch repos:", err);
+      // Silent fail - repositories are optional
     }
   };
 

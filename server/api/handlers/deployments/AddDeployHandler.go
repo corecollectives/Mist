@@ -2,7 +2,6 @@ package deployments
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/corecollectives/mist/api/handlers"
@@ -10,6 +9,7 @@ import (
 	"github.com/corecollectives/mist/github"
 	"github.com/corecollectives/mist/models"
 	"github.com/corecollectives/mist/queue"
+	"github.com/rs/zerolog/log"
 )
 
 func AddDeployHandler(w http.ResponseWriter, r *http.Request) {
@@ -30,7 +30,7 @@ func AddDeployHandler(w http.ResponseWriter, r *http.Request) {
 	userId := int64(user.ID)
 	commit, err := github.GetLatestCommit(int64(req.AppId), userId)
 	if err != nil {
-		fmt.Println("Error getting latest commit:", err.Error())
+		log.Error().Err(err).Int("app_id", req.AppId).Msg("Error getting latest commit")
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "failed to get latest commit", err.Error())
 		return
 	}
@@ -49,17 +49,13 @@ func AddDeployHandler(w http.ResponseWriter, r *http.Request) {
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "failed to insert deployment", err.Error())
 		return
 	}
-	if err != nil {
-		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "failed to get inserted id", err.Error())
-		return
-	}
 
 	if err := queue.AddJob(int64(deployment.ID)); err != nil {
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "failed to add job to queue", err.Error())
 		return
 	}
 
-	println("Deployment added to queue with ID:", deployment.ID)
+	log.Info().Int64("deployment_id", deployment.ID).Int("app_id", req.AppId).Msg("Deployment added to queue")
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)

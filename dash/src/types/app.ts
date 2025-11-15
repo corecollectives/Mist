@@ -17,6 +17,21 @@ export type App = {
   healthcheckPath: string | null;
   healthcheckInterval: number;
   status: string;
-  createdAt: string;   // or Date if you parse it
-  updatedAt: string;   // or Date if you parse it
+  createdAt: string;
+  updatedAt: string;
 };
+
+export type CreateAppRequest = {
+  projectId: number;
+  name: string;
+  description?: string;
+  gitRepository?: string;
+  gitBranch?: string;
+  port?: number;
+  rootDirectory?: string;
+  buildCommand?: string;
+  startCommand?: string;
+};
+
+export type UpdateAppRequest = Partial<Omit<App, 'id' | 'createdAt' | 'updatedAt'>>;
+

@@ -11,29 +11,40 @@ func BuildImage(imageTag, contextPath string, logfile *os.File) error {
 	cmd := exec.Command("docker", "build", "-t", imageTag, contextPath)
 	cmd.Stdout = logfile
 	cmd.Stderr = logfile
-	return cmd.Run()
+
+	if err := cmd.Run(); err != nil {
+		exitCode := -1
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			exitCode = exitErr.ExitCode()
+		}
+		return fmt.Errorf("docker build failed with exit code %d: %w", exitCode, err)
+	}
+	return nil
 }
 
 func StopRemoveContainer(containerName string, logfile *os.File) error {
+	ifExists := ContainerExists(containerName)
+	if !ifExists {
+		// Container doesn't exist, nothing to stop/remove
+		return nil
+	}
+
+	// Stop container
 	stopCmd := exec.Command("docker", "stop", containerName)
 	stopCmd.Stdout = logfile
 	stopCmd.Stderr = logfile
-	ifExists := ContainerExists(containerName)
-	fmt.Println("Container", containerName, "exists:", ifExists)
-	if !ifExists {
-		return nil
+	if err := stopCmd.Run(); err != nil {
+		return fmt.Errorf("failed to stop container %s: %w", containerName, err)
 	}
+
+	// Remove container
 	removeCmd := exec.Command("docker", "rm", containerName)
 	removeCmd.Stdout = logfile
 	removeCmd.Stderr = logfile
-	if err := stopCmd.Run(); err != nil {
-		fmt.Println("Warning: failed to stop container:", err.Error())
-		return err
-	}
 	if err := removeCmd.Run(); err != nil {
-		fmt.Println("Warning: failed to remove container:", err.Error())
-		return err
+		return fmt.Errorf("failed to remove container %s: %w", containerName, err)
 	}
+
 	return nil
 }
 
@@ -42,11 +53,9 @@ func ContainerExists(name string) bool {
 	output, err := cmd.CombinedOutput()
 
 	if err != nil {
-
 		if strings.Contains(string(output), "No such object") {
 			return false
 		}
-
 		return false
 	}
 
@@ -70,5 +79,13 @@ func RunContainer(imageTag, containerName string, domain string, Port int, logfi
 	cmd.Stdout = logfile
 	cmd.Stderr = logfile
 
-	return cmd.Run()
+	if err := cmd.Run(); err != nil {
+		exitCode := -1
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			exitCode = exitErr.ExitCode()
+		}
+		return fmt.Errorf("docker run failed with exit code %d: %w", exitCode, err)
+	}
+
+	return nil
 }

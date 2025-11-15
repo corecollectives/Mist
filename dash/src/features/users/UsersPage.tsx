@@ -2,11 +2,11 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { FullScreenLoading } from '@/shared/components';
+import { FullScreenLoading } from '@/components/common';
 import { UserCard, CreateUserModal } from './components';
 import { canManageUsers } from './utils';
 import type { CreateUserData, User } from '@/types';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/providers';
 
 export default function UsersPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -66,8 +66,8 @@ export default function UsersPage() {
       toast.error(errorMessage);
     }
   };
-  const handleUserClick = (selectedUser: User) => {
-    console.log('User clicked:', selectedUser);
+  const handleUserClick = () => {
+    // Handle user click action
   };
 
   if (isLoading && users.length === 0) {

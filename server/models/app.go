@@ -1,7 +1,6 @@
 package models
 
 import (
-	"database/sql"
 	"time"
 
 	"github.com/corecollectives/mist/utils"
@@ -25,18 +24,18 @@ type App struct {
 	ProjectID           int64              `db:"project_id" json:"project_id"`
 	CreatedBy           int64              `db:"created_by" json:"created_by"`
 	Name                string             `db:"name" json:"name"`
-	Description         sql.NullString     `db:"description" json:"description,omitempty"`
-	GitProviderID       sql.NullInt64      `db:"git_provider_id" json:"git_provider_id,omitempty"`
-	GitRepository       sql.NullString     `db:"git_repository" json:"git_repository,omitempty"`
+	Description         *string            `db:"description" json:"description,omitempty"`
+	GitProviderID       *int64             `db:"git_provider_id" json:"git_provider_id,omitempty"`
+	GitRepository       *string            `db:"git_repository" json:"git_repository,omitempty"`
 	GitBranch           string             `db:"git_branch" json:"git_branch,omitempty"`
-	GitCloneURL         sql.NullString     `db:"git_clone_url" json:"git_clone_url,omitempty"`
+	GitCloneURL         *string            `db:"git_clone_url" json:"git_clone_url,omitempty"`
 	DeploymentStrategy  DeploymentStrategy `db:"deployment_strategy" json:"deployment_strategy"`
-	Port                sql.NullInt64      `db:"port" json:"port,omitempty"`
+	Port                *int64             `db:"port" json:"port,omitempty"`
 	RootDirectory       string             `db:"root_directory" json:"root_directory,omitempty"`
-	BuildCommand        sql.NullString     `db:"build_command" json:"build_command,omitempty"`
-	StartCommand        sql.NullString     `db:"start_command" json:"start_command,omitempty"`
-	DockerfilePath      sql.NullString     `db:"dockerfile_path" json:"dockerfile_path,omitempty"`
-	HealthcheckPath     sql.NullString     `db:"healthcheck_path" json:"healthcheck_path,omitempty"`
+	BuildCommand        *string            `db:"build_command" json:"build_command,omitempty"`
+	StartCommand        *string            `db:"start_command" json:"start_command,omitempty"`
+	DockerfilePath      *string            `db:"dockerfile_path" json:"dockerfile_path,omitempty"`
+	HealthcheckPath     *string            `db:"healthcheck_path" json:"healthcheck_path,omitempty"`
 	HealthcheckInterval int                `db:"healthcheck_interval" json:"healthcheck_interval"`
 	Status              AppStatus          `db:"status" json:"status"`
 	CreatedAt           time.Time          `db:"created_at" json:"created_at"`
@@ -49,18 +48,18 @@ func (a *App) ToJson() map[string]interface{} {
 		"projectId":           a.ProjectID,
 		"createdBy":           a.CreatedBy,
 		"name":                a.Name,
-		"description":         a.Description.String,
-		"gitProviderId":       a.GitProviderID.Int64,
-		"gitRepository":       a.GitRepository.String,
+		"description":         a.Description,
+		"gitProviderId":       a.GitProviderID,
+		"gitRepository":       a.GitRepository,
 		"gitBranch":           a.GitBranch,
-		"gitCloneUrl":         a.GitCloneURL.String,
+		"gitCloneUrl":         a.GitCloneURL,
 		"deploymentStrategy":  a.DeploymentStrategy,
-		"port":                a.Port.Int64,
+		"port":                a.Port,
 		"rootDirectory":       a.RootDirectory,
-		"buildCommand":        a.BuildCommand.String,
-		"startCommand":        a.StartCommand.String,
-		"dockerfilePath":      a.DockerfilePath.String,
-		"healthcheckPath":     a.HealthcheckPath.String,
+		"buildCommand":        a.BuildCommand,
+		"startCommand":        a.StartCommand,
+		"dockerfilePath":      a.DockerfilePath,
+		"healthcheckPath":     a.HealthcheckPath,
 		"healthcheckInterval": a.HealthcheckInterval,
 		"status":              a.Status,
 		"createdAt":           a.CreatedAt,

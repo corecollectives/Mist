@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 	"sync"
+
+	"github.com/rs/zerolog/log"
 )
 
 type Queue struct {
@@ -60,5 +62,5 @@ func (q *Queue) Close() {
 	q.cancel()
 	close(q.jobs)
 	q.wg.Wait()
-	fmt.Println("queue is closed")
+	log.Info().Msg("Deployment queue closed")
 }

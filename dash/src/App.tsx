@@ -1,13 +1,12 @@
-import { FullScreenLoading } from "./shared/components";
-import { useAuth } from "./context/AuthContext";
+import { LoadingSpinner } from "@/components/common";
+import { useAuth } from "@/providers";
 import { Navigate, Route, BrowserRouter as Router, Routes } from "react-router-dom"
 import { Layout } from "./Layout";
 import "./App.css"
 import { Toaster } from "./components/ui/sonner";
 import { CallbackPage } from "./pages/Callback";
 
-import { SetupPage } from "./features/auth";
-import { LoginPage } from "./features/auth";
+import { SetupPage, LoginPage } from "./features/auth";
 import { DashboardPage } from "./features/dashboard";
 import { UsersPage } from "./features/users";
 import { ProjectsPage } from "./features/projects";
@@ -19,6 +18,12 @@ import { LogsPage } from "./pages/Logs";
 import { SettingsPage } from "./pages/Settings";
 import { ProjectPage } from "./features/projects/ProjectPage";
 import { AppPage } from "./features/applications/AppPage";
+
+const FullScreenLoading = () => (
+  <div className="flex items-center justify-center h-screen">
+    <LoadingSpinner />
+  </div>
+);
 
 export default function App() {
   const { setupRequired, user } = useAuth();

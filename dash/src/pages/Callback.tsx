@@ -1,4 +1,4 @@
-import { FullScreenLoading } from "@/shared/components";
+import { FullScreenLoading } from "@/components/common";
 import { useEffect } from "react";
 import { toast } from "sonner";
 

@@ -1,131 +1,25 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '@/providers';
 
 import { Button } from '../../components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/card';
-import { Badge } from '../../components/ui/badge';
-import { Separator } from '../../components/ui/separator';
+import { Card, CardContent } from '../../components/ui/card';
 import { FormModal } from '../../components/FormModal';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '../../components/ui/dropdown-menu';
-import { MoreVertical, Plus, Search } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 import { Input } from '../../components/ui/input';
-import { FullScreenLoading } from '../../shared/components';
+import { FullScreenLoading } from '@/components/common';
 
-import { getProjectOwnerDisplay, formatProjectDate, canEditProject, canDeleteProject, validateProjectData, filterProjects, sortProjects } from '../projects/utils';
+import { canEditProject, canDeleteProject, validateProjectData, filterProjects, sortProjects } from '../projects/utils';
 import type { Project, ProjectCreateInput } from '../../types';
-import { ROUTES, SUCCESS_MESSAGES, ERROR_MESSAGES } from '../../constants';
+import { SUCCESS_MESSAGES, ERROR_MESSAGES } from '../../constants';
+import { ProjectCard } from './components/ProjectCard';
 
-const ProjectCard: React.FC<{
-  project: Project;
-  onEdit: (project: Project) => void;
-  onDelete: (projectId: number) => void;
-  canEdit: boolean;
-  canDelete: boolean;
-}> = ({ project, onEdit, onDelete, canEdit, canDelete }) => {
-  const navigate = useNavigate();
-  const ownerDisplay = getProjectOwnerDisplay(project);
 
-  return (
-    <Card
-      className="relative transition-colors hover:border-primary cursor-pointer group"
-      onClick={() => navigate(`${ROUTES.PROJECTS}/${project.id}`)}
-    >
-      <CardHeader className="flex flex-row items-start justify-between space-y-0">
-        <div className="min-w-0 flex-1">
-          <CardTitle className="truncate">{project.name}</CardTitle>
-          <CardDescription className="truncate">
-            {project.description}
-          </CardDescription>
-        </div>
-
-        {(canEdit || canDelete) && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <MoreVertical className="w-4 h-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {canEdit && (
-                <DropdownMenuItem
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onEdit(project);
-                  }}
-                >
-                  Edit
-                </DropdownMenuItem>
-              )}
-              {canDelete && (
-                <DropdownMenuItem
-                  className="text-destructive"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDelete(project.id);
-                  }}
-                >
-                  Delete
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
-      </CardHeader>
-
-      <CardContent>
-        {/* Tags */}
-        {project.tags && project.tags.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-4">
-            {project.tags.map((tag) => (
-              <Badge
-                key={tag}
-                variant="secondary"
-                className="capitalize text-xs"
-              >
-                {tag}
-              </Badge>
-            ))}
-          </div>
-        )}
-
-        <Separator className="my-4" />
-
-        {/* Owner and date info */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs text-muted-foreground gap-2">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center">
-              <span className="text-xs font-medium text-foreground">
-                {ownerDisplay.initials}
-              </span>
-            </div>
-            <span className="truncate">{ownerDisplay.name}</span>
-          </div>
-          <span className="shrink-0">
-            {formatProjectDate(project, 'created')}
-          </span>
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
-
-const EmptyState: React.FC<{ onCreateProject: () => void; canCreate: boolean }> = ({ 
-  onCreateProject, 
-  canCreate 
+const EmptyState: React.FC<{ onCreateProject: () => void; canCreate: boolean }> = ({
+  onCreateProject,
+  canCreate
 }) => (
   <div className="flex flex-col items-center justify-center py-12">
     <div className="text-center">
@@ -145,7 +39,7 @@ const EmptyState: React.FC<{ onCreateProject: () => void; canCreate: boolean }> 
 
 export const ProjectsPage: React.FC = () => {
   const { user } = useAuth();
-  
+
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -156,7 +50,7 @@ export const ProjectsPage: React.FC = () => {
   const [sortOrder] = useState<'asc' | 'desc'>('desc');
 
   const canCreateProjects = user?.isAdmin || user?.role === 'owner';
-  
+
   const filteredAndSortedProjects = useMemo(() => {
     const filtered = filterProjects(projects, searchTerm);
     return sortProjects(filtered, sortBy, sortOrder);
@@ -183,7 +77,7 @@ export const ProjectsPage: React.FC = () => {
 
   useEffect(() => {
     fetchProjects();
-    
+
     document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = '';
@@ -299,10 +193,10 @@ export const ProjectsPage: React.FC = () => {
           <Card className="border-destructive text-destructive mb-6">
             <CardContent className="p-4 text-center">
               <p>{error}</p>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="mt-2" 
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2"
                 onClick={() => fetchProjects()}
               >
                 Try Again
@@ -312,9 +206,9 @@ export const ProjectsPage: React.FC = () => {
         )}
 
         {filteredAndSortedProjects.length === 0 ? (
-          <EmptyState 
-            onCreateProject={handleCreateProject} 
-            canCreate={canCreateProjects} 
+          <EmptyState
+            onCreateProject={handleCreateProject}
+            canCreate={canCreateProjects}
           />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pb-16">
@@ -332,7 +226,6 @@ export const ProjectsPage: React.FC = () => {
         )}
       </div>
 
-      {/* Create/Edit Modal */}
       <FormModal
         isOpen={isModalOpen}
         onClose={() => {

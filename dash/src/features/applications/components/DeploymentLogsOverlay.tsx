@@ -23,7 +23,6 @@ export const DeploymentLogsOverlay = ({ deploymentId, open, onClose }: Props) =>
     bottomRef.current?.scrollIntoView({ behavior: "smooth" })
   }
 
-  // ✅ Scroll every time logs change
   useEffect(() => {
     scrollToBottom()
   }, [logs])
@@ -36,9 +35,8 @@ export const DeploymentLogsOverlay = ({ deploymentId, open, onClose }: Props) =>
     ws.onmessage = (event) => {
       if (event.data === "") return
       const cleaned = event.data
-        .replace(/\r/g, "")          // remove CR if present
-        .replace(/\n\s*\n+/g, "\n")  // collapse multiple newlines
-
+        .replace(/\r/g, "")
+        .replace(/\n\s*\n+/g, "\n")
       setLogs((prev) => prev + cleaned)
     }
 

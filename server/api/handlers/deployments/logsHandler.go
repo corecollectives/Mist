@@ -2,13 +2,15 @@ package deployments
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
+	"os"
 	"strconv"
+	"time"
 
 	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/docker"
 	"github.com/corecollectives/mist/models"
-
 	"github.com/corecollectives/mist/websockets"
 	"github.com/gorilla/websocket"
 )
@@ -28,9 +30,7 @@ func LogsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	dep, err := models.GetDeploymentByID(depId)
 	if err != nil {
-
 		handlers.SendResponse(w, http.StatusNotFound, false, nil, "deployment not found", err.Error())
-
 		return
 	}
 
@@ -45,17 +45,52 @@ func LogsHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithCancel(r.Context())
 	defer cancel()
 
-	send := make(chan string)
+	events := make(chan websockets.DeploymentEvent, 100)
+
+	go websockets.WatchDeploymentStatus(ctx, depId, events)
+
 	go func() {
-		_ = websockets.WatcherLogs(ctx, logPath, send)
-		close(send)
+		for i := 0; i < 20; i++ {
+			if _, err := os.Stat(logPath); err == nil {
+				break
+			}
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(500 * time.Millisecond):
+			}
+		}
+
+		send := make(chan string)
+		go func() {
+			_ = websockets.WatcherLogs(ctx, logPath, send)
+			close(send)
+		}()
+
+		for line := range send {
+			select {
+			case <-ctx.Done():
+				return
+			case events <- websockets.DeploymentEvent{
+				Type:      "log",
+				Timestamp: time.Now(),
+				Data: websockets.LogUpdate{
+					Line:      line,
+					Timestamp: time.Now(),
+				},
+			}:
+			}
+		}
 	}()
 
-	for line := range send {
-		if err := conn.WriteMessage(websocket.TextMessage, []byte(line)); err != nil {
+	for event := range events {
+		msg, err := json.Marshal(event)
+		if err != nil {
+			continue
+		}
+		if err := conn.WriteMessage(websocket.TextMessage, msg); err != nil {
 			cancel()
 			break
 		}
 	}
-
 }

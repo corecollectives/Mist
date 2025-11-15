@@ -15,12 +15,13 @@ import {
   Server,
   Activity,
   Clock,
+  Loader2,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { useState } from "react"
 import type { App } from "@/types/app"
-import { DeploymentLogsOverlay } from "./DeploymentLogsOverlay"
+import { DeploymentMonitor } from "./DeploymentMonitor"
 
 interface Props {
   app: App
@@ -103,6 +104,10 @@ export const AppInfo = ({ app, latestCommit }: Props) => {
 
       const data = await res.json()
 
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to create deployment")
+      }
+
       toast.success("Deployment started!")
 
       setDeploymentId(data.id)
@@ -126,8 +131,17 @@ export const AppInfo = ({ app, latestCommit }: Props) => {
             className="flex items-center gap-2 shadow-sm"
             size="sm"
           >
-            <Rocket className="h-4 w-4" />
-            {deploying ? "Deploying..." : "Deploy"}
+            {deploying ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Deploying...
+              </>
+            ) : (
+              <>
+                <Rocket className="h-4 w-4" />
+                Deploy
+              </>
+            )}
           </Button>
         </div>
       </CardHeader>
@@ -195,7 +209,7 @@ export const AppInfo = ({ app, latestCommit }: Props) => {
           {app.port !== 0 && (
             <InfoItem icon={Server} label="Port">
               <div className="font-mono text-sm font-medium">
-                Port:{app.port || "Not configured"}
+                {app.port || <s className="text-red-500">"Not configured"</s>}
               </div>
             </InfoItem>
           )}
@@ -292,10 +306,16 @@ export const AppInfo = ({ app, latestCommit }: Props) => {
       </CardContent>
 
       {deploymentId !== null && (
-        <DeploymentLogsOverlay
+        <DeploymentMonitor
           deploymentId={deploymentId}
           open={logsOpen}
-          onClose={() => setLogsOpen(false)}
+          onClose={() => {
+            setLogsOpen(false)
+            setDeploymentId(null)
+          }}
+          onComplete={() => {
+            toast.success("Deployment completed successfully!")
+          }}
         />
       )}
     </Card>

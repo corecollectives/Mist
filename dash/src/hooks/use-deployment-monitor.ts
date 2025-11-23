@@ -25,6 +25,7 @@ export const useDeploymentMonitor = ({
   const reconnectTimeoutRef = useRef<number>(0);
   const reconnectAttemptsRef = useRef(0);
   const hasFetchedRef = useRef(false);
+  const hasCompletedRef = useRef(false);
 
   const fetchCompletedDeployment = useCallback(async () => {
     if (hasFetchedRef.current) return;
@@ -90,6 +91,7 @@ export const useDeploymentMonitor = ({
       wsRef.current = ws;
 
       ws.onopen = () => {
+        console.log('[DeploymentMonitor] WebSocket connected');
         setIsConnected(true);
         setError(null);
         setIsLoading(false);
@@ -97,26 +99,36 @@ export const useDeploymentMonitor = ({
       };
 
       ws.onmessage = (event) => {
+        // Handle ping messages
+        if (event.data instanceof Blob) {
+          return;
+        }
+
         try {
           const deploymentEvent: DeploymentEvent = JSON.parse(event.data);
 
           switch (deploymentEvent.type) {
             case 'log':
               const logData = deploymentEvent.data as LogUpdate;
-              setLogs((prev) => [...prev, logData.line]);
+              if (logData.line && logData.line.trim()) {
+                setLogs((prev) => [...prev, logData.line]);
+              }
               break;
 
             case 'status':
               const statusData = deploymentEvent.data as StatusUpdate;
               setStatus(statusData);
 
-              // Handle completion
-              if (statusData.status === 'success') {
+              // Handle completion - only call once
+              if (statusData.status === 'success' && !hasCompletedRef.current) {
+                console.log('[DeploymentMonitor] Deployment completed successfully');
+                hasCompletedRef.current = true;
                 onComplete?.();
               }
 
               // Handle errors
               if (statusData.status === 'failed' && statusData.error_message) {
+                console.error('[DeploymentMonitor] Deployment failed:', statusData.error_message);
                 setError(statusData.error_message);
                 onError?.(statusData.error_message);
               }
@@ -124,6 +136,7 @@ export const useDeploymentMonitor = ({
 
             case 'error':
               const errorMsg = (deploymentEvent.data as any).message || 'Unknown error';
+              console.error('[DeploymentMonitor] Error event:', errorMsg);
               setError(errorMsg);
               onError?.(errorMsg);
               break;
@@ -139,18 +152,23 @@ export const useDeploymentMonitor = ({
         setIsConnected(false);
       };
 
-      ws.onclose = () => {
+      ws.onclose = (event) => {
+        console.log('[DeploymentMonitor] WebSocket closed', event.code, event.reason);
         setIsConnected(false);
         wsRef.current = null;
 
+        // Don't reconnect if deployment is complete
         if (status?.status === 'success' || status?.status === 'failed') {
+          console.log('[DeploymentMonitor] Deployment complete, not reconnecting');
           return;
         }
 
+        // Reconnect with exponential backoff
         if (reconnectAttemptsRef.current < 10) {
           const delay = Math.min(1000 * Math.pow(2, reconnectAttemptsRef.current), 30000);
           reconnectAttemptsRef.current++;
 
+          console.log(`[DeploymentMonitor] Reconnecting in ${delay}ms (attempt ${reconnectAttemptsRef.current})`);
           reconnectTimeoutRef.current = window.setTimeout(() => {
             connectWebSocket();
           }, delay);
@@ -201,6 +219,7 @@ export const useDeploymentMonitor = ({
     setIsLoading(true);
     setIsLive(false);
     hasFetchedRef.current = false;
+    hasCompletedRef.current = false;
   };
 
   return {

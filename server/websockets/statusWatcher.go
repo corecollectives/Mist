@@ -31,6 +31,7 @@ type LogUpdate struct {
 func WatchDeploymentStatus(ctx context.Context, depID int64, events chan<- DeploymentEvent) {
 	ticker := time.NewTicker(500 * time.Millisecond)
 	defer ticker.Stop()
+	defer close(events)
 
 	var lastStatus string
 	var lastStage string
@@ -56,7 +57,10 @@ func WatchDeploymentStatus(ctx context.Context, depID int64, events chan<- Deplo
 					errMsg = *dep.ErrorMessage
 				}
 
-				events <- DeploymentEvent{
+				select {
+				case <-ctx.Done():
+					return
+				case events <- DeploymentEvent{
 					Type:      "status",
 					Timestamp: time.Now(),
 					Data: StatusUpdate{
@@ -67,11 +71,12 @@ func WatchDeploymentStatus(ctx context.Context, depID int64, events chan<- Deplo
 						Message:      utils.GetStageMessage(dep.Stage),
 						ErrorMessage: errMsg,
 					},
+				}:
 				}
 			}
 
 			if dep.Status == "success" || dep.Status == "failed" {
-				time.Sleep(500 * time.Millisecond)
+				time.Sleep(1 * time.Second)
 				return
 			}
 		}

@@ -6,7 +6,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import type { App } from "@/types/app";
 import { TabsList, Tabs, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { AppInfo, GitProviderTab } from "@/components/applications";
+import { AppInfo, GitProviderTab, EnvironmentVariables, Domains, AppSettings, ContainerControls, LiveLogsViewer, AppStats } from "@/components/applications";
 import { DeploymentsTab } from "@/components/deployments";
 
 
@@ -16,6 +16,7 @@ export const AppPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [latestCommit, setLatestCommit] = useState();
+  const [previewUrl, setPreviewUrl] = useState<string>("");
 
   const params = useParams();
   const navigate = useNavigate();
@@ -111,6 +112,30 @@ export const AppPage = () => {
     fetchAppDetails()
   }, [params.appId]);
 
+  // Fetch preview URL when app changes
+  useEffect(() => {
+    const fetchPreviewUrl = async () => {
+      if (!app || app.status !== "running") return
+      
+      try {
+        const response = await fetch(`/api/apps/getPreviewUrl`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ appId: app.id }),
+        })
+        const data = await response.json()
+        if (data.success) {
+          setPreviewUrl(data.data.url)
+        }
+      } catch (err) {
+        console.error("Failed to fetch preview URL:", err)
+      }
+    }
+
+    fetchPreviewUrl()
+  }, [app]);
+
 
 
 
@@ -160,7 +185,14 @@ export const AppPage = () => {
 
           {/* ✅ INFO TAB */}
           <TabsContent value="info" className="space-y-6">
-            <AppInfo app={app} latestCommit={latestCommit} />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                <AppInfo app={app} latestCommit={latestCommit} />
+              </div>
+              <div>
+                <AppStats appId={app.id} appStatus={app.status} previewUrl={previewUrl} />
+              </div>
+            </div>
           </TabsContent>
 
           <TabsContent value="git" className="space-y-6">
@@ -168,13 +200,8 @@ export const AppPage = () => {
           </TabsContent>
 
           {/* ✅ ENVIRONMENT TAB */}
-          <TabsContent value="environment">
-            <div className="bg-card border border-border rounded-lg p-6">
-              <h2 className="text-lg font-semibold mb-3">Environment Variables</h2>
-              <p className="text-muted-foreground">
-                No environment variables added yet.
-              </p>
-            </div>
+          <TabsContent value="environment" className="space-y-6">
+            <EnvironmentVariables appId={app.id} />
           </TabsContent>
 
           {/* ✅ DEPLOYMENTS TAB */}
@@ -182,18 +209,14 @@ export const AppPage = () => {
             <DeploymentsTab appId={app.id} />
           </TabsContent>
 
-          <TabsContent value="logs">
-            <div className="bg-card border border-border rounded-lg p-6">
-              <h2 className="text-lg font-semibold mb-3">Logs</h2>
-              <p className="text-muted-foreground">Real-time logs will appear here.</p>
-            </div>
+          <TabsContent value="logs" className="h-full">
+            <LiveLogsViewer appId={app.id} enabled={true} />
           </TabsContent>
 
-          <TabsContent value="settings">
-            <div className="bg-card border border-border rounded-lg p-6 space-y-3">
-              <h2 className="text-lg font-semibold">Settings</h2>
-              <p className="text-muted-foreground">Modify app-level settings here.</p>
-            </div>
+          <TabsContent value="settings" className="space-y-6">
+            <ContainerControls appId={app.id} onStatusChange={fetchAppDetails} />
+            <AppSettings app={app} onUpdate={fetchAppDetails} />
+            <Domains appId={app.id} />
           </TabsContent>
         </Tabs>
       </main>

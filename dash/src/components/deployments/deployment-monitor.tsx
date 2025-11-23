@@ -21,11 +21,16 @@ interface Props {
 export const DeploymentMonitor = ({ deploymentId, open, onClose, onComplete }: Props) => {
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  const completedRef = useRef(false);
+
   const { logs, status, error, isConnected, isLoading, isLive, reset } = useDeploymentMonitor({
     deploymentId,
     enabled: open,
     onComplete: () => {
-      onComplete?.();
+      if (!completedRef.current) {
+        completedRef.current = true;
+        onComplete?.();
+      }
     },
     onError: (err) => {
       console.error('Deployment error:', err);
@@ -37,6 +42,7 @@ export const DeploymentMonitor = ({ deploymentId, open, onClose, onComplete }: P
   }, [logs]);
 
   const handleClose = () => {
+    completedRef.current = false;
     reset();
     onClose();
   };

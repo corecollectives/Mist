@@ -11,7 +11,6 @@ import (
 )
 
 func main() {
-	// Initialize logger
 	utils.InitLogger()
 
 	log.Info().Msg("Starting Mist server")
@@ -36,5 +35,5 @@ func main() {
 
 	log.Info().Msg("Store initialized successfully")
 
-	api.InitApiServer(dbInstance)
+	api.InitApiServer()
 }

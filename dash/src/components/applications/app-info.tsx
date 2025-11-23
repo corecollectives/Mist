@@ -16,13 +16,14 @@ import {
   Activity,
   Clock,
   Loader2,
+  ExternalLink,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import type { App } from "@/types"
 import { DeploymentMonitor } from "@/components/deployments"
-import { deploymentsService } from "@/services"
+import { deploymentsService, applicationsService } from "@/services"
 
 interface Props {
   app: App
@@ -89,8 +90,26 @@ export const AppInfo = ({ app, latestCommit }: Props) => {
   const [deploying, setDeploying] = useState(false)
   const [logsOpen, setLogsOpen] = useState(false)
   const [deploymentId, setDeploymentId] = useState<number | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string>("")
 
   const statusConfig = getStatusConfig(app.status)
+
+  // Fetch preview URL when component mounts or app changes
+  useEffect(() => {
+    const fetchPreviewUrl = async () => {
+      try {
+        const data = await applicationsService.getPreviewUrl(app.id)
+        setPreviewUrl(data.url)
+      } catch (error) {
+        // Silently fail if no preview URL available
+        console.error("Failed to fetch preview URL:", error)
+      }
+    }
+
+    if (app.status === "running") {
+      fetchPreviewUrl()
+    }
+  }, [app.id, app.status])
 
   const handleDeploy = async () => {
     try {
@@ -140,7 +159,7 @@ export const AppInfo = ({ app, latestCommit }: Props) => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Status */}
           <InfoItem icon={Activity} label="Status">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3 flex-wrap">
               <Badge
                 variant="outline"
                 className={`${statusConfig.bgColor} ${statusConfig.color} font-medium border`}
@@ -158,6 +177,17 @@ export const AppInfo = ({ app, latestCommit }: Props) => {
                 </span>
                 {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
               </Badge>
+              {previewUrl && app.status === "running" && (
+                <a
+                  href={previewUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline font-medium"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  View Live App
+                </a>
+              )}
             </div>
           </InfoItem>
 

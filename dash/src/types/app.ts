@@ -35,3 +35,50 @@ export type CreateAppRequest = {
 
 export type UpdateAppRequest = Partial<Omit<App, 'id' | 'createdAt' | 'updatedAt'>>;
 
+export type EnvVariable = {
+  id: number;
+  appId: number;
+  key: string;
+  value: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CreateEnvVariableRequest = {
+  appId: number;
+  key: string;
+  value: string;
+};
+
+export type UpdateEnvVariableRequest = {
+  id: number;
+  key: string;
+  value: string;
+};
+
+export type Domain = {
+  id: number;
+  appId: number;
+  domain: string;
+  sslStatus: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CreateDomainRequest = {
+  appId: number;
+  domain: string;
+};
+
+export type UpdateDomainRequest = {
+  id: number;
+  domain: string;
+};
+
+export type ContainerStatus = {
+  name: string;
+  status: string;
+  state: string;
+  uptime: string;
+  healthy: boolean;
+};

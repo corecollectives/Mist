@@ -18,16 +18,6 @@ func WatcherLogs(ctx context.Context, filePath string, send chan<- string) error
 	reader := bufio.NewReader(file)
 
 	for {
-		line, err := reader.ReadString('\n')
-		if err == io.EOF {
-			break
-		} else if err != nil {
-			return err
-		}
-		send <- line
-	}
-
-	for {
 		select {
 		case <-ctx.Done():
 			return nil
@@ -39,7 +29,17 @@ func WatcherLogs(ctx context.Context, filePath string, send chan<- string) error
 			} else if err != nil {
 				return err
 			}
-			send <- line
+
+			if len(line) > 0 && line[len(line)-1] == '\n' {
+				line = line[:len(line)-1]
+			}
+			if len(line) > 0 && line[len(line)-1] == '\r' {
+				line = line[:len(line)-1]
+			}
+
+			if len(line) > 0 {
+				send <- line
+			}
 		}
 	}
 }

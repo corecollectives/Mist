@@ -41,6 +41,12 @@ func LogsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer conn.Close()
 
+	conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+	conn.SetPongHandler(func(string) error {
+		conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+		return nil
+	})
+
 	logPath := docker.GetLogsPath(dep.CommitHash, depId)
 	ctx, cancel := context.WithCancel(r.Context())
 	defer cancel()
@@ -48,6 +54,31 @@ func LogsHandler(w http.ResponseWriter, r *http.Request) {
 	events := make(chan websockets.DeploymentEvent, 100)
 
 	go websockets.WatchDeploymentStatus(ctx, depId, events)
+
+	go func() {
+		for {
+			if _, _, err := conn.ReadMessage(); err != nil {
+				cancel()
+				return
+			}
+		}
+	}()
+
+	go func() {
+		ticker := time.NewTicker(30 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+					cancel()
+					return
+				}
+			}
+		}
+	}()
 
 	go func() {
 		for i := 0; i < 20; i++ {
@@ -61,7 +92,7 @@ func LogsHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		send := make(chan string)
+		send := make(chan string, 100)
 		go func() {
 			_ = websockets.WatcherLogs(ctx, logPath, send)
 			close(send)
@@ -88,9 +119,19 @@ func LogsHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			continue
 		}
+
+		conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
 		if err := conn.WriteMessage(websocket.TextMessage, msg); err != nil {
 			cancel()
 			break
+		}
+
+		if statusData, ok := event.Data.(websockets.StatusUpdate); ok {
+			if statusData.Status == "success" || statusData.Status == "failed" {
+				time.Sleep(1 * time.Second)
+				cancel()
+				break
+			}
 		}
 	}
 }

@@ -1,0 +1,218 @@
+import { useEffect, useRef } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Terminal, X, CheckCircle2, XCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { useDeploymentMonitor } from '@/hooks';
+import { cn } from '@/lib/utils';
+
+interface Props {
+  deploymentId: number;
+  open: boolean;
+  onClose: () => void;
+  onComplete?: () => void;
+}
+
+export const DeploymentMonitor = ({ deploymentId, open, onClose, onComplete }: Props) => {
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  const { logs, status, error, isConnected, isLoading, isLive, reset } = useDeploymentMonitor({
+    deploymentId,
+    enabled: open,
+    onComplete: () => {
+      onComplete?.();
+    },
+    onError: (err) => {
+      console.error('Deployment error:', err);
+    },
+  });
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [logs]);
+
+  const handleClose = () => {
+    reset();
+    onClose();
+  };
+
+  const getStatusInfo = () => {
+    const statusValue = status?.status || 'pending';
+
+    switch (statusValue) {
+      case 'success':
+        return {
+          color: 'bg-green-500 text-white',
+          icon: <CheckCircle2 className="h-4 w-4" />,
+          label: 'Success',
+        };
+      case 'failed':
+        return {
+          color: 'bg-red-500 text-white',
+          icon: <XCircle className="h-4 w-4" />,
+          label: 'Failed',
+        };
+      case 'building':
+      case 'deploying':
+      case 'cloning':
+        return {
+          color: 'bg-blue-500 text-white animate-pulse',
+          icon: <Loader2 className="h-4 w-4 animate-spin" />,
+          label: statusValue.charAt(0).toUpperCase() + statusValue.slice(1),
+        };
+      case 'pending':
+        return {
+          color: 'bg-yellow-500 text-white',
+          icon: <AlertCircle className="h-4 w-4" />,
+          label: 'Pending',
+        };
+      default:
+        return {
+          color: 'bg-gray-500 text-white',
+          icon: null,
+          label: statusValue,
+        };
+    }
+  };
+
+  const statusInfo = getStatusInfo();
+
+  return (
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent
+        showCloseButton={false}
+        className="w-full max-w-[90vw] lg:max-w-[85vw] h-[90vh] p-0 rounded-xl overflow-hidden border border-border bg-background/95 backdrop-blur-xl shadow-2xl flex flex-col gap-0"
+      >
+        {/* Header */}
+        <DialogHeader className="px-6 py-4 border-b bg-background/80 backdrop-blur flex flex-row justify-between items-center shrink-0">
+          <DialogTitle className="flex items-center gap-3 text-lg">
+            <Terminal className="h-5 w-5 text-primary" />
+            <span>Deployment Monitor</span>
+          </DialogTitle>
+
+          <div className="flex items-center gap-3">
+            {/* Connection Status */}
+            <div className="flex items-center gap-2 text-xs">
+              <div
+                className={cn(
+                  'w-2 h-2 rounded-full',
+                  isLive ? (isConnected ? 'bg-green-500' : 'bg-red-500') : 'bg-blue-500'
+                )}
+              />
+              <span className="text-muted-foreground">
+                {isLive 
+                  ? (isConnected ? 'Live' : 'Disconnected')
+                  : 'Completed'
+                }
+              </span>
+            </div>
+
+            {/* Deployment ID Badge */}
+            <Badge variant="outline" className="font-mono text-xs px-2 py-0.5">
+              #{deploymentId}
+            </Badge>
+
+            <button
+              onClick={handleClose}
+              className="p-1.5 hover:bg-muted rounded-md transition"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+        </DialogHeader>
+
+        {/* Status Bar */}
+        {status && (
+          <div className="px-6 py-3 bg-muted/30 border-b flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-3">
+              <Badge className={cn('flex items-center gap-1.5', statusInfo.color)}>
+                {statusInfo.icon}
+                <span>{statusInfo.label}</span>
+              </Badge>
+              <span className="text-sm text-muted-foreground">
+                {status.message}
+              </span>
+            </div>
+
+            {/* Progress Bar */}
+            {status.status !== 'success' && status.status !== 'failed' && (
+              <div className="flex items-center gap-3 min-w-[200px]">
+                <div className="flex-1 bg-muted rounded-full h-2 overflow-hidden">
+                  <div
+                    className="bg-primary h-full transition-all duration-300 ease-out"
+                    style={{ width: `${status.progress}%` }}
+                  />
+                </div>
+                <span className="text-sm text-muted-foreground font-medium min-w-[3ch] text-right">
+                  {status.progress}%
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Error Banner - Only show for live deployments */}
+        {error && isLive && (
+          <div className="px-6 py-3 bg-red-500/10 border-b border-red-500/30 flex items-start gap-3 shrink-0">
+            <XCircle className="h-5 w-5 text-red-500 mt-0.5 shrink-0" />
+            <div className="flex-1">
+              <h3 className="font-semibold text-red-500">Deployment Failed</h3>
+              <p className="text-sm text-red-500/90 mt-1">{error}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Success Banner - Only show for live deployments */}
+        {status?.status === 'success' && isLive && (
+          <div className="px-6 py-3 bg-green-500/10 border-b border-green-500/30 flex items-center gap-3 shrink-0">
+            <CheckCircle2 className="h-5 w-5 text-green-500" />
+            <span className="font-semibold text-green-500">
+              Deployment Successful!
+            </span>
+            {status.duration && (
+              <span className="text-sm text-green-500/80">
+                Completed in {status.duration}s
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Logs Viewer */}
+        <div className="flex-1 bg-black text-green-400 p-4 overflow-auto font-mono text-sm leading-relaxed">
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center h-full text-gray-500">
+              <Loader2 className="h-8 w-8 animate-spin mb-3" />
+              <p>Loading deployment...</p>
+            </div>
+          ) : logs.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-gray-500">
+              <Loader2 className="h-8 w-8 animate-spin mb-3" />
+              <p>Waiting for logs...</p>
+            </div>
+          ) : (
+            <div className="space-y-0.5">
+              {logs.map((log, index) => (
+                <div key={index} className="whitespace-pre-wrap break-words">
+                  {log}
+                </div>
+              ))}
+              <div ref={bottomRef} />
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-3 border-t bg-background/80 backdrop-blur flex justify-end shrink-0">
+          <Button onClick={handleClose} className="px-6">
+            Close
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};

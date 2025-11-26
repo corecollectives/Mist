@@ -50,8 +50,10 @@ func RegisterRoutes(mux *http.ServeMux) {
 	mux.Handle("POST /api/github/branches", middleware.AuthMiddleware()(http.HandlerFunc(github.GetBranches)))
 	mux.HandleFunc("POST /api/github/webhook", github.GithubWebhook)
 
-	mux.HandleFunc("/api/ws/logs", deployments.LogsHandler)
+	mux.HandleFunc("/api/deployments/logs/stream", deployments.LogsHandler)
+	mux.Handle("POST /api/deployments", middleware.AuthMiddleware()(http.HandlerFunc(deployments.AddDeployHandler)))
 	mux.Handle("POST /api/deployments/create", middleware.AuthMiddleware()(http.HandlerFunc(deployments.AddDeployHandler)))
 	mux.Handle("POST /api/deployments/getByAppId", middleware.AuthMiddleware()(http.HandlerFunc(deployments.GetByApplicationID)))
+	mux.Handle("GET /api/deployments/logs", middleware.AuthMiddleware()(http.HandlerFunc(deployments.GetCompletedDeploymentLogsHandler)))
 
 }

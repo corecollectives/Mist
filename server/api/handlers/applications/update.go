@@ -1,7 +1,6 @@
 package applications
 
 import (
-	"database/sql"
 	"encoding/json"
 	"net/http"
 	"strings"
@@ -66,22 +65,26 @@ func UpdateApplication(w http.ResponseWriter, r *http.Request) {
 		app.Name = strings.TrimSpace(*req.Name)
 	}
 	if req.Description != nil {
-		app.Description = sql.NullString{String: strings.TrimSpace(*req.Description), Valid: true}
+		trimmed := strings.TrimSpace(*req.Description)
+		app.Description = &trimmed
 	}
 	if req.GitRepository != nil {
-		app.GitRepository = sql.NullString{String: strings.TrimSpace(*req.GitRepository), Valid: true}
+		trimmed := strings.TrimSpace(*req.GitRepository)
+		app.GitRepository = &trimmed
 	}
 	if req.GitBranch != nil {
 		app.GitBranch = strings.TrimSpace(*req.GitBranch)
 	}
 	if req.Port != nil {
-		app.Port = sql.NullInt64{Int64: int64(*req.Port), Valid: true}
+		port := int64(*req.Port)
+		app.Port = &port
 	}
 	if req.RootDirectory != nil {
 		app.RootDirectory = strings.TrimSpace(*req.RootDirectory)
 	}
 	if req.DockerfilePath != nil {
-		app.DockerfilePath = sql.NullString{String: strings.TrimSpace(*req.DockerfilePath), Valid: true}
+		trimmed := strings.TrimSpace(*req.DockerfilePath)
+		app.DockerfilePath = &trimmed
 	}
 	if req.DeploymentStrategy != nil {
 		app.DeploymentStrategy = models.DeploymentStrategy(strings.TrimSpace(*req.DeploymentStrategy))

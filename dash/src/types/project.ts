@@ -24,3 +24,7 @@ export interface ProjectUpdateInput {
   description: string;
   tags: string[];
 }
+
+// Aliases for service layer
+export type CreateProjectRequest = ProjectCreateInput;
+export type UpdateProjectRequest = ProjectUpdateInput;

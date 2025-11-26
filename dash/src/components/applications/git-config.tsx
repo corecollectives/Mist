@@ -8,7 +8,7 @@ import { toast } from "sonner"
 import type { App } from "@/types/app"
 import { Github, Gitlab } from "lucide-react"
 import { SiBitbucket, SiGitea } from "react-icons/si"
-import { Skeleton } from "@/components/Skeleton"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface GitProviderTabProps {
   app: App
@@ -101,9 +101,6 @@ export const GitProviderTab = ({ app }: GitProviderTabProps) => {
       setBranches([{ name: app.gitBranch }])
     }
   }, [app])
-
-
-  console.log("Selected Repo:", selectedRepo, branches)
 
   const saveGitConfig = async () => {
     try {

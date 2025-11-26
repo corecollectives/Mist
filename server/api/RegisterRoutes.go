@@ -17,6 +17,7 @@ import (
 func RegisterRoutes(mux *http.ServeMux) {
 
 	mux.Handle("/api/ws/stats", middleware.AuthMiddleware()(http.HandlerFunc(websockets.StatWsHandler)))
+	mux.HandleFunc("/api/ws/container/logs", websockets.ContainerLogsHandler)
 	mux.HandleFunc("GET /api/health", handlers.HealthCheckHandler)
 
 	mux.HandleFunc("POST /api/auth/signup", auth.SignUpHandler)
@@ -41,6 +42,23 @@ func RegisterRoutes(mux *http.ServeMux) {
 	mux.Handle("POST /api/apps/getById", middleware.AuthMiddleware()(http.HandlerFunc(applications.GetApplicationById)))
 	mux.Handle("PUT /api/apps/update", middleware.AuthMiddleware()(http.HandlerFunc(applications.UpdateApplication)))
 	mux.Handle("POST /api/apps/getLatestCommit", middleware.AuthMiddleware()(http.HandlerFunc(applications.GetLatestCommit)))
+	mux.Handle("POST /api/apps/getPreviewUrl", middleware.AuthMiddleware()(http.HandlerFunc(applications.GetPreviewURL)))
+
+	mux.Handle("POST /api/apps/envs/create", middleware.AuthMiddleware()(http.HandlerFunc(applications.CreateEnvVariable)))
+	mux.Handle("POST /api/apps/envs/get", middleware.AuthMiddleware()(http.HandlerFunc(applications.GetEnvVariables)))
+	mux.Handle("PUT /api/apps/envs/update", middleware.AuthMiddleware()(http.HandlerFunc(applications.UpdateEnvVariable)))
+	mux.Handle("DELETE /api/apps/envs/delete", middleware.AuthMiddleware()(http.HandlerFunc(applications.DeleteEnvVariable)))
+
+	mux.Handle("POST /api/apps/domains/create", middleware.AuthMiddleware()(http.HandlerFunc(applications.CreateDomain)))
+	mux.Handle("POST /api/apps/domains/get", middleware.AuthMiddleware()(http.HandlerFunc(applications.GetDomains)))
+	mux.Handle("PUT /api/apps/domains/update", middleware.AuthMiddleware()(http.HandlerFunc(applications.UpdateDomain)))
+	mux.Handle("DELETE /api/apps/domains/delete", middleware.AuthMiddleware()(http.HandlerFunc(applications.DeleteDomain)))
+
+	mux.Handle("POST /api/apps/container/stop", middleware.AuthMiddleware()(http.HandlerFunc(applications.StopContainerHandler)))
+	mux.Handle("POST /api/apps/container/start", middleware.AuthMiddleware()(http.HandlerFunc(applications.StartContainerHandler)))
+	mux.Handle("POST /api/apps/container/restart", middleware.AuthMiddleware()(http.HandlerFunc(applications.RestartContainerHandler)))
+	mux.Handle("GET /api/apps/container/status", middleware.AuthMiddleware()(http.HandlerFunc(applications.GetContainerStatusHandler)))
+	mux.Handle("GET /api/apps/container/logs", middleware.AuthMiddleware()(http.HandlerFunc(applications.GetContainerLogsHandler)))
 
 	mux.Handle("GET /api/github/app", middleware.AuthMiddleware()(http.HandlerFunc(github.GetApp)))
 	mux.Handle("GET /api/github/app/create", middleware.AuthMiddleware()(http.HandlerFunc(github.CreateGithubApp)))

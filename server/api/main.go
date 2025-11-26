@@ -1,7 +1,6 @@
 package api
 
 import (
-	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
@@ -13,7 +12,7 @@ import (
 	"github.com/corecollectives/mist/websockets"
 )
 
-func InitApiServer(db *sql.DB) {
+func InitApiServer() {
 	mux := http.NewServeMux()
 	RegisterRoutes(mux)
 

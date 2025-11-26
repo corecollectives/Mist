@@ -101,4 +101,222 @@ export const applicationsService = {
 
     return data.data;
   },
+
+  // Environment Variables
+  async createEnvVariable(request: { appId: number; key: string; value: string }) {
+    const response = await fetch(`${API_BASE}/apps/envs/create`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(request),
+    });
+
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to create environment variable');
+    }
+
+    return data.data;
+  },
+
+  async getEnvVariables(appId: number) {
+    const response = await fetch(`${API_BASE}/apps/envs/get`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ appId }),
+    });
+
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to fetch environment variables');
+    }
+
+    return data.data || [];
+  },
+
+  async updateEnvVariable(request: { id: number; key: string; value: string }) {
+    const response = await fetch(`${API_BASE}/apps/envs/update`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(request),
+    });
+
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to update environment variable');
+    }
+
+    return data.data;
+  },
+
+  async deleteEnvVariable(id: number) {
+    const response = await fetch(`${API_BASE}/apps/envs/delete`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ id }),
+    });
+
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to delete environment variable');
+    }
+
+    return data.data;
+  },
+
+  // Domains
+  async createDomain(request: { appId: number; domain: string }) {
+    const response = await fetch(`${API_BASE}/apps/domains/create`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(request),
+    });
+
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to create domain');
+    }
+
+    return data.data;
+  },
+
+  async getDomains(appId: number) {
+    const response = await fetch(`${API_BASE}/apps/domains/get`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ appId }),
+    });
+
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to fetch domains');
+    }
+
+    return data.data || [];
+  },
+
+  async updateDomain(request: { id: number; domain: string }) {
+    const response = await fetch(`${API_BASE}/apps/domains/update`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(request),
+    });
+
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to update domain');
+    }
+
+    return data.data;
+  },
+
+  async deleteDomain(id: number) {
+    const response = await fetch(`${API_BASE}/apps/domains/delete`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ id }),
+    });
+
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to delete domain');
+    }
+
+    return data.data;
+  },
+
+  // Preview URL
+  async getPreviewUrl(appId: number): Promise<{ url: string; domain: string }> {
+    const response = await fetch(`${API_BASE}/apps/getPreviewUrl`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ appId }),
+    });
+
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to fetch preview URL');
+    }
+
+    return data.data;
+  },
+
+  // Container Control
+  async stopContainer(appId: number): Promise<{ message: string }> {
+    const response = await fetch(`${API_BASE}/apps/container/stop?appId=${appId}`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to stop container');
+    }
+
+    return data.data;
+  },
+
+  async startContainer(appId: number): Promise<{ message: string }> {
+    const response = await fetch(`${API_BASE}/apps/container/start?appId=${appId}`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to start container');
+    }
+
+    return data.data;
+  },
+
+  async restartContainer(appId: number): Promise<{ message: string }> {
+    const response = await fetch(`${API_BASE}/apps/container/restart?appId=${appId}`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to restart container');
+    }
+
+    return data.data;
+  },
+
+  async getContainerStatus(appId: number) {
+    const response = await fetch(`${API_BASE}/apps/container/status?appId=${appId}`, {
+      method: 'GET',
+      credentials: 'include',
+    });
+
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to fetch container status');
+    }
+
+    return data.data;
+  },
+
+  async getContainerLogs(appId: number, tail: number = 100): Promise<{ logs: string }> {
+    const response = await fetch(`${API_BASE}/apps/container/logs?appId=${appId}&tail=${tail}`, {
+      method: 'GET',
+      credentials: 'include',
+    });
+
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to fetch container logs');
+    }
+
+    return data.data;
+  },
 };

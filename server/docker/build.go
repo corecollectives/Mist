@@ -7,8 +7,17 @@ import (
 	"strings"
 )
 
-func BuildImage(imageTag, contextPath string, logfile *os.File) error {
-	cmd := exec.Command("docker", "build", "-t", imageTag, contextPath)
+func BuildImage(imageTag, contextPath string, envVars map[string]string, logfile *os.File) error {
+	buildArgs := []string{"build", "-t", imageTag}
+
+	for key, value := range envVars {
+		buildArgs = append(buildArgs, "--build-arg", fmt.Sprintf("%s=%s", key, value))
+	}
+
+	buildArgs = append(buildArgs, contextPath)
+
+	fmt.Println(buildArgs)
+	cmd := exec.Command("docker", buildArgs...)
 	cmd.Stdout = logfile
 	cmd.Stderr = logfile
 
@@ -25,11 +34,9 @@ func BuildImage(imageTag, contextPath string, logfile *os.File) error {
 func StopRemoveContainer(containerName string, logfile *os.File) error {
 	ifExists := ContainerExists(containerName)
 	if !ifExists {
-		// Container doesn't exist, nothing to stop/remove
 		return nil
 	}
 
-	// Stop container
 	stopCmd := exec.Command("docker", "stop", containerName)
 	stopCmd.Stdout = logfile
 	stopCmd.Stderr = logfile
@@ -37,7 +44,6 @@ func StopRemoveContainer(containerName string, logfile *os.File) error {
 		return fmt.Errorf("failed to stop container %s: %w", containerName, err)
 	}
 
-	// Remove container
 	removeCmd := exec.Command("docker", "rm", containerName)
 	removeCmd.Stdout = logfile
 	removeCmd.Stderr = logfile
@@ -62,17 +68,40 @@ func ContainerExists(name string) bool {
 	return true
 }
 
-func RunContainer(imageTag, containerName string, domain string, Port int, logfile *os.File) error {
+func RunContainer(imageTag, containerName string, domains []string, Port int, envVars map[string]string, logfile *os.File) error {
 
 	runArgs := []string{
 		"run", "-d",
-		"--network", "traefik-net",
-		"-l", "traefik.enable=true",
-		"-l", fmt.Sprintf("traefik.http.routers.%s.rule=Host(`%s`)", containerName, domain),
-		"-l", fmt.Sprintf("traefik.http.routers.%s.entrypoints=web", containerName),
-		"-l", fmt.Sprintf("traefik.http.services.%s.loadbalancer.server.port=%d", containerName, Port),
 		"--name", containerName,
 	}
+
+	for key, value := range envVars {
+		runArgs = append(runArgs, "-e", fmt.Sprintf("%s=%s", key, value))
+	}
+
+	if len(domains) > 0 {
+		runArgs = append(runArgs,
+			"--network", "traefik-net",
+			"-l", "traefik.enable=true",
+		)
+
+		var hostRules []string
+		for _, domain := range domains {
+			hostRules = append(hostRules, fmt.Sprintf("Host(`%s`)", domain))
+		}
+		hostRule := strings.Join(hostRules, " || ")
+
+		runArgs = append(runArgs,
+			"-l", fmt.Sprintf("traefik.http.routers.%s.rule=%s", containerName, hostRule),
+			"-l", fmt.Sprintf("traefik.http.routers.%s.entrypoints=web", containerName),
+			"-l", fmt.Sprintf("traefik.http.services.%s.loadbalancer.server.port=%d", containerName, Port),
+		)
+	} else {
+		runArgs = append(runArgs,
+			"-p", fmt.Sprintf("%d:%d", Port, Port),
+		)
+	}
+
 	runArgs = append(runArgs, imageTag)
 
 	cmd := exec.Command("docker", runArgs...)

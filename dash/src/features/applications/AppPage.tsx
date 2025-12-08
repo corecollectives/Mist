@@ -1,10 +1,9 @@
-import { FormModal } from "@/components/FormModal";
+import { FormModal } from "@/components/common/form-modal";
 import { FullScreenLoading } from "@/components/common";
 import { Button } from "@/components/ui/button";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { toast } from "sonner";
-import type { App } from "@/types/app";
+import { useApplication } from "@/hooks";
 import { TabsList, Tabs, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { AppInfo, GitProviderTab, EnvironmentVariables, Domains, AppSettings, ContainerControls, LiveLogsViewer, AppStats } from "@/components/applications";
 import { DeploymentsTab } from "@/components/deployments";
@@ -12,129 +11,42 @@ import { DeploymentsTab } from "@/components/deployments";
 
 export const AppPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [app, setApp] = useState<App | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [latestCommit, setLatestCommit] = useState();
-  const [previewUrl, setPreviewUrl] = useState<string>("");
 
   const params = useParams();
   const navigate = useNavigate();
 
   const appId = useMemo(() => Number(params.appId), [params.appId]);
-  const projectId = parseInt(params.projectId!);
 
-  // Fetch app details
-  const fetchAppDetails = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await fetch(`/api/apps/getById`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ appId }),
-      });
-
-      const data = await response.json();
-      if (!data.success) throw new Error(data.error || "Failed to fetch app details");
-      setApp(data.data);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to fetch app details";
-      setError(message);
-      toast.error(message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-
-  const fetchLatestCommit = async () => {
-    try {
-      const res = await fetch(`/api/apps/getLatestCommit`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ appID: appId, projectID: projectId }),
-        }
-      );
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error || "Failed to fetch latest commit");
-      setLatestCommit(data.data);
-    }
-    catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to fetch latest commit");
-    }
-  }
+  const {
+    app,
+    loading,
+    error,
+    latestCommit,
+    previewUrl,
+    updateApp,
+    deleteApp,
+    refreshApp,
+  } = useApplication({
+    appId,
+    autoFetch: true,
+  });
 
   const deleteAppHandler = async () => {
-    try {
-      const response = await fetch(`/api/apps/delete?id=${appId}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-      const data = await response.json();
-      if (!data.success) throw new Error(data.error || "Failed to delete app");
-
-      toast.success("App deleted successfully");
+    const success = await deleteApp();
+    if (success) {
       navigate(-1);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to delete app");
     }
   };
 
   const handleUpdateApp = async (appData: {
-
     name: string;
     description: string;
   }) => {
-    try {
-      const response = await fetch(`/api/apps/update`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ appId: appId, ...appData }),
-        credentials: "include",
-      });
-      const data = await response.json();
-      if (!data.success) throw new Error(data.error || "Failed to update app");
-
-      toast.success(data.message || "App updated successfully");
-      await fetchAppDetails();
+    const result = await updateApp(appData);
+    if (result) {
       setIsModalOpen(false);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to update app");
     }
   };
-
-  useEffect(() => {
-    fetchLatestCommit()
-    fetchAppDetails()
-  }, [params.appId]);
-
-  // Fetch preview URL when app changes
-  useEffect(() => {
-    const fetchPreviewUrl = async () => {
-      if (!app || app.status !== "running") return
-      
-      try {
-        const response = await fetch(`/api/apps/getPreviewUrl`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ appId: app.id }),
-        })
-        const data = await response.json()
-        if (data.success) {
-          setPreviewUrl(data.data.url)
-        }
-      } catch (err) {
-        console.error("Failed to fetch preview URL:", err)
-      }
-    }
-
-    fetchPreviewUrl()
-  }, [app]);
 
 
 
@@ -214,8 +126,8 @@ export const AppPage = () => {
           </TabsContent>
 
           <TabsContent value="settings" className="space-y-6">
-            <ContainerControls appId={app.id} onStatusChange={fetchAppDetails} />
-            <AppSettings app={app} onUpdate={fetchAppDetails} />
+            <ContainerControls appId={app.id} onStatusChange={refreshApp} />
+            <AppSettings app={app} onUpdate={refreshApp} />
             <Domains appId={app.id} />
           </TabsContent>
         </Tabs>

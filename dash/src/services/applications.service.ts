@@ -1,15 +1,12 @@
-import type { 
-  App, 
-  CreateAppRequest, 
-  UpdateAppRequest 
+import type {
+  App,
+  CreateAppRequest,
+  UpdateAppRequest
 } from '@/types';
 
 const API_BASE = '/api';
 
 export const applicationsService = {
-  /**
-   * Get application by ID
-   */
   async getById(appId: number): Promise<App> {
     const response = await fetch(`${API_BASE}/apps/getById`, {
       method: 'POST',
@@ -26,9 +23,6 @@ export const applicationsService = {
     return data.data;
   },
 
-  /**
-   * Get applications by project ID
-   */
   async getByProjectId(projectId: number): Promise<App[]> {
     const response = await fetch(`${API_BASE}/apps/getByProjectId`, {
       method: 'POST',
@@ -45,9 +39,6 @@ export const applicationsService = {
     return data.data || [];
   },
 
-  /**
-   * Create new application
-   */
   async create(request: CreateAppRequest): Promise<App> {
     const response = await fetch(`${API_BASE}/apps/create`, {
       method: 'POST',
@@ -64,9 +55,6 @@ export const applicationsService = {
     return data.data;
   },
 
-  /**
-   * Update application
-   */
   async update(appId: number, updates: UpdateAppRequest): Promise<App> {
     const response = await fetch(`${API_BASE}/apps/update`, {
       method: 'PUT',
@@ -83,9 +71,6 @@ export const applicationsService = {
     return data.data;
   },
 
-  /**
-   * Get latest commit for application
-   */
   async getLatestCommit(appId: number): Promise<any> {
     const response = await fetch(`${API_BASE}/apps/getLatestCommit`, {
       method: 'POST',
@@ -102,7 +87,6 @@ export const applicationsService = {
     return data.data;
   },
 
-  // Environment Variables
   async createEnvVariable(request: { appId: number; key: string; value: string }) {
     const response = await fetch(`${API_BASE}/apps/envs/create`, {
       method: 'POST',
@@ -167,7 +151,6 @@ export const applicationsService = {
     return data.data;
   },
 
-  // Domains
   async createDomain(request: { appId: number; domain: string }) {
     const response = await fetch(`${API_BASE}/apps/domains/create`, {
       method: 'POST',
@@ -232,7 +215,6 @@ export const applicationsService = {
     return data.data;
   },
 
-  // Preview URL
   async getPreviewUrl(appId: number): Promise<{ url: string; domain: string }> {
     const response = await fetch(`${API_BASE}/apps/getPreviewUrl`, {
       method: 'POST',
@@ -249,7 +231,6 @@ export const applicationsService = {
     return data.data;
   },
 
-  // Container Control
   async stopContainer(appId: number): Promise<{ message: string }> {
     const response = await fetch(`${API_BASE}/apps/container/stop?appId=${appId}`, {
       method: 'POST',

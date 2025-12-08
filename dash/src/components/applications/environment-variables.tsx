@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Trash2, Plus, Pencil, X, Check } from "lucide-react";
 import { toast } from "sonner";
-import { applicationsService } from "@/services";
+import { useEnvironmentVariables } from "@/hooks";
 import type { EnvVariable } from "@/types";
 
 interface EnvironmentVariablesProps {
@@ -13,30 +13,17 @@ interface EnvironmentVariablesProps {
 }
 
 export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
-  const [envVars, setEnvVars] = useState<EnvVariable[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { envVars, loading, createEnvVar, updateEnvVar, deleteEnvVar } = useEnvironmentVariables({ 
+    appId, 
+    autoFetch: true 
+  });
+
   const [newKey, setNewKey] = useState("");
   const [newValue, setNewValue] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editKey, setEditKey] = useState("");
   const [editValue, setEditValue] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
-
-  const fetchEnvVars = async () => {
-    try {
-      setLoading(true);
-      const data = await applicationsService.getEnvVariables(appId);
-      setEnvVars(data);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to fetch environment variables");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchEnvVars();
-  }, [appId]);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,19 +32,11 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
       return;
     }
 
-    try {
-      await applicationsService.createEnvVariable({
-        appId,
-        key: newKey.trim(),
-        value: newValue,
-      });
-      toast.success("Environment variable added");
+    const result = await createEnvVar(newKey.trim(), newValue);
+    if (result) {
       setNewKey("");
       setNewValue("");
       setShowAddForm(false);
-      await fetchEnvVars();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to add environment variable");
     }
   };
 
@@ -67,17 +46,9 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
       return;
     }
 
-    try {
-      await applicationsService.updateEnvVariable({
-        id,
-        key: editKey.trim(),
-        value: editValue,
-      });
-      toast.success("Environment variable updated");
+    const result = await updateEnvVar(id, editKey.trim(), editValue);
+    if (result) {
       setEditingId(null);
-      await fetchEnvVars();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to update environment variable");
     }
   };
 
@@ -85,14 +56,7 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
     if (!confirm("Are you sure you want to delete this environment variable?")) {
       return;
     }
-
-    try {
-      await applicationsService.deleteEnvVariable(id);
-      toast.success("Environment variable deleted");
-      await fetchEnvVars();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to delete environment variable");
-    }
+    await deleteEnvVar(id);
   };
 
   const startEdit = (env: EnvVariable) => {

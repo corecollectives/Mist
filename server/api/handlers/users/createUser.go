@@ -65,5 +65,12 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	models.LogUserAudit(userData.ID, "create", "user", &user.ID, map[string]interface{}{
+		"username":   user.Username,
+		"email":      user.Email,
+		"role":       user.Role,
+		"created_by": userData.Username,
+	})
+
 	handlers.SendResponse(w, http.StatusCreated, true, user, "User created successfully", "")
 }

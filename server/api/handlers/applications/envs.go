@@ -49,6 +49,12 @@ func CreateEnvVariable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Log audit event
+	models.LogUserAudit(userInfo.ID, "create", "env_variable", &env.ID, map[string]interface{}{
+		"app_id": req.AppID,
+		"key":    req.Key,
+	})
+
 	handlers.SendResponse(w, http.StatusOK, true, env, "Environment variable created successfully", "")
 }
 
@@ -137,6 +143,12 @@ func UpdateEnvVariable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Log audit event
+	models.LogUserAudit(userInfo.ID, "update", "env_variable", &req.ID, map[string]interface{}{
+		"app_id": env.AppID,
+		"key":    req.Key,
+	})
+
 	handlers.SendResponse(w, http.StatusOK, true, nil, "Environment variable updated successfully", "")
 }
 
@@ -176,6 +188,12 @@ func DeleteEnvVariable(w http.ResponseWriter, r *http.Request) {
 		handlers.SendResponse(w, http.StatusForbidden, false, nil, "You do not have permission to modify this application", "Forbidden")
 		return
 	}
+
+	// Log audit event before deletion
+	models.LogUserAudit(userInfo.ID, "delete", "env_variable", &req.ID, map[string]interface{}{
+		"app_id": env.AppID,
+		"key":    env.Key,
+	})
 
 	err = models.DeleteEnvVariable(req.ID)
 	if err != nil {

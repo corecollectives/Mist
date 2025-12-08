@@ -1,2 +1,3 @@
 export { ErrorBoundary } from './error-boundary';
-export { LoadingSpinner, FullScreenLoading, LoadingCard } from './loading-spinner';
+export { LoadingSpinner, FullScreenLoading } from './loading-spinner';
+export { FormModal } from './form-modal';

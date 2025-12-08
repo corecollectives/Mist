@@ -1,4 +1,3 @@
-import { Card } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -24,19 +23,6 @@ export function LoadingSpinner({ size = 'md', className, text }: LoadingSpinnerP
         )}
       </div>
     </div>
-  );
-}
-
-interface LoadingCardProps {
-  className?: string;
-  text?: string;
-}
-
-export function LoadingCard({ className, text = 'Loading...' }: LoadingCardProps) {
-  return (
-    <Card className={cn('p-8', className)}>
-      <LoadingSpinner text={text} />
-    </Card>
   );
 }
 

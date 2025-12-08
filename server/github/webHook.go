@@ -56,6 +56,16 @@ func CreateDeploymentFromGithubPushEvent(evt PushEvent) (int64, error) {
 		Int64("deployment_id", deployment.ID).
 		Int64("app_id", appID).
 		Msg("Deployment created from GitHub webhook")
+
+	models.LogWebhookAudit("create", "deployment", &deployment.ID, map[string]interface{}{
+		"app_id":         appID,
+		"commit_hash":    commit,
+		"commit_message": evt.HeadCommit.Message,
+		"repository":     repoName,
+		"branch":         branch,
+		"pusher":         evt.Pusher.Name,
+	})
+
 	return deployment.ID, nil
 
 }

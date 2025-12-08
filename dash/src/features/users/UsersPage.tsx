@@ -1,5 +1,4 @@
-import { useEffect, useState } from 'react';
-import { toast } from 'sonner';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FullScreenLoading } from '@/components/common';
@@ -7,70 +6,25 @@ import { UserCard, CreateUserModal } from './components';
 import { canManageUsers } from './utils';
 import type { CreateUserData, User } from '@/types';
 import { useAuth } from '@/providers';
+import { useUsers } from '@/hooks';
 
 export default function UsersPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [users, setUsers] = useState<User[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
-
-  const fetchUsers = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const response = await fetch("/api/users/getAll", {
-        credentials: 'include'
-      });
-      const data = await response.json();
-      if (!data.success) throw new Error(data.error || "Failed to fetch users");
-      
-      const updatedUsers: User[] = data.data.map((u: User) => ({
-        ...u,
-        isAdmin: u.role === "admin" || u.role === "owner",
-      }));
-      
-      setUsers(updatedUsers);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to fetch users";
-      setError(errorMessage);
-      toast.error(errorMessage);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchUsers();
-  }, []);
+  const { users, loading, error, createUser } = useUsers({ autoFetch: true });
 
   const handleCreateUser = async (userData: CreateUserData) => {
-    try {
-      const response = await fetch("/api/users/create", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(userData),
-        credentials: 'include'
-      });
-
-      const data = await response.json();
-      if (!data.success) throw new Error(data.error || "Failed to create user");
-
-      toast.success('User created successfully');
+    const result = await createUser(userData);
+    if (result) {
       setIsModalOpen(false);
-      fetchUsers(); // Refresh the users list
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to create user";
-      toast.error(errorMessage);
     }
   };
+
   const handleUserClick = () => {
     // Handle user click action
   };
 
-  if (isLoading && users.length === 0) {
+  if (loading && users.length === 0) {
     return <FullScreenLoading />;
   }
 

@@ -60,11 +60,26 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get user info before deletion for audit log
+	userToDelete, _ := models.GetUserByID(int64(id))
+
 	err = models.DeleteUserByID(int64(id))
 	if err != nil {
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to delete user", err.Error())
 		return
 	}
+
+	deletedUserID := int64(id)
+	auditDetails := map[string]interface{}{
+		"deleted_by": userData.Username,
+		"role":       userToDeleteRole,
+	}
+	if userToDelete != nil {
+		auditDetails["username"] = userToDelete.Username
+		auditDetails["email"] = userToDelete.Email
+	}
+	models.LogUserAudit(userData.ID, "delete", "user", &deletedUserID, auditDetails)
+
 	store.InitSetupRequired()
 	handlers.SendResponse(w, http.StatusOK, true, nil, "User deleted successfully", "")
 

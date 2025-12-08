@@ -57,6 +57,13 @@ func CreateApplication(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Log audit event
+	models.LogUserAudit(userInfo.ID, "create", "application", &app.ID, map[string]interface{}{
+		"name":        app.Name,
+		"description": app.Description,
+		"project_id":  app.ProjectID,
+	})
+
 	handlers.SendResponse(w, http.StatusOK, true, app.ToJson(), "Application created successfully", "")
 
 }

@@ -1,99 +1,40 @@
-import { FormModal } from "@/components/FormModal";
+import { FormModal } from "@/components/common/form-modal";
 import { FullScreenLoading } from "@/components/common";
 import { Button } from "@/components/ui/button";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { toast } from "sonner";
-import type { Project } from "@/types";
-import type { App } from "@/types/app";
+import { useProject, useApplications } from "@/hooks";
 import { AppCard } from "./components/AppCard";
 
 export const ProjectPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAddNewAppModalOpen, setIsAddNewAppModalOpen] = useState(false);
-  const [project, setProject] = useState<Project | null>(null);
-  const [apps, setApps] = useState<App[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [fetchingApps, setFetchingApps] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const params = useParams();
   const navigate = useNavigate();
-
   const projectId = parseInt(params.projectId!);
 
-  // Fetch project details
-  const fetchProjectDetails = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await fetch(`/api/projects/getFromId?id=${projectId}`, {
-        credentials: "include",
-      });
-      const data = await response.json();
-      if (!data.success) throw new Error(data.error || "Failed to fetch project details");
-      setProject(data.data);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to fetch project details";
-      setError(message);
-      toast.error(message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { project, loading, error, updateProject, deleteProject: deleteProjectFn } = useProject({
+    projectId,
+    autoFetch: true,
+  });
 
-  // Fetch all apps in the project
-  const getApps = async () => {
-    try {
-      setFetchingApps(true);
-      const response = await fetch(`/api/apps/getByProjectId`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ projectId }),
-      });
-      const data = await response.json();
-      if (!data.success) throw new Error(data.error || "Failed to fetch apps");
-      setApps(data.data);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to fetch apps");
-    } finally {
-      setFetchingApps(false);
-    }
-  };
+  const { apps, loading: fetchingApps, createApp } = useApplications({
+    projectId,
+    autoFetch: true,
+  });
 
   const createNewApp = async ({ name, description }: { name: string; description: string }) => {
-    try {
-      const response = await fetch(`/api/apps/create`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, description, projectId }),
-        credentials: "include",
-      });
-      const data = await response.json();
-      if (!data.success) throw new Error(data.error || "Failed to create app");
-
-      toast.success("App created successfully");
+    const result = await createApp({ name, description, projectId });
+    if (result) {
       setIsAddNewAppModalOpen(false);
-      await getApps(); // Refresh app list after creating
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create app");
     }
   };
 
   const deleteProjectHandler = async () => {
-    try {
-      const response = await fetch(`/api/projects/delete?id=${projectId}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-      const data = await response.json();
-      if (!data.success) throw new Error(data.error || "Failed to delete project");
-
-      toast.success("Project deleted successfully");
+    const success = await deleteProjectFn();
+    if (success) {
       navigate("/projects");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to delete project");
     }
   };
 
@@ -102,28 +43,11 @@ export const ProjectPage = () => {
     description: string;
     tags: string[];
   }) => {
-    try {
-      const response = await fetch(`/api/projects/update?id=${projectId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(projectData),
-        credentials: "include",
-      });
-      const data = await response.json();
-      if (!data.success) throw new Error(data.error || "Failed to update project");
-
-      toast.success(data.message || "Project updated");
-      await fetchProjectDetails();
+    const result = await updateProject(projectData);
+    if (result) {
       setIsModalOpen(false);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to update project");
     }
   };
-
-  useEffect(() => {
-    fetchProjectDetails();
-    getApps();
-  }, [params.projectId]);
 
   if (loading) return <FullScreenLoading />;
 

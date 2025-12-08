@@ -72,7 +72,7 @@ export const AppCard: React.FC<AppCardProps> = ({
             <DropdownMenuContent align="end">
               {canEdit && (
                 <DropdownMenuItem
-                  onClick={(e) => {
+                  onClick={(e: React.MouseEvent) => {
                     e.stopPropagation();
                     onEdit?.(app);
                   }}
@@ -83,7 +83,7 @@ export const AppCard: React.FC<AppCardProps> = ({
               {canDelete && (
                 <DropdownMenuItem
                   className="text-destructive"
-                  onClick={(e) => {
+                  onClick={(e: React.MouseEvent) => {
                     e.stopPropagation();
                     onDelete?.(app.id);
                   }}

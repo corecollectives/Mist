@@ -25,7 +25,6 @@ func main() {
 
 	log.Info().Msg("Database initialized successfully")
 
-	// make sure models get the db instance before initing the store, bcz store is dependent on models
 	models.SetDB(dbInstance)
 	err = store.InitStore()
 	if err != nil {

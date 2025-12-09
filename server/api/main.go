@@ -16,7 +16,6 @@ func InitApiServer() {
 	mux := http.NewServeMux()
 	RegisterRoutes(mux)
 
-	// serve static frontend files in prod
 	staticDir := "static"
 	fs := http.FileServer(http.Dir(staticDir))
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

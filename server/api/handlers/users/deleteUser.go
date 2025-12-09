@@ -60,7 +60,6 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get user info before deletion for audit log
 	userToDelete, _ := models.GetUserByID(int64(id))
 
 	err = models.DeleteUserByID(int64(id))

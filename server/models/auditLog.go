@@ -82,7 +82,6 @@ func GetAllAuditLogs(limit, offset int) ([]AuditLog, error) {
 
 		if log.UserID == nil {
 			log.TriggerType = "system"
-			// Try to determine if it's a webhook from details
 			if log.Details != nil && (*log.Details != "") {
 				var detailsMap map[string]interface{}
 				if err := json.Unmarshal([]byte(*log.Details), &detailsMap); err == nil {

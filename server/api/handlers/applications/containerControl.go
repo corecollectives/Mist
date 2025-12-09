@@ -57,7 +57,6 @@ func StopContainerHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Log audit event
 	models.LogUserAudit(userInfo.ID, "stop", "container", &appId, map[string]interface{}{
 		"app_name":       app.Name,
 		"container_name": containerName,
@@ -115,7 +114,6 @@ func StartContainerHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Log audit event
 	models.LogUserAudit(userInfo.ID, "start", "container", &appId, map[string]interface{}{
 		"app_name":       app.Name,
 		"container_name": containerName,
@@ -173,7 +171,6 @@ func RestartContainerHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Log audit event
 	models.LogUserAudit(userInfo.ID, "restart", "container", &appId, map[string]interface{}{
 		"app_name":       app.Name,
 		"container_name": containerName,

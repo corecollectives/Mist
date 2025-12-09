@@ -316,7 +316,6 @@ func UpdateProjectMembers(projectID int64, userIDs []int64) error {
 		userIDs = append(userIDs, ownerID)
 	}
 
-	// Insert all new members (including owner if not already in the list)
 	for _, userID := range userIDs {
 		_, err = tx.Exec(`
 			INSERT INTO project_members (project_id, user_id)

@@ -12,7 +12,6 @@ import (
 )
 
 func (q *Queue) HandleWork(id int64, db *sql.DB) {
-	// Recovery for any panics during deployment
 	defer func() {
 		if r := recover(); r != nil {
 			errMsg := fmt.Sprintf("panic during deployment: %v", r)
@@ -20,7 +19,6 @@ func (q *Queue) HandleWork(id int64, db *sql.DB) {
 		}
 	}()
 
-	// Get deployment and app info for logging
 	appId, err := models.GetAppIDByDeploymentID(id)
 	if err != nil {
 		errMsg := fmt.Sprintf("Failed to get app ID: %v", err)
@@ -35,11 +33,9 @@ func (q *Queue) HandleWork(id int64, db *sql.DB) {
 		return
 	}
 
-	// Initialize logger
 	logger := utils.NewDeploymentLogger(id, appId, dep.CommitHash)
 	logger.Info("Starting deployment processing")
 
-	// Mark deployment as started
 	if err := models.MarkDeploymentStarted(id); err != nil {
 		logger.Error(err, "Failed to mark deployment as started")
 		errMsg := fmt.Sprintf("Failed to update deployment start time: %v", err)
@@ -47,7 +43,6 @@ func (q *Queue) HandleWork(id int64, db *sql.DB) {
 		return
 	}
 
-	// Create log file
 	logFile, _, err := fs.CreateDockerBuildLogFile(id)
 	if err != nil {
 		logger.Error(err, "Failed to create log file")
@@ -57,11 +52,9 @@ func (q *Queue) HandleWork(id int64, db *sql.DB) {
 	}
 	defer logFile.Close()
 
-	// Update status to cloning
 	logger.Info("Cloning repository")
 	models.UpdateDeploymentStatus(id, "cloning", "cloning", 20, nil)
 
-	// Clone repository
 	err = github.CloneRepo(appId, logFile)
 	if err != nil {
 		logger.Error(err, "Failed to clone repository")
@@ -72,7 +65,6 @@ func (q *Queue) HandleWork(id int64, db *sql.DB) {
 
 	logger.Info("Repository cloned successfully")
 
-	// Start deployment
 	_, err = docker.DeployerMain(id, db, logFile, logger)
 	if err != nil {
 		logger.Error(err, "Deployment failed")

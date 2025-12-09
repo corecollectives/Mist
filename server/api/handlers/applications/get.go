@@ -19,7 +19,6 @@ func GetApplicationByProjectID(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		ProjectID int64 `json:"projectId"`
 	}
-	// parse request body
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		handlers.SendResponse(w, http.StatusBadRequest, false, nil, "Invalid request body", "Could not parse JSON")
 		return

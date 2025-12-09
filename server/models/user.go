@@ -65,11 +65,11 @@ func DeleteUserByID(userID int64) error {
 func UpdateUser(u *User) error {
 	query := `
 		UPDATE users
-		SET username = $1, email = $2, password_hash = $3, role = $4, avatar_url = $5, updated_at = NOW()
-		WHERE id = $6
+		SET username = $1, email = $2,  role = $3, avatar_url = $4, updated_at = CURRENT_TIMESTAMP
+		WHERE id = $5
 		RETURNING updated_at
 	`
-	return db.QueryRow(query, u.Username, u.Email, u.PasswordHash, u.Role, u.AvatarURL, u.ID).Scan(&u.UpdatedAt)
+	return db.QueryRow(query, u.Username, u.Email, u.Role, u.AvatarURL, u.ID).Scan(&u.UpdatedAt)
 }
 
 func (u *User) MatchPassword(password string) bool {
@@ -85,6 +85,17 @@ func (u *User) MatchPassword(password string) bool {
 	}
 
 	return bcrypt.CompareHashAndPassword([]byte(storedHash), []byte(password)) == nil
+}
+
+func (u *User) UpdatePassword() error {
+	query := `
+		UPDATE users
+		SET password_hash = $1, updated_at = CURRENT_TIMESTAMP
+		WHERE id = $2
+		RETURNING updated_at
+  `
+	return db.QueryRow(query, u.PasswordHash, u.ID).Scan(&u.UpdatedAt)
+
 }
 
 func GetUserByEmail(email string) (*User, error) {

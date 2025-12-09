@@ -158,11 +158,23 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
 
       <SidebarFooter className="border-t border-border/40 p-3 flex flex-row items-center justify-between">
         {isCollapsed ? (
-          <User className="h-4 w-4 text-muted-foreground mx-auto" />
+          <div className="h-8 w-8 rounded-full overflow-hidden border-2 border-border bg-muted flex items-center justify-center mx-auto">
+            {user?.avatarUrl ? (
+              <img src={user.avatarUrl} alt="Profile" className="h-full w-full object-cover" />
+            ) : (
+              <User className="h-4 w-4 text-muted-foreground" />
+            )}
+          </div>
         ) : (
           <>
             <div className="flex items-center w-full gap-2">
-              <User className="h-4 w-4 text-muted-foreground" />
+              <div className="h-8 w-8 rounded-full overflow-hidden border-2 border-border bg-muted flex items-center justify-center shrink-0">
+                {user?.avatarUrl ? (
+                  <img src={user.avatarUrl} alt="Profile" className="h-full w-full object-cover" />
+                ) : (
+                  <User className="h-4 w-4 text-muted-foreground" />
+                )}
+              </div>
               <div className="flex flex-col leading-none">
                 <span className="text-sm font-medium">{user?.username || "Guest"}</span>
                 <span className="text-xs text-muted-foreground truncate max-w-[120px]">

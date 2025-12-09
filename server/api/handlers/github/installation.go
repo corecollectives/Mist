@@ -103,5 +103,12 @@ func HandleInstallationEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	userID := int64(stateData.UserId)
+	models.LogUserAudit(userID, "create", "github_installation", &installation.InstallationID, map[string]interface{}{
+		"installationId": installInfo.ID,
+		"accountLogin":   installInfo.Account.Login,
+		"accountType":    installInfo.Account.Type,
+	})
+
 	http.Redirect(w, r, fmt.Sprintf("%s/callback?toast=Github_App_Created_Successfully&redirect=/git", baseFrontendURL), http.StatusSeeOther)
 }

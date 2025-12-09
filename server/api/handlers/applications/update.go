@@ -100,7 +100,6 @@ func UpdateApplication(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Log audit event
 	changes := make(map[string]interface{})
 	if req.Name != nil {
 		changes["name"] = *req.Name

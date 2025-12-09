@@ -11,6 +11,7 @@ import { useUsers } from '@/hooks';
 export default function UsersPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { user } = useAuth();
+  console.log(user)
   const { users, loading, error, createUser } = useUsers({ autoFetch: true });
 
   const handleCreateUser = async (userData: CreateUserData) => {
@@ -21,7 +22,6 @@ export default function UsersPage() {
   };
 
   const handleUserClick = () => {
-    // Handle user click action
   };
 
   if (loading && users.length === 0) {

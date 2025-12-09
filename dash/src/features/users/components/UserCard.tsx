@@ -17,8 +17,12 @@ export function UserCard({ user, onClick }: UserCardProps) {
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-muted text-foreground">
-              {getUserInitials(user.username)}
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-muted text-foreground overflow-hidden border-2 border-border">
+              {user.avatarUrl ? (
+                <img src={user.avatarUrl} alt={user.username} className="h-full w-full object-cover" />
+              ) : (
+                getUserInitials(user.username)
+              )}
             </div>
             <div>
               <CardTitle className="text-lg font-semibold text-foreground">

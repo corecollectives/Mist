@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/corecollectives/mist/github"
+	"github.com/corecollectives/mist/models"
 	"github.com/corecollectives/mist/queue"
 )
 
@@ -54,6 +55,13 @@ func GithubWebhook(w http.ResponseWriter, r *http.Request) {
 		}
 		queue := queue.GetQueue()
 		queue.AddJob(depId)
+
+		models.LogWebhookAudit("create", "deployment", &depId, map[string]interface{}{
+			"repository": evt.Repository.FullName,
+			"branch":     evt.Ref,
+			"commit":     evt.HeadCommit.ID,
+			"pusher":     evt.Pusher.Name,
+		})
 	}
 
 	w.WriteHeader(http.StatusOK)

@@ -49,7 +49,6 @@ func CreateEnvVariable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Log audit event
 	models.LogUserAudit(userInfo.ID, "create", "env_variable", &env.ID, map[string]interface{}{
 		"app_id": req.AppID,
 		"key":    req.Key,
@@ -143,7 +142,6 @@ func UpdateEnvVariable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Log audit event
 	models.LogUserAudit(userInfo.ID, "update", "env_variable", &req.ID, map[string]interface{}{
 		"app_id": env.AppID,
 		"key":    req.Key,
@@ -189,7 +187,6 @@ func DeleteEnvVariable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Log audit event before deletion
 	models.LogUserAudit(userInfo.ID, "delete", "env_variable", &req.ID, map[string]interface{}{
 		"app_id": env.AppID,
 		"key":    env.Key,

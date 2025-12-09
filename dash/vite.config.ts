@@ -21,10 +21,17 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        changeOrigin: true,
-        target: process.env.VITE_API_URL || 'http://localhost:8080/',
+        changeorigin: true,
+        target: process.env.vite_api_url || 'http://localhost:8080/',
         ws: true,
-      }
+      },
+      '/uploads': {
+        changeorigin: true,
+        target: process.env.vite_api_url || 'http://localhost:8080/',
+        ws: true,
+      },
+
+
     }
   }
 })

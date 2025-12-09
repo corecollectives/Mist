@@ -130,7 +130,6 @@ export const useContainerLogs = ({
       return;
     }
 
-    // Only connect if we don't have an active connection
     if (!wsRef.current || wsRef.current.readyState === WebSocket.CLOSED) {
       connectWebSocket();
     }

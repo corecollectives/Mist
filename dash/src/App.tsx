@@ -53,6 +53,7 @@ export default function App() {
               <Route path="/logs" element={<LogsPage />} />
               <Route path="/audit-logs" element={<AuditLogsPage />} />
               <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/profile" element={<SettingsPage />} />
               <Route path="/callback" element={<CallbackPage />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />

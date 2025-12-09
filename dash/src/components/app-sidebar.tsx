@@ -58,6 +58,13 @@ const useNavData = () => {
             icon: Server,
             isActive: location.pathname === "/deployments",
           },
+          {
+            title: "Audit Logs",
+            url: "/audit-logs",
+            icon: FileText,
+            isActive: location.pathname === "/audit-logs",
+          },
+
         ],
       },
       {
@@ -68,12 +75,6 @@ const useNavData = () => {
             url: "/users",
             icon: Users,
             isActive: location.pathname === "/users",
-          },
-          {
-            title: "Audit Logs",
-            url: "/audit-logs",
-            icon: FileText,
-            isActive: location.pathname === "/audit-logs",
           },
           {
             title: "Mist",

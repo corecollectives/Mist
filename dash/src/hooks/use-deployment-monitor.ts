@@ -84,6 +84,12 @@ export const useDeploymentMonitor = ({
   const connectWebSocket = useCallback(() => {
     if (!enabled || !isLive) return;
 
+    // Prevent duplicate connections
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      console.log('[DeploymentMonitor] WebSocket already connected, skipping');
+      return;
+    }
+
     try {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const host = window.location.host;
@@ -157,32 +163,37 @@ export const useDeploymentMonitor = ({
         setIsConnected(false);
         wsRef.current = null;
 
-        // Don't reconnect if deployment is complete
-        if (status?.status === 'success' || status?.status === 'failed') {
-          console.log('[DeploymentMonitor] Deployment complete, not reconnecting');
-          return;
-        }
+        // Check the current status from state to decide on reconnection
+        setStatus((currentStatus) => {
+          // Don't reconnect if deployment is complete
+          if (currentStatus?.status === 'success' || currentStatus?.status === 'failed') {
+            console.log('[DeploymentMonitor] Deployment complete, not reconnecting');
+            return currentStatus;
+          }
 
-        // Reconnect with exponential backoff
-        if (reconnectAttemptsRef.current < 10) {
-          const delay = Math.min(1000 * Math.pow(2, reconnectAttemptsRef.current), 30000);
-          reconnectAttemptsRef.current++;
+          // Reconnect with exponential backoff only if still enabled
+          if (enabled && reconnectAttemptsRef.current < 10) {
+            const delay = Math.min(1000 * Math.pow(2, reconnectAttemptsRef.current), 30000);
+            reconnectAttemptsRef.current++;
 
-          console.log(`[DeploymentMonitor] Reconnecting in ${delay}ms (attempt ${reconnectAttemptsRef.current})`);
-          reconnectTimeoutRef.current = window.setTimeout(() => {
-            connectWebSocket();
-          }, delay);
-        } else {
-          setError('Failed to connect after multiple attempts');
-          setIsLoading(false);
-        }
+            console.log(`[DeploymentMonitor] Reconnecting in ${delay}ms (attempt ${reconnectAttemptsRef.current})`);
+            reconnectTimeoutRef.current = window.setTimeout(() => {
+              connectWebSocket();
+            }, delay);
+          } else if (reconnectAttemptsRef.current >= 10) {
+            setError('Failed to connect after multiple attempts');
+            setIsLoading(false);
+          }
+
+          return currentStatus;
+        });
       };
     } catch (err) {
       console.error('[DeploymentMonitor] Error creating WebSocket:', err);
       setError('Failed to establish connection');
       setIsLoading(false);
     }
-  }, [deploymentId, enabled, isLive, onComplete, onError, status?.status]);
+  }, [deploymentId, enabled, isLive, onComplete, onError]);
 
   useEffect(() => {
     if (enabled) {
@@ -199,17 +210,27 @@ export const useDeploymentMonitor = ({
     };
   }, [enabled, fetchCompletedDeployment]);
 
+  // Separate effect for WebSocket management that only runs when isLive changes
   useEffect(() => {
-    if (isLive && enabled) {
+    if (!isLive || !enabled) {
+      return;
+    }
+
+    // Only connect if we don't have an active connection
+    if (!wsRef.current || wsRef.current.readyState === WebSocket.CLOSED) {
       connectWebSocket();
     }
 
     return () => {
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
       if (wsRef.current) {
         wsRef.current.close();
+        wsRef.current = null;
       }
     };
-  }, [isLive, enabled, connectWebSocket]);
+  }, [isLive, enabled]);
 
   const reset = () => {
     setLogs([]);

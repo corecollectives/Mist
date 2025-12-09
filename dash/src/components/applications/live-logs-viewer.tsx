@@ -42,14 +42,12 @@ export const LiveLogsViewer = ({ appId, enabled = true }: LiveLogsViewerProps) =
     },
   })
 
-  // Auto-scroll to bottom when new logs arrive
   useEffect(() => {
     if (autoScroll && logsEndRef.current) {
       logsEndRef.current.scrollIntoView({ behavior: "smooth" })
     }
   }, [logs, autoScroll])
 
-  // Detect manual scroll to disable auto-scroll
   useEffect(() => {
     const container = logsContainerRef.current
     if (!container) return
@@ -120,7 +118,7 @@ export const LiveLogsViewer = ({ appId, enabled = true }: LiveLogsViewerProps) =
                 State: {containerState}
               </Badge>
             )}
-            
+
             {logs.length > 0 && (
               <Button
                 variant="outline"
@@ -132,7 +130,7 @@ export const LiveLogsViewer = ({ appId, enabled = true }: LiveLogsViewerProps) =
                 Download
               </Button>
             )}
-            
+
             {logs.length > 0 && (
               <Button
                 variant="outline"
@@ -174,7 +172,6 @@ export const LiveLogsViewer = ({ appId, enabled = true }: LiveLogsViewerProps) =
           </div>
         )}
 
-        {/* Logs Display */}
         {logs.length > 0 && (
           <>
             <div
@@ -196,7 +193,6 @@ export const LiveLogsViewer = ({ appId, enabled = true }: LiveLogsViewerProps) =
               <div ref={logsEndRef} />
             </div>
 
-            {/* Auto-scroll indicator */}
             {!autoScroll && (
               <div className="border-t border-border/50 p-2 bg-muted/50 flex items-center justify-between">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -217,7 +213,6 @@ export const LiveLogsViewer = ({ appId, enabled = true }: LiveLogsViewerProps) =
               </div>
             )}
 
-            {/* Stats Footer */}
             <div className="border-t border-border/50 px-4 py-2 bg-muted/30 flex items-center justify-between text-xs text-muted-foreground">
               <div className="flex items-center gap-4">
                 <span className="flex items-center gap-1.5">

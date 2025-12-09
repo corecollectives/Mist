@@ -16,6 +16,7 @@ export const AppPage = () => {
   const navigate = useNavigate();
 
   const appId = useMemo(() => Number(params.appId), [params.appId]);
+  const projectId = useMemo(() => Number(params.projectId), [params.projectId])
 
   const {
     app,
@@ -29,6 +30,7 @@ export const AppPage = () => {
   } = useApplication({
     appId,
     autoFetch: true,
+    projectId
   });
 
   const deleteAppHandler = async () => {

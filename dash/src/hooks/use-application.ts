@@ -5,6 +5,7 @@ import type { App, UpdateAppRequest } from '@/types';
 
 interface UseApplicationOptions {
   appId: number;
+  projectId: number;
   autoFetch?: boolean;
 }
 
@@ -23,8 +24,8 @@ interface UseApplicationReturn {
 }
 
 export const useApplication = (options: UseApplicationOptions): UseApplicationReturn => {
-  const { appId, autoFetch = true } = options;
-  
+  const { appId, projectId, autoFetch = true } = options;
+
   const [app, setApp] = useState<App | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,7 +49,7 @@ export const useApplication = (options: UseApplicationOptions): UseApplicationRe
 
   const fetchLatestCommit = useCallback(async () => {
     try {
-      const data = await applicationsService.getLatestCommit(appId);
+      const data = await applicationsService.getLatestCommit(appId, projectId);
       setLatestCommit(data);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch latest commit';
@@ -82,14 +83,14 @@ export const useApplication = (options: UseApplicationOptions): UseApplicationRe
 
   const deleteApp = useCallback(async (): Promise<boolean> => {
     try {
-      // Note: applicationsService doesn't have a delete method yet, using fetch directly
+      // applicationsService doesn't have a delete method yet, using fetch directly
       const response = await fetch(`/api/apps/delete?id=${appId}`, {
         method: 'DELETE',
         credentials: 'include',
       });
       const data = await response.json();
       if (!data.success) throw new Error(data.error || 'Failed to delete application');
-      
+
       toast.success('Application deleted successfully');
       return true;
     } catch (err) {
@@ -101,7 +102,6 @@ export const useApplication = (options: UseApplicationOptions): UseApplicationRe
 
   const refreshApp = useCallback(() => fetchApp(), [fetchApp]);
 
-  // Auto-fetch app
   useEffect(() => {
     if (autoFetch) {
       fetchApp();
@@ -109,7 +109,6 @@ export const useApplication = (options: UseApplicationOptions): UseApplicationRe
     }
   }, [autoFetch, fetchApp, fetchLatestCommit]);
 
-  // Auto-fetch preview URL when app changes
   useEffect(() => {
     fetchPreviewUrl();
   }, [app?.status, fetchPreviewUrl]);

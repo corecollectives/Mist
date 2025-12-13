@@ -40,8 +40,8 @@ func AddDeployHandler(w http.ResponseWriter, r *http.Request) {
 	deployment := models.Deployment{
 		AppID:         int64(req.AppId),
 		CommitHash:    commitHash,
-		CommitMessage: commitMessage,
-		Status:        "pending",
+		CommitMessage: &commitMessage,
+		Status:        models.DeploymentStatusPending,
 	}
 	err = deployment.CreateDeployment()
 

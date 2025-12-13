@@ -1,9 +1,15 @@
+export type AppType = 'web' | 'service' | 'database';
+
+export type RestartPolicy = 'no' | 'always' | 'on-failure' | 'unless-stopped';
+
 export type App = {
   id: number;
   projectId: number;
   createdBy: number;
   name: string;
   description: string | null;
+  appType: AppType;
+  templateName: string | null;
   gitProviderId: number | null;
   gitRepository: string | null;
   gitBranch: string;
@@ -14,6 +20,9 @@ export type App = {
   buildCommand: string | null;
   startCommand: string | null;
   dockerfilePath: string | null;
+  cpuLimit: number | null;
+  memoryLimit: number | null;
+  restartPolicy: RestartPolicy;
   healthcheckPath: string | null;
   healthcheckInterval: number;
   status: string;
@@ -25,12 +34,18 @@ export type CreateAppRequest = {
   projectId: number;
   name: string;
   description?: string;
+  appType: AppType;
+  templateName?: string;
   gitRepository?: string;
   gitBranch?: string;
   port?: number;
   rootDirectory?: string;
   buildCommand?: string;
   startCommand?: string;
+  cpuLimit?: number;
+  memoryLimit?: number;
+  restartPolicy?: RestartPolicy;
+  envVars?: Record<string, string>;
 };
 
 export type UpdateAppRequest = Partial<Omit<App, 'id' | 'createdAt' | 'updatedAt'>>;
@@ -81,4 +96,35 @@ export type ContainerStatus = {
   state: string;
   uptime: string;
   healthy: boolean;
+};
+
+export type ServiceTemplateCategory = 'database' | 'cache' | 'queue' | 'storage' | 'other';
+
+export type ServiceTemplate = {
+  id: number;
+  name: string;
+  displayName: string;
+  category: ServiceTemplateCategory;
+  description: string | null;
+  iconUrl: string | null;
+  dockerImage: string;
+  dockerImageVersion: string | null;
+  defaultPort: number;
+  defaultEnvVars: string | null; // JSON string
+  requiredEnvVars: string | null; // JSON string
+  defaultVolumePath: string | null;
+  volumeRequired: boolean;
+  recommendedCpu: number | null;
+  recommendedMemory: number | null;
+  minMemory: number | null;
+  healthcheckCommand: string | null;
+  healthcheckInterval: number;
+  adminUiImage: string | null;
+  adminUiPort: number | null;
+  setupInstructions: string | null;
+  isActive: boolean;
+  isFeatured: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
 };

@@ -27,16 +27,40 @@ func AddDeployHandler(w http.ResponseWriter, r *http.Request) {
 		handlers.SendResponse(w, http.StatusForbidden, false, nil, "unauthorized", "")
 		return
 	}
-	userId := int64(user.ID)
-	commit, err := github.GetLatestCommit(int64(req.AppId), userId)
+
+	app, err := models.GetApplicationByID(int64(req.AppId))
 	if err != nil {
-		log.Error().Err(err).Int("app_id", req.AppId).Msg("Error getting latest commit")
-		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "failed to get latest commit", err.Error())
+		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "failed to get app details", err.Error())
 		return
 	}
-	commitHash := commit.SHA
 
-	commitMessage := commit.Message
+	var commitHash string
+	var commitMessage string
+
+	if app.AppType != models.AppTypeDatabase {
+		userId := int64(user.ID)
+		commit, err := github.GetLatestCommit(int64(req.AppId), userId)
+		if err != nil {
+			log.Error().Err(err).Int("app_id", req.AppId).Msg("Error getting latest commit")
+			handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "failed to get latest commit", err.Error())
+			return
+		}
+		commitHash = commit.SHA
+		commitMessage = commit.Message
+	} else {
+		if app.TemplateName != nil {
+			template, err := models.GetServiceTemplateByName(*app.TemplateName)
+			if err == nil && template != nil && template.DockerImageVersion != nil {
+				commitHash = *template.DockerImageVersion
+			} else {
+				commitHash = "latest"
+			}
+		} else {
+			commitHash = "latest"
+		}
+		commitMessage = "Deploy database service"
+	}
+
 	deployment := models.Deployment{
 		AppID:         int64(req.AppId),
 		CommitHash:    commitHash,

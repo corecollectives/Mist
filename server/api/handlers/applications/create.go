@@ -17,9 +17,13 @@ func CreateApplication(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		Name        string `json:"name"`
-		Description string `json:"description"`
-		ProjectID   int64  `json:"projectId"`
+		Name         string            `json:"name"`
+		Description  string            `json:"description"`
+		ProjectID    int64             `json:"projectId"`
+		AppType      string            `json:"appType"`      // "web", "service", "database"
+		TemplateName *string           `json:"templateName"` // For database type
+		Port         *int              `json:"port"`         // For web type
+		EnvVars      map[string]string `json:"envVars"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		handlers.SendResponse(w, http.StatusBadRequest, false, nil, "Invalid request body", "Could not parse JSON")
@@ -33,6 +37,15 @@ func CreateApplication(w http.ResponseWriter, r *http.Request) {
 
 	if req.ProjectID == 0 {
 		handlers.SendResponse(w, http.StatusBadRequest, false, nil, "Project ID is required", "Missing fields")
+		return
+	}
+
+	if req.AppType == "" {
+		req.AppType = "web"
+	}
+
+	if req.AppType != "web" && req.AppType != "service" && req.AppType != "database" {
+		handlers.SendResponse(w, http.StatusBadRequest, false, nil, "Invalid app type", "Must be 'web', 'service', or 'database'")
 		return
 	}
 
@@ -51,10 +64,65 @@ func CreateApplication(w http.ResponseWriter, r *http.Request) {
 		Description: &req.Description,
 		ProjectID:   req.ProjectID,
 		CreatedBy:   userInfo.ID,
+		AppType:     models.AppType(req.AppType),
 	}
+
+	switch req.AppType {
+	case "web":
+		if req.Port != nil {
+			port := int64(*req.Port)
+			app.Port = &port
+		} else {
+			defaultPort := int64(3000)
+			app.Port = &defaultPort
+		}
+
+	case "service":
+		// this port doesn't matter becuase yeh externally available nhi hai its something that will work without being exposed to external http
+		internalPort := int64(3000)
+		app.Port = &internalPort
+
+	case "database":
+		if req.TemplateName == nil || *req.TemplateName == "" {
+			handlers.SendResponse(w, http.StatusBadRequest, false, nil, "Template name is required for database apps", "Missing template")
+			return
+		}
+
+		app.TemplateName = req.TemplateName
+
+		template, err := models.GetServiceTemplateByName(*req.TemplateName)
+		if err != nil {
+			handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to fetch template", err.Error())
+			return
+		}
+		if template == nil {
+			handlers.SendResponse(w, http.StatusNotFound, false, nil, "Service template not found", "")
+			return
+		}
+
+		port := int64(template.DefaultPort)
+		app.Port = &port
+
+		if template.RecommendedCPU != nil {
+			app.CPULimit = template.RecommendedCPU
+		}
+		if template.RecommendedMemory != nil {
+			app.MemoryLimit = template.RecommendedMemory
+		}
+	}
+
 	if err := app.InsertInDB(); err != nil {
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to create application", err.Error())
 		return
+	}
+
+	if len(req.EnvVars) > 0 {
+		for key, value := range req.EnvVars {
+			_, err := models.CreateEnvVariable(app.ID, key, value)
+			if err != nil {
+				continue
+			}
+		}
 	}
 
 	handlers.SendResponse(w, http.StatusOK, true, app.ToJson(), "Application created successfully", "")

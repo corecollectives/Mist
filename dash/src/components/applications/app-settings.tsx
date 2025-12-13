@@ -3,9 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { applicationsService } from "@/services";
-import type { App } from "@/types";
+import type { App, RestartPolicy } from "@/types";
 
 interface AppSettingsProps {
   app: App;
@@ -19,6 +20,9 @@ export const AppSettings = ({ app, onUpdate }: AppSettingsProps) => {
   const [rootDirectory, setRootDirectory] = useState(app.rootDirectory || "");
   const [dockerfilePath, setDockerfilePath] = useState(app.dockerfilePath || "");
   const [healthcheckPath, setHealthcheckPath] = useState(app.healthcheckPath || "");
+  const [cpuLimit, setCpuLimit] = useState(app.cpuLimit?.toString() || "");
+  const [memoryLimit, setMemoryLimit] = useState(app.memoryLimit?.toString() || "");
+  const [restartPolicy, setRestartPolicy] = useState(app.restartPolicy || "unless-stopped");
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
@@ -31,6 +35,7 @@ export const AppSettings = ({ app, onUpdate }: AppSettingsProps) => {
         buildCommand: buildCommand || null,
         startCommand: startCommand || null,
         healthcheckPath: healthcheckPath || null,
+        restartPolicy,
       };
 
       if (port) {
@@ -40,6 +45,28 @@ export const AppSettings = ({ app, onUpdate }: AppSettingsProps) => {
           return;
         }
         updates.port = portNum;
+      }
+
+      if (cpuLimit) {
+        const cpu = parseFloat(cpuLimit);
+        if (isNaN(cpu) || cpu <= 0) {
+          toast.error("CPU limit must be a positive number");
+          return;
+        }
+        updates.cpuLimit = cpu;
+      } else {
+        updates.cpuLimit = null;
+      }
+
+      if (memoryLimit) {
+        const memory = parseInt(memoryLimit);
+        if (isNaN(memory) || memory <= 0) {
+          toast.error("Memory limit must be a positive number");
+          return;
+        }
+        updates.memoryLimit = memory;
+      } else {
+        updates.memoryLimit = null;
       }
 
       await applicationsService.update(app.id, updates);
@@ -61,6 +88,20 @@ export const AppSettings = ({ app, onUpdate }: AppSettingsProps) => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* App Type Badge */}
+        <div className="flex items-center gap-2 pb-4 border-b">
+          <Label>Application Type:</Label>
+          <Badge variant="secondary" className="capitalize">
+            {app.appType || 'web'}
+          </Badge>
+          {app.templateName && (
+            <>
+              <span className="text-muted-foreground">•</span>
+              <Badge variant="outline">{app.templateName}</Badge>
+            </>
+          )}
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <Label htmlFor="port">Port</Label>
@@ -72,9 +113,12 @@ export const AppSettings = ({ app, onUpdate }: AppSettingsProps) => {
               onChange={(e) => setPort(e.target.value)}
               min="1"
               max="65535"
+              disabled={app.appType === 'database'}
             />
             <p className="text-sm text-muted-foreground">
-              The port your application runs on
+              {app.appType === 'database' 
+                ? 'Port is managed by the template' 
+                : 'The port your application runs on'}
             </p>
           </div>
 
@@ -85,9 +129,61 @@ export const AppSettings = ({ app, onUpdate }: AppSettingsProps) => {
               placeholder="/"
               value={rootDirectory}
               onChange={(e) => setRootDirectory(e.target.value)}
+              disabled={app.appType === 'database'}
             />
             <p className="text-sm text-muted-foreground">
-              The root directory of your application
+              {app.appType === 'database'
+                ? 'Not applicable for database apps'
+                : 'The root directory of your application'}
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="cpuLimit">CPU Limit (cores)</Label>
+            <Input
+              id="cpuLimit"
+              type="number"
+              placeholder="e.g., 0.5 or 2"
+              value={cpuLimit}
+              onChange={(e) => setCpuLimit(e.target.value)}
+              min="0"
+              step="0.1"
+            />
+            <p className="text-sm text-muted-foreground">
+              Maximum CPU cores (leave empty for no limit)
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="memoryLimit">Memory Limit (MB)</Label>
+            <Input
+              id="memoryLimit"
+              type="number"
+              placeholder="e.g., 512 or 1024"
+              value={memoryLimit}
+              onChange={(e) => setMemoryLimit(e.target.value)}
+              min="0"
+            />
+            <p className="text-sm text-muted-foreground">
+              Maximum memory in MB (leave empty for no limit)
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="restartPolicy">Restart Policy</Label>
+            <select
+              id="restartPolicy"
+              value={restartPolicy}
+              onChange={(e) => setRestartPolicy(e.target.value as RestartPolicy)}
+              className="w-full bg-background border rounded-md px-3 py-2"
+            >
+              <option value="no">No</option>
+              <option value="always">Always</option>
+              <option value="on-failure">On Failure</option>
+              <option value="unless-stopped">Unless Stopped</option>
+            </select>
+            <p className="text-sm text-muted-foreground">
+              When to restart the container
             </p>
           </div>
 
@@ -98,9 +194,12 @@ export const AppSettings = ({ app, onUpdate }: AppSettingsProps) => {
               placeholder="Dockerfile"
               value={dockerfilePath}
               onChange={(e) => setDockerfilePath(e.target.value)}
+              disabled={app.appType === 'database'}
             />
             <p className="text-sm text-muted-foreground">
-              Path to your Dockerfile (optional)
+              {app.appType === 'database'
+                ? 'Not applicable for database apps'
+                : 'Path to your Dockerfile (optional)'}
             </p>
           </div>
 
@@ -111,9 +210,12 @@ export const AppSettings = ({ app, onUpdate }: AppSettingsProps) => {
               placeholder="/health"
               value={healthcheckPath}
               onChange={(e) => setHealthcheckPath(e.target.value)}
+              disabled={app.appType === 'database'}
             />
             <p className="text-sm text-muted-foreground">
-              Path for health checks (optional)
+              {app.appType === 'database'
+                ? 'Health checks managed by template'
+                : 'Path for health checks (optional)'}
             </p>
           </div>
 
@@ -124,9 +226,12 @@ export const AppSettings = ({ app, onUpdate }: AppSettingsProps) => {
               placeholder="npm run build"
               value={buildCommand}
               onChange={(e) => setBuildCommand(e.target.value)}
+              disabled={app.appType === 'database'}
             />
             <p className="text-sm text-muted-foreground">
-              Command to build your application (optional)
+              {app.appType === 'database'
+                ? 'Not applicable for database apps'
+                : 'Command to build your application (optional)'}
             </p>
           </div>
 
@@ -137,9 +242,12 @@ export const AppSettings = ({ app, onUpdate }: AppSettingsProps) => {
               placeholder="npm start"
               value={startCommand}
               onChange={(e) => setStartCommand(e.target.value)}
+              disabled={app.appType === 'database'}
             />
             <p className="text-sm text-muted-foreground">
-              Command to start your application (optional)
+              {app.appType === 'database'
+                ? 'Start command managed by template'
+                : 'Command to start your application (optional)'}
             </p>
           </div>
         </div>

@@ -1,6 +1,8 @@
 package models
 
 import (
+	"database/sql"
+	"fmt"
 	"time"
 
 	"github.com/corecollectives/mist/utils"
@@ -38,17 +40,14 @@ type App struct {
 	Name        string  `db:"name" json:"name"`
 	Description *string `db:"description" json:"description,omitempty"`
 
-	// App Type (for port handling solution)
 	AppType      AppType `db:"app_type" json:"app_type"`
 	TemplateName *string `db:"template_name" json:"template_name,omitempty"`
 
-	// Git Configuration
 	GitProviderID *int64  `db:"git_provider_id" json:"git_provider_id,omitempty"`
 	GitRepository *string `db:"git_repository" json:"git_repository,omitempty"`
 	GitBranch     string  `db:"git_branch" json:"git_branch,omitempty"`
 	GitCloneURL   *string `db:"git_clone_url" json:"git_clone_url,omitempty"`
 
-	// Deployment Configuration
 	DeploymentStrategy DeploymentStrategy `db:"deployment_strategy" json:"deployment_strategy"`
 	Port               *int64             `db:"port" json:"port,omitempty"`
 	RootDirectory      string             `db:"root_directory" json:"root_directory,omitempty"`
@@ -56,21 +55,16 @@ type App struct {
 	StartCommand       *string            `db:"start_command" json:"start_command,omitempty"`
 	DockerfilePath     *string            `db:"dockerfile_path" json:"dockerfile_path,omitempty"`
 
-	// Resource Limits
 	CPULimit      *float64      `db:"cpu_limit" json:"cpu_limit,omitempty"`
 	MemoryLimit   *int          `db:"memory_limit" json:"memory_limit,omitempty"`
 	RestartPolicy RestartPolicy `db:"restart_policy" json:"restart_policy"`
 
-	// Health Check Configuration
-	HealthcheckPath     *string `db:"healthcheck_path" json:"healthcheck_path,omitempty"`
-	HealthcheckInterval int     `db:"healthcheck_interval" json:"healthcheck_interval"`
-	HealthcheckTimeout  int     `db:"healthcheck_timeout" json:"healthcheck_timeout"`
-	HealthcheckRetries  int     `db:"healthcheck_retries" json:"healthcheck_retries"`
+	HealthcheckPath     *string   `db:"healthcheck_path" json:"healthcheck_path,omitempty"`
+	HealthcheckInterval int       `db:"healthcheck_interval" json:"healthcheck_interval"`
+	HealthcheckTimeout  int       `db:"healthcheck_timeout" json:"healthcheck_timeout"`
+	HealthcheckRetries  int       `db:"healthcheck_retries" json:"healthcheck_retries"`
+	Status              AppStatus `db:"status" json:"status"`
 
-	// Status
-	Status AppStatus `db:"status" json:"status"`
-
-	// Metadata
 	CreatedAt time.Time `db:"created_at" json:"created_at"`
 	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
 }
@@ -288,7 +282,9 @@ func GetAppIDByDeploymentID(depID int64) (int64, error) {
 }
 
 func GetAppRepoInfo(appId int64) (string, string, int64, string, error) {
-	var repo, branch, name string
+	var repo sql.NullString
+	var branch sql.NullString
+	var name string
 	var projectId int64
 
 	err := db.QueryRow(`
@@ -299,18 +295,29 @@ func GetAppRepoInfo(appId int64) (string, string, int64, string, error) {
 		return "", "", 0, "", err
 	}
 
-	return repo, branch, projectId, name, nil
+	repoStr := ""
+	if repo.Valid {
+		repoStr = repo.String
+	}
+
+	branchStr := ""
+	if branch.Valid {
+		branchStr = branch.String
+	}
+
+	return repoStr, branchStr, projectId, name, nil
 }
 
 func GetAppRepoAndBranch(appID int64) (string, string, error) {
-	var repoName, branch string
+	var repoName sql.NullString
+	var branch string
 	err := db.QueryRow(`SELECT git_repository, COALESCE(git_branch, 'main') FROM apps WHERE id = ?`, appID).
 		Scan(&repoName, &branch)
 	if err != nil {
 		return "", "", err
 	}
-	if repoName == "" {
-		return "", "", err
+	if !repoName.Valid || repoName.String == "" {
+		return "", "", fmt.Errorf("app has no git repository configured")
 	}
-	return repoName, branch, nil
+	return repoName.String, branch, nil
 }

@@ -4,11 +4,11 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { DeploymentMonitor } from "@/components/deployments"
-import type { Deployment } from "@/types"
+import type { Deployment, App } from "@/types"
 import { Loader2, Clock, CheckCircle2, XCircle, PlayCircle, AlertCircle } from "lucide-react"
 import { deploymentsService } from "@/services"
 
-export const DeploymentsTab = ({ appId }: { appId: number }) => {
+export const DeploymentsTab = ({ appId, app }: { appId: number; app?: App }) => {
   const [deployments, setDeployments] = useState<Deployment[]>([])
   const [loading, setLoading] = useState(true)
   const [deploying, setDeploying] = useState(false)
@@ -186,11 +186,23 @@ export const DeploymentsTab = ({ appId }: { appId: number }) => {
                     </div>
 
                     <div className="space-y-1">
-                      <p className="font-mono text-sm">
-                        <span className="text-primary">{d.commit_hash.slice(0, 7)}</span>
-                        {' – '}
-                        {d.commit_message}
-                      </p>
+                      {app?.appType === 'database' ? (
+                        <p className="font-mono text-sm">
+                          <span className="text-primary">Version: {d.commit_hash}</span>
+                          {d.commit_message && (
+                            <>
+                              {' – '}
+                              {d.commit_message}
+                            </>
+                          )}
+                        </p>
+                      ) : (
+                        <p className="font-mono text-sm">
+                          <span className="text-primary">{d.commit_hash.slice(0, 7)}</span>
+                          {' – '}
+                          {d.commit_message}
+                        </p>
+                      )}
 
                       {d.error_message && (
                         <p className="text-xs text-red-500 flex items-start gap-1">

@@ -5,6 +5,8 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+
+	"github.com/corecollectives/mist/models"
 )
 
 func BuildImage(imageTag, contextPath string, envVars map[string]string, logfile *os.File) error {
@@ -68,35 +70,64 @@ func ContainerExists(name string) bool {
 	return true
 }
 
-func RunContainer(imageTag, containerName string, domains []string, Port int, envVars map[string]string, logfile *os.File) error {
+func RunContainer(app *models.App, imageTag, containerName string, domains []string, Port int, envVars map[string]string, logfile *os.File) error {
 
 	runArgs := []string{
 		"run", "-d",
 		"--name", containerName,
 	}
 
+	restartPolicy := string(app.RestartPolicy)
+	if restartPolicy == "" {
+		restartPolicy = "unless-stopped"
+	}
+	runArgs = append(runArgs, "--restart", restartPolicy)
+
+	if app.CPULimit != nil && *app.CPULimit > 0 {
+		runArgs = append(runArgs, "--cpus", fmt.Sprintf("%.2f", *app.CPULimit))
+	}
+
+	if app.MemoryLimit != nil && *app.MemoryLimit > 0 {
+		runArgs = append(runArgs, "-m", fmt.Sprintf("%dm", *app.MemoryLimit))
+	}
+
 	for key, value := range envVars {
 		runArgs = append(runArgs, "-e", fmt.Sprintf("%s=%s", key, value))
 	}
 
-	if len(domains) > 0 {
-		runArgs = append(runArgs,
-			"--network", "traefik-net",
-			"-l", "traefik.enable=true",
-		)
+	switch app.AppType {
+	case models.AppTypeWeb:
+		// Web apps: Always use Traefik for routing if domains exist, otherwise expose port
+		if len(domains) > 0 {
+			runArgs = append(runArgs,
+				"--network", "traefik-net",
+				"-l", "traefik.enable=true",
+			)
 
-		var hostRules []string
-		for _, domain := range domains {
-			hostRules = append(hostRules, fmt.Sprintf("Host(`%s`)", domain))
+			var hostRules []string
+			for _, domain := range domains {
+				hostRules = append(hostRules, fmt.Sprintf("Host(`%s`)", domain))
+			}
+			hostRule := strings.Join(hostRules, " || ")
+
+			runArgs = append(runArgs,
+				"-l", fmt.Sprintf("traefik.http.routers.%s.rule=%s", containerName, hostRule),
+				"-l", fmt.Sprintf("traefik.http.routers.%s.entrypoints=web", containerName),
+				"-l", fmt.Sprintf("traefik.http.services.%s.loadbalancer.server.port=%d", containerName, Port),
+			)
+		} else {
+			runArgs = append(runArgs,
+				"-p", fmt.Sprintf("%d:%d", Port, Port),
+			)
 		}
-		hostRule := strings.Join(hostRules, " || ")
 
-		runArgs = append(runArgs,
-			"-l", fmt.Sprintf("traefik.http.routers.%s.rule=%s", containerName, hostRule),
-			"-l", fmt.Sprintf("traefik.http.routers.%s.entrypoints=web", containerName),
-			"-l", fmt.Sprintf("traefik.http.services.%s.loadbalancer.server.port=%d", containerName, Port),
-		)
-	} else {
+	case models.AppTypeService:
+		runArgs = append(runArgs, "--network", "traefik-net")
+
+	case models.AppTypeDatabase:
+		runArgs = append(runArgs, "--network", "traefik-net")
+
+	default:
 		runArgs = append(runArgs,
 			"-p", fmt.Sprintf("%d:%d", Port, Port),
 		)
@@ -116,5 +147,20 @@ func RunContainer(imageTag, containerName string, domains []string, Port int, en
 		return fmt.Errorf("docker run failed with exit code %d: %w", exitCode, err)
 	}
 
+	return nil
+}
+
+func PullDockerImage(imageName string, logfile *os.File) error {
+	pullCmd := exec.Command("docker", "pull", imageName)
+	pullCmd.Stdout = logfile
+	pullCmd.Stderr = logfile
+
+	if err := pullCmd.Run(); err != nil {
+		exitCode := -1
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			exitCode = exitErr.ExitCode()
+		}
+		return fmt.Errorf("docker pull failed with exit code %d: %w", exitCode, err)
+	}
 	return nil
 }

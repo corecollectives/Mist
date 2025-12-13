@@ -3,7 +3,8 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { applicationsService } from "@/services"
-import type { ContainerStatus } from "@/types"
+import type { ContainerStatus, App } from "@/types"
+import { toast } from "sonner"
 import {
   Activity,
   CheckCircle2,
@@ -14,17 +15,23 @@ import {
   Loader2,
   Play,
   ExternalLink,
+  Power,
+  Square,
+  RotateCw,
 } from "lucide-react"
 
 interface AppStatsProps {
   appId: number
   appStatus: string
+  app?: App
   previewUrl?: string
+  onStatusChange?: () => void
 }
 
-export const AppStats = ({ appId, previewUrl }: AppStatsProps) => {
+export const AppStats = ({ appId, app, previewUrl, onStatusChange }: AppStatsProps) => {
   const [containerStatus, setContainerStatus] = useState<ContainerStatus | null>(null)
   const [loading, setLoading] = useState(false)
+  const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date())
 
   const fetchContainerStatus = async () => {
@@ -98,6 +105,48 @@ export const AppStats = ({ appId, previewUrl }: AppStatsProps) => {
     }
   }
 
+  const handleStart = async () => {
+    try {
+      setActionLoading("start")
+      await applicationsService.startContainer(appId)
+      toast.success("Container started successfully")
+      await fetchContainerStatus()
+      onStatusChange?.()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to start container")
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const handleStop = async () => {
+    try {
+      setActionLoading("stop")
+      await applicationsService.stopContainer(appId)
+      toast.success("Container stopped successfully")
+      await fetchContainerStatus()
+      onStatusChange?.()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to stop container")
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const handleRestart = async () => {
+    try {
+      setActionLoading("restart")
+      await applicationsService.restartContainer(appId)
+      toast.success("Container restarted successfully")
+      await fetchContainerStatus()
+      onStatusChange?.()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to restart container")
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
   return (
     <Card className="border-border/50">
       <CardHeader className="border-b border-border/50 bg-muted/30">
@@ -127,6 +176,68 @@ export const AppStats = ({ appId, previewUrl }: AppStatsProps) => {
 
         {containerStatus && (
           <div className="space-y-4">
+            {/* Container Control Buttons */}
+            <div className="flex gap-2 pb-4 border-b border-border/50">
+              <Button
+                onClick={handleStart}
+                disabled={containerStatus.state === "running" || actionLoading !== null || loading}
+                size="sm"
+                className="flex-1"
+              >
+                {actionLoading === "start" ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Starting...
+                  </>
+                ) : (
+                  <>
+                    <Power className="h-4 w-4 mr-2" />
+                    Start
+                  </>
+                )}
+              </Button>
+
+              <Button
+                onClick={handleStop}
+                disabled={containerStatus.state !== "running" || actionLoading !== null || loading}
+                size="sm"
+                variant="destructive"
+                className="flex-1"
+              >
+                {actionLoading === "stop" ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Stopping...
+                  </>
+                ) : (
+                  <>
+                    <Square className="h-4 w-4 mr-2" />
+                    Stop
+                  </>
+                )}
+              </Button>
+
+              <Button
+                onClick={handleRestart}
+                disabled={containerStatus.state !== "running" || actionLoading !== null || loading}
+                size="sm"
+                variant="outline"
+                className="flex-1"
+              >
+                {actionLoading === "restart" ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Restarting...
+                  </>
+                ) : (
+                  <>
+                    <RotateCw className="h-4 w-4 mr-2" />
+                    Restart
+                  </>
+                )}
+              </Button>
+            </div>
+
             {/* Status Row */}
             <div className="flex items-center justify-between py-3 border-b border-border/50">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -192,8 +303,8 @@ export const AppStats = ({ appId, previewUrl }: AppStatsProps) => {
               </>
             )}
 
-            {/* Preview URL */}
-            {previewUrl && containerStatus.state === "running" && (
+            {/* Preview URL - only for web apps */}
+            {previewUrl && containerStatus.state === "running" && app?.appType === 'web' && (
               <div className="pt-2">
                 <a
                   href={previewUrl}

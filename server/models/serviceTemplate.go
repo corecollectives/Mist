@@ -25,8 +25,8 @@ type ServiceTemplate struct {
 	DockerImage         string                  `db:"docker_image" json:"dockerImage"`
 	DockerImageVersion  *string                 `db:"docker_image_version" json:"dockerImageVersion,omitempty"`
 	DefaultPort         int                     `db:"default_port" json:"defaultPort"`
-	DefaultEnvVars      *string                 `db:"default_env_vars" json:"defaultEnvVars,omitempty"`   // JSON
-	RequiredEnvVars     *string                 `db:"required_env_vars" json:"requiredEnvVars,omitempty"` // JSON
+	DefaultEnvVars      *string                 `db:"default_env_vars" json:"defaultEnvVars,omitempty"`
+	RequiredEnvVars     *string                 `db:"required_env_vars" json:"requiredEnvVars,omitempty"`
 	DefaultVolumePath   *string                 `db:"default_volume_path" json:"defaultVolumePath,omitempty"`
 	VolumeRequired      bool                    `db:"volume_required" json:"volumeRequired"`
 	RecommendedCPU      *float64                `db:"recommended_cpu" json:"recommendedCpu,omitempty"`

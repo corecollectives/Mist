@@ -19,16 +19,19 @@ func UpdateApplication(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		AppID              int64   `json:"appId"`
-		Name               *string `json:"name"`
-		Description        *string `json:"description"`
-		GitRepository      *string `json:"gitRepository"`
-		GitBranch          *string `json:"gitBranch"`
-		Port               *int    `json:"port"`
-		RootDirectory      *string `json:"rootDirectory"`
-		DockerfilePath     *string `json:"dockerfilePath"`
-		DeploymentStrategy *string `json:"deploymentStrategy"`
-		Status             *string `json:"status"`
+		AppID              int64    `json:"appId"`
+		Name               *string  `json:"name"`
+		Description        *string  `json:"description"`
+		GitRepository      *string  `json:"gitRepository"`
+		GitBranch          *string  `json:"gitBranch"`
+		Port               *int     `json:"port"`
+		RootDirectory      *string  `json:"rootDirectory"`
+		DockerfilePath     *string  `json:"dockerfilePath"`
+		DeploymentStrategy *string  `json:"deploymentStrategy"`
+		Status             *string  `json:"status"`
+		CPULimit           *float64 `json:"cpuLimit"`
+		MemoryLimit        *int     `json:"memoryLimit"`
+		RestartPolicy      *string  `json:"restartPolicy"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -91,6 +94,15 @@ func UpdateApplication(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.Status != nil {
 		app.Status = models.AppStatus(strings.TrimSpace(*req.Status))
+	}
+	if req.CPULimit != nil {
+		app.CPULimit = req.CPULimit
+	}
+	if req.MemoryLimit != nil {
+		app.MemoryLimit = req.MemoryLimit
+	}
+	if req.RestartPolicy != nil {
+		app.RestartPolicy = models.RestartPolicy(strings.TrimSpace(*req.RestartPolicy))
 	}
 
 	app.UpdatedAt = time.Now()

@@ -5,8 +5,9 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import type { Project } from "@/types";
-import type { App } from "@/types/app";
+import type { App, CreateAppRequest } from "@/types/app";
 import { AppCard } from "./components/AppCard";
+import { CreateAppModal } from "./components/CreateAppModal";
 
 export const ProjectPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -62,12 +63,12 @@ export const ProjectPage = () => {
     }
   };
 
-  const createNewApp = async ({ name, description }: { name: string; description: string }) => {
+  const createNewApp = async (appData: CreateAppRequest) => {
     try {
       const response = await fetch(`/api/apps/create`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, description, projectId }),
+        body: JSON.stringify(appData),
         credentials: "include",
       });
       const data = await response.json();
@@ -211,15 +212,11 @@ export const ProjectPage = () => {
         onSubmit={(data) => handleUpdateProject(data as any)}
       />
 
-      <FormModal
+      <CreateAppModal
         isOpen={isAddNewAppModalOpen}
         onClose={() => setIsAddNewAppModalOpen(false)}
-        title="Create New App"
-        fields={[
-          { label: "App Name", name: "name", type: "text" },
-          { label: "Description", name: "description", type: "textarea" },
-        ]}
-        onSubmit={(data) => createNewApp(data as any)}
+        projectId={projectId}
+        onSubmit={createNewApp}
       />
     </div>
   );

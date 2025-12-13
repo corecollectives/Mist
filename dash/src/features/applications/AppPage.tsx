@@ -6,7 +6,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import type { App } from "@/types/app";
 import { TabsList, Tabs, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { AppInfo, GitProviderTab, EnvironmentVariables, Domains, AppSettings, ContainerControls, LiveLogsViewer, AppStats } from "@/components/applications";
+import { AppInfo, GitProviderTab, EnvironmentVariables, Domains, AppSettings, LiveLogsViewer, AppStats } from "@/components/applications";
 import { DeploymentsTab } from "@/components/deployments";
 
 
@@ -17,6 +17,7 @@ export const AppPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [latestCommit, setLatestCommit] = useState();
   const [previewUrl, setPreviewUrl] = useState<string>("");
+  const [activeTab, setActiveTab] = useState("info");
 
   const params = useParams();
   const navigate = useNavigate();
@@ -108,7 +109,10 @@ export const AppPage = () => {
   };
 
   useEffect(() => {
-    fetchLatestCommit()
+    // Only fetch latest commit for non-database apps
+    if (app && app.appType !== 'database') {
+      fetchLatestCommit()
+    }
     fetchAppDetails()
   }, [params.appId]);
 
@@ -173,10 +177,10 @@ export const AppPage = () => {
 
       {/* App Info */}
       <main className="flex-1 overflow-y-auto py-6">
-        <Tabs defaultValue="info" className="w-full">
-          <TabsList className="grid w-full grid-cols-6 mb-6">
+        <Tabs defaultValue="info" className="w-full" onValueChange={setActiveTab}>
+          <TabsList className={`grid w-full ${app.appType === 'database' ? 'grid-cols-5' : 'grid-cols-6'} mb-6`}>
             <TabsTrigger value="info">Info</TabsTrigger>
-            <TabsTrigger value="git">Git</TabsTrigger>
+            {app.appType !== 'database' && <TabsTrigger value="git">Git</TabsTrigger>}
             <TabsTrigger value="environment">Environment</TabsTrigger>
             <TabsTrigger value="deployments">Deployments</TabsTrigger>
             <TabsTrigger value="logs">Logs</TabsTrigger>
@@ -190,14 +194,16 @@ export const AppPage = () => {
                 <AppInfo app={app} latestCommit={latestCommit} />
               </div>
               <div>
-                <AppStats appId={app.id} appStatus={app.status} previewUrl={previewUrl} />
+                <AppStats appId={app.id} appStatus={app.status} app={app} previewUrl={previewUrl} onStatusChange={fetchAppDetails} />
               </div>
             </div>
           </TabsContent>
 
-          <TabsContent value="git" className="space-y-6">
-            <GitProviderTab app={app} />
-          </TabsContent>
+          {app.appType !== 'database' && (
+            <TabsContent value="git" className="space-y-6">
+              <GitProviderTab app={app} />
+            </TabsContent>
+          )}
 
           {/* ✅ ENVIRONMENT TAB */}
           <TabsContent value="environment" className="space-y-6">
@@ -206,17 +212,16 @@ export const AppPage = () => {
 
           {/* ✅ DEPLOYMENTS TAB */}
           <TabsContent value="deployments">
-            <DeploymentsTab appId={app.id} />
+            <DeploymentsTab appId={app.id} app={app} />
           </TabsContent>
 
           <TabsContent value="logs" className="h-full">
-            <LiveLogsViewer appId={app.id} enabled={true} />
+            <LiveLogsViewer appId={app.id} enabled={activeTab === "logs"} />
           </TabsContent>
 
           <TabsContent value="settings" className="space-y-6">
-            <ContainerControls appId={app.id} onStatusChange={fetchAppDetails} />
             <AppSettings app={app} onUpdate={fetchAppDetails} />
-            <Domains appId={app.id} />
+            {app.appType === 'web' && <Domains appId={app.id} />}
           </TabsContent>
         </Tabs>
       </main>

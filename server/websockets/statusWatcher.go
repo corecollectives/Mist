@@ -33,7 +33,7 @@ func WatchDeploymentStatus(ctx context.Context, depID int64, events chan<- Deplo
 	defer ticker.Stop()
 	defer close(events)
 
-	var lastStatus string
+	var lastStatus models.DeploymentStatus
 	var lastStage string
 	var lastProgress int
 
@@ -65,7 +65,7 @@ func WatchDeploymentStatus(ctx context.Context, depID int64, events chan<- Deplo
 					Timestamp: time.Now(),
 					Data: StatusUpdate{
 						DeploymentID: depID,
-						Status:       dep.Status,
+						Status:       string(dep.Status),
 						Stage:        dep.Stage,
 						Progress:     dep.Progress,
 						Message:      utils.GetStageMessage(dep.Stage),

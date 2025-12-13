@@ -17,6 +17,7 @@ import {
   Clock,
   Loader2,
   ExternalLink,
+  Database,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
@@ -176,7 +177,7 @@ export const AppInfo = ({ app, latestCommit }: Props) => {
                 </span>
                 {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
               </Badge>
-              {previewUrl && app.status === "running" && (
+              {previewUrl && app.status === "running" && app.appType === 'web' && (
                 <a
                   href={previewUrl}
                   target="_blank"
@@ -197,44 +198,65 @@ export const AppInfo = ({ app, latestCommit }: Props) => {
             </Badge>
           </InfoItem>
 
-          {/* Git Repository */}
-          <InfoItem icon={Github} label="Repository">
-            {app.gitRepository ? (
-              <a
-                href={`https://github.com/${app.gitRepository}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-mono text-sm text-primary hover:underline flex items-center gap-2 group"
-              >
-                <span className="truncate">{app.gitRepository}</span>
-                <svg className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-              </a>
-            ) : (
-              <p className="text-muted-foreground text-sm">Not connected</p>
-            )}
-          </InfoItem>
+          {/* For database apps, show template info instead of git */}
+          {app.appType === 'database' ? (
+            <>
+              <InfoItem icon={Database} label="Service Template">
+                <Badge variant="outline" className="font-mono text-xs">
+                  {app.templateName || "Unknown"}
+                </Badge>
+              </InfoItem>
+              
+              {app.port && app.port !== 0 && (
+                <InfoItem icon={Server} label="Port">
+                  <div className="font-mono text-sm font-medium">
+                    {app.port}
+                  </div>
+                </InfoItem>
+              )}
+            </>
+          ) : (
+            <>
+              {/* Git Repository */}
+              <InfoItem icon={Github} label="Repository">
+                {app.gitRepository ? (
+                  <a
+                    href={`https://github.com/${app.gitRepository}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-mono text-sm text-primary hover:underline flex items-center gap-2 group"
+                  >
+                    <span className="truncate">{app.gitRepository}</span>
+                    <svg className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  </a>
+                ) : (
+                  <p className="text-muted-foreground text-sm">Not connected</p>
+                )}
+              </InfoItem>
 
-          {/* Branch */}
-          <InfoItem icon={GitBranch} label="Branch">
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="font-mono text-xs">
-                {app.gitBranch || "Not specified"}
-              </Badge>
-            </div>
-          </InfoItem>
+              {/* Branch */}
+              <InfoItem icon={GitBranch} label="Branch">
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="font-mono text-xs">
+                    {app.gitBranch || "Not specified"}
+                  </Badge>
+                </div>
+              </InfoItem>
 
-          {app.port !== 0 && (
-            <InfoItem icon={Server} label="Port">
-              <div className="font-mono text-sm font-medium">
-                {app.port || <s className="text-red-500">"Not configured"</s>}
-              </div>
-            </InfoItem>
+              {app.port !== 0 && (
+                <InfoItem icon={Server} label="Port">
+                  <div className="font-mono text-sm font-medium">
+                    {app.port || <s className="text-red-500">"Not configured"</s>}
+                  </div>
+                </InfoItem>
+              )}
+            </>
           )}
 
-          {/* Root Directory */}
-          {app.rootDirectory && (
+          {/* Root Directory - only for web/service apps */}
+          {app.rootDirectory && app.appType !== 'database' && (
             <InfoItem icon={Server} label="Root Directory">
               <div className="font-mono text-sm text-muted-foreground">
                 {app.rootDirectory}
@@ -242,8 +264,8 @@ export const AppInfo = ({ app, latestCommit }: Props) => {
             </InfoItem>
           )}
 
-          {/* Build Command */}
-          {app.buildCommand && (
+          {/* Build Command - only for web/service apps */}
+          {app.buildCommand && app.appType !== 'database' && (
             <InfoItem icon={Server} label="Build Command" className="md:col-span-2">
               <div className="font-mono text-sm bg-muted/50 border border-border/50 rounded px-3 py-2">
                 {app.buildCommand}
@@ -251,8 +273,8 @@ export const AppInfo = ({ app, latestCommit }: Props) => {
             </InfoItem>
           )}
 
-          {/* Start Command */}
-          {app.startCommand && (
+          {/* Start Command - only for web/service apps */}
+          {app.startCommand && app.appType !== 'database' && (
             <InfoItem icon={Rocket} label="Start Command" className="md:col-span-2">
               <div className="font-mono text-sm bg-muted/50 border border-border/50 rounded px-3 py-2">
                 {app.startCommand}
@@ -260,41 +282,41 @@ export const AppInfo = ({ app, latestCommit }: Props) => {
             </InfoItem>
           )}
 
-          {/* Latest Commit */}
-          <InfoItem icon={GitCommit} label="Latest Commit" className="md:col-span-2">
-            {latestCommit ? (
-              <div className="space-y-2 p-3 rounded-lg bg-muted/50 border border-border/50">
-                <a
-                  href={latestCommit.html_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-mono text-sm text-primary hover:underline inline-flex items-center gap-2 group"
-                >
-                  <span>{latestCommit.sha.slice(0, 7)}</span>
-                  <svg className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                  </svg>
-                </a>
-                <div>{latestCommit.message}</div>
-
-                <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                  {latestCommit.author && (
-                    <span>by {latestCommit.author}</span>
-                  )}
-                  {latestCommit.timestamp && (
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      {new Date(latestCommit.timestamp).toLocaleString()}
-                    </span>
-                  )}
+          {/* Latest Commit - only for web/service apps */}
+          {app.appType !== 'database' && (
+            <InfoItem icon={GitCommit} label="Latest Commit" className="md:col-span-2">
+              {latestCommit ? (
+                <div className="space-y-2 p-3 rounded-lg bg-muted/50 border border-border/50">
+                  <a
+                    href={latestCommit.html_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-mono text-sm text-primary hover:underline inline-flex items-center gap-2 group"
+                  >
+                    <span>{latestCommit.sha.slice(0, 7)}</span>
+                    <svg className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  </a>
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                    {latestCommit.author && (
+                      <span>by {latestCommit.author}</span>
+                    )}
+                    {latestCommit.timestamp && (
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {new Date(latestCommit.timestamp).toLocaleString()}
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <p className="text-muted-foreground text-sm">
-                No commit information available
-              </p>
-            )}
-          </InfoItem>
+              ) : (
+                <p className="text-muted-foreground text-sm">
+                  No commit information available
+                </p>
+              )}
+            </InfoItem>
+          )}
 
           {/* Healthcheck */}
           {app.healthcheckPath && (

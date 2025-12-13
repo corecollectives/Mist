@@ -45,6 +45,17 @@ func GetLatestCommit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	app, err := models.GetApplicationByID(req.AppID)
+	if err != nil {
+		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to get app details", err.Error())
+		return
+	}
+
+	if app.AppType == models.AppTypeDatabase {
+		handlers.SendResponse(w, http.StatusOK, true, nil, "Database apps do not have commits", "")
+		return
+	}
+
 	commit, err := github.GetLatestCommit(req.AppID, userInfo.ID)
 	if err != nil {
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to get latest commit", err.Error())

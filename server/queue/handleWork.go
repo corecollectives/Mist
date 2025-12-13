@@ -26,6 +26,13 @@ func (q *Queue) HandleWork(id int64, db *sql.DB) {
 		return
 	}
 
+	app, err := models.GetApplicationByID(appId)
+	if err != nil {
+		errMsg := fmt.Sprintf("Failed to get app details: %v", err)
+		models.UpdateDeploymentStatus(id, "failed", "failed", 0, &errMsg)
+		return
+	}
+
 	dep, err := docker.LoadDeployment(id, db)
 	if err != nil {
 		errMsg := fmt.Sprintf("Failed to load deployment: %v", err)
@@ -52,18 +59,22 @@ func (q *Queue) HandleWork(id int64, db *sql.DB) {
 	}
 	defer logFile.Close()
 
-	logger.Info("Cloning repository")
-	models.UpdateDeploymentStatus(id, "cloning", "cloning", 20, nil)
+	if app.AppType != models.AppTypeDatabase {
+		logger.Info("Cloning repository")
+		models.UpdateDeploymentStatus(id, "cloning", "cloning", 20, nil)
 
-	err = github.CloneRepo(appId, logFile)
-	if err != nil {
-		logger.Error(err, "Failed to clone repository")
-		errMsg := fmt.Sprintf("Failed to clone repository: %v", err)
-		models.UpdateDeploymentStatus(id, "failed", "failed", 0, &errMsg)
-		return
+		err = github.CloneRepo(appId, logFile)
+		if err != nil {
+			logger.Error(err, "Failed to clone repository")
+			errMsg := fmt.Sprintf("Failed to clone repository: %v", err)
+			models.UpdateDeploymentStatus(id, "failed", "failed", 0, &errMsg)
+			return
+		}
+
+		logger.Info("Repository cloned successfully")
+	} else {
+		logger.Info("Skipping git clone for database app")
 	}
-
-	logger.Info("Repository cloned successfully")
 
 	_, err = docker.DeployerMain(id, db, logFile, logger)
 	if err != nil {

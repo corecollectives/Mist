@@ -39,10 +39,11 @@ func CreateDeploymentFromGithubPushEvent(evt PushEvent) (int64, error) {
 		return 0, errors.New("no application found for this repository and branch")
 	}
 
+	commitMsg := evt.HeadCommit.Message
 	deployment := models.Deployment{
 		AppID:         appID,
 		CommitHash:    commit,
-		CommitMessage: evt.HeadCommit.Message,
+		CommitMessage: &commitMsg,
 	}
 
 	if err := deployment.CreateDeployment(); err != nil {

@@ -1,6 +1,8 @@
 package models
 
 import (
+	"database/sql"
+	"fmt"
 	"time"
 
 	"github.com/corecollectives/mist/utils"
@@ -8,38 +10,63 @@ import (
 
 type DeploymentStrategy string
 type AppStatus string
+type AppType string
+type RestartPolicy string
 
 const (
 	DeploymentAuto   DeploymentStrategy = "auto"
 	DeploymentManual DeploymentStrategy = "manual"
 
-	StatusStopped  AppStatus = "stopped"
-	StatusRunning  AppStatus = "running"
-	StatusError    AppStatus = "error"
-	StatusBuilding AppStatus = "building"
+	StatusStopped   AppStatus = "stopped"
+	StatusRunning   AppStatus = "running"
+	StatusError     AppStatus = "error"
+	StatusBuilding  AppStatus = "building"
+	StatusDeploying AppStatus = "deploying"
+
+	AppTypeWeb      AppType = "web"
+	AppTypeService  AppType = "service"
+	AppTypeDatabase AppType = "database"
+
+	RestartPolicyNo            RestartPolicy = "no"
+	RestartPolicyAlways        RestartPolicy = "always"
+	RestartPolicyOnFailure     RestartPolicy = "on-failure"
+	RestartPolicyUnlessStopped RestartPolicy = "unless-stopped"
 )
 
 type App struct {
-	ID                  int64              `db:"id" json:"id"`
-	ProjectID           int64              `db:"project_id" json:"project_id"`
-	CreatedBy           int64              `db:"created_by" json:"created_by"`
-	Name                string             `db:"name" json:"name"`
-	Description         *string            `db:"description" json:"description,omitempty"`
-	GitProviderID       *int64             `db:"git_provider_id" json:"git_provider_id,omitempty"`
-	GitRepository       *string            `db:"git_repository" json:"git_repository,omitempty"`
-	GitBranch           string             `db:"git_branch" json:"git_branch,omitempty"`
-	GitCloneURL         *string            `db:"git_clone_url" json:"git_clone_url,omitempty"`
-	DeploymentStrategy  DeploymentStrategy `db:"deployment_strategy" json:"deployment_strategy"`
-	Port                *int64             `db:"port" json:"port,omitempty"`
-	RootDirectory       string             `db:"root_directory" json:"root_directory,omitempty"`
-	BuildCommand        *string            `db:"build_command" json:"build_command,omitempty"`
-	StartCommand        *string            `db:"start_command" json:"start_command,omitempty"`
-	DockerfilePath      *string            `db:"dockerfile_path" json:"dockerfile_path,omitempty"`
-	HealthcheckPath     *string            `db:"healthcheck_path" json:"healthcheck_path,omitempty"`
-	HealthcheckInterval int                `db:"healthcheck_interval" json:"healthcheck_interval"`
-	Status              AppStatus          `db:"status" json:"status"`
-	CreatedAt           time.Time          `db:"created_at" json:"created_at"`
-	UpdatedAt           time.Time          `db:"updated_at" json:"updated_at"`
+	ID          int64   `db:"id" json:"id"`
+	ProjectID   int64   `db:"project_id" json:"project_id"`
+	CreatedBy   int64   `db:"created_by" json:"created_by"`
+	Name        string  `db:"name" json:"name"`
+	Description *string `db:"description" json:"description,omitempty"`
+
+	AppType      AppType `db:"app_type" json:"app_type"`
+	TemplateName *string `db:"template_name" json:"template_name,omitempty"`
+
+	GitProviderID *int64  `db:"git_provider_id" json:"git_provider_id,omitempty"`
+	GitRepository *string `db:"git_repository" json:"git_repository,omitempty"`
+	GitBranch     string  `db:"git_branch" json:"git_branch,omitempty"`
+	GitCloneURL   *string `db:"git_clone_url" json:"git_clone_url,omitempty"`
+
+	DeploymentStrategy DeploymentStrategy `db:"deployment_strategy" json:"deployment_strategy"`
+	Port               *int64             `db:"port" json:"port,omitempty"`
+	RootDirectory      string             `db:"root_directory" json:"root_directory,omitempty"`
+	BuildCommand       *string            `db:"build_command" json:"build_command,omitempty"`
+	StartCommand       *string            `db:"start_command" json:"start_command,omitempty"`
+	DockerfilePath     *string            `db:"dockerfile_path" json:"dockerfile_path,omitempty"`
+
+	CPULimit      *float64      `db:"cpu_limit" json:"cpu_limit,omitempty"`
+	MemoryLimit   *int          `db:"memory_limit" json:"memory_limit,omitempty"`
+	RestartPolicy RestartPolicy `db:"restart_policy" json:"restart_policy"`
+
+	HealthcheckPath     *string   `db:"healthcheck_path" json:"healthcheck_path,omitempty"`
+	HealthcheckInterval int       `db:"healthcheck_interval" json:"healthcheck_interval"`
+	HealthcheckTimeout  int       `db:"healthcheck_timeout" json:"healthcheck_timeout"`
+	HealthcheckRetries  int       `db:"healthcheck_retries" json:"healthcheck_retries"`
+	Status              AppStatus `db:"status" json:"status"`
+
+	CreatedAt time.Time `db:"created_at" json:"created_at"`
+	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
 }
 
 func (a *App) ToJson() map[string]interface{} {
@@ -49,6 +76,8 @@ func (a *App) ToJson() map[string]interface{} {
 		"createdBy":           a.CreatedBy,
 		"name":                a.Name,
 		"description":         a.Description,
+		"appType":             a.AppType,
+		"templateName":        a.TemplateName,
 		"gitProviderId":       a.GitProviderID,
 		"gitRepository":       a.GitRepository,
 		"gitBranch":           a.GitBranch,
@@ -59,24 +88,39 @@ func (a *App) ToJson() map[string]interface{} {
 		"buildCommand":        a.BuildCommand,
 		"startCommand":        a.StartCommand,
 		"dockerfilePath":      a.DockerfilePath,
+		"cpuLimit":            a.CPULimit,
+		"memoryLimit":         a.MemoryLimit,
+		"restartPolicy":       a.RestartPolicy,
 		"healthcheckPath":     a.HealthcheckPath,
 		"healthcheckInterval": a.HealthcheckInterval,
+		"healthcheckTimeout":  a.HealthcheckTimeout,
+		"healthcheckRetries":  a.HealthcheckRetries,
 		"status":              a.Status,
 		"createdAt":           a.CreatedAt,
 		"updatedAt":           a.UpdatedAt,
 	}
 }
+
 func (a *App) InsertInDB() error {
 	id := utils.GenerateRandomId()
 	a.ID = id
+
+	// Set defaults
+	if a.AppType == "" {
+		a.AppType = AppTypeWeb
+	}
+	if a.RestartPolicy == "" {
+		a.RestartPolicy = RestartPolicyUnlessStopped
+	}
+
 	query := `
 	INSERT INTO apps (
-		id, name, description, project_id, created_by
-	) VALUES (?, ?, ?, ?, ?)
+		id, name, description, project_id, created_by, app_type, template_name
+	) VALUES (?, ?, ?, ?, ?, ?, ?)
 	RETURNING 
 		created_at, updated_at
 	`
-	err := db.QueryRow(query, a.ID, a.Name, a.Description, a.ProjectID, a.CreatedBy).Scan(&a.CreatedAt, &a.UpdatedAt)
+	err := db.QueryRow(query, a.ID, a.Name, a.Description, a.ProjectID, a.CreatedBy, a.AppType, a.TemplateName).Scan(&a.CreatedAt, &a.UpdatedAt)
 	if err != nil {
 		return err
 	}
@@ -86,10 +130,11 @@ func (a *App) InsertInDB() error {
 func GetApplicationByProjectID(projectId int64) ([]App, error) {
 	var apps []App
 	query := `
-	SELECT id, project_id, created_by, name, description, git_provider_id,
-	       git_repository, git_branch, git_clone_url, deployment_strategy,
-	       port, root_directory, build_command, start_command,
-	       dockerfile_path, healthcheck_path, healthcheck_interval,
+	SELECT id, project_id, created_by, name, description, app_type, template_name,
+	       git_provider_id, git_repository, git_branch, git_clone_url, 
+	       deployment_strategy, port, root_directory, build_command, start_command,
+	       dockerfile_path, cpu_limit, memory_limit, restart_policy,
+	       healthcheck_path, healthcheck_interval, healthcheck_timeout, healthcheck_retries,
 	       status, created_at, updated_at
 	FROM apps
 	WHERE project_id = ?
@@ -104,11 +149,12 @@ func GetApplicationByProjectID(projectId int64) ([]App, error) {
 		var app App
 		err := rows.Scan(
 			&app.ID, &app.ProjectID, &app.CreatedBy, &app.Name, &app.Description,
-			&app.GitProviderID, &app.GitRepository, &app.GitBranch, &app.GitCloneURL,
-			&app.DeploymentStrategy, &app.Port, &app.RootDirectory,
-			&app.BuildCommand, &app.StartCommand, &app.DockerfilePath,
-			&app.HealthcheckPath, &app.HealthcheckInterval, &app.Status,
-			&app.CreatedAt, &app.UpdatedAt,
+			&app.AppType, &app.TemplateName, &app.GitProviderID, &app.GitRepository,
+			&app.GitBranch, &app.GitCloneURL, &app.DeploymentStrategy, &app.Port,
+			&app.RootDirectory, &app.BuildCommand, &app.StartCommand, &app.DockerfilePath,
+			&app.CPULimit, &app.MemoryLimit, &app.RestartPolicy,
+			&app.HealthcheckPath, &app.HealthcheckInterval, &app.HealthcheckTimeout,
+			&app.HealthcheckRetries, &app.Status, &app.CreatedAt, &app.UpdatedAt,
 		)
 		if err != nil {
 			return nil, err
@@ -124,21 +170,23 @@ func GetApplicationByProjectID(projectId int64) ([]App, error) {
 func GetApplicationByID(appId int64) (*App, error) {
 	var app App
 	query := `
-	SELECT id, project_id, created_by, name, description, git_provider_id,
-	       git_repository, git_branch, git_clone_url, deployment_strategy,
-	       port, root_directory, build_command, start_command,
-	       dockerfile_path, healthcheck_path, healthcheck_interval,
+	SELECT id, project_id, created_by, name, description, app_type, template_name,
+	       git_provider_id, git_repository, git_branch, git_clone_url,
+	       deployment_strategy, port, root_directory, build_command, start_command,
+	       dockerfile_path, cpu_limit, memory_limit, restart_policy,
+	       healthcheck_path, healthcheck_interval, healthcheck_timeout, healthcheck_retries,
 	       status, created_at, updated_at
 	FROM apps
 	WHERE id = ?
 	`
 	err := db.QueryRow(query, appId).Scan(
 		&app.ID, &app.ProjectID, &app.CreatedBy, &app.Name, &app.Description,
-		&app.GitProviderID, &app.GitRepository, &app.GitBranch, &app.GitCloneURL,
-		&app.DeploymentStrategy, &app.Port, &app.RootDirectory,
-		&app.BuildCommand, &app.StartCommand, &app.DockerfilePath,
-		&app.HealthcheckPath, &app.HealthcheckInterval, &app.Status,
-		&app.CreatedAt, &app.UpdatedAt,
+		&app.AppType, &app.TemplateName, &app.GitProviderID, &app.GitRepository,
+		&app.GitBranch, &app.GitCloneURL, &app.DeploymentStrategy, &app.Port,
+		&app.RootDirectory, &app.BuildCommand, &app.StartCommand, &app.DockerfilePath,
+		&app.CPULimit, &app.MemoryLimit, &app.RestartPolicy,
+		&app.HealthcheckPath, &app.HealthcheckInterval, &app.HealthcheckTimeout,
+		&app.HealthcheckRetries, &app.Status, &app.CreatedAt, &app.UpdatedAt,
 	)
 	if err != nil {
 		return nil, err
@@ -152,6 +200,8 @@ func (app *App) UpdateApplication() error {
 	SET 
 		name = ?,
 		description = ?,
+		app_type = ?,
+		template_name = ?,
 		git_provider_id = ?,
 		git_repository = ?,
 		git_branch = ?,
@@ -162,29 +212,25 @@ func (app *App) UpdateApplication() error {
 		build_command = ?,
 		start_command = ?,
 		dockerfile_path = ?,
+		cpu_limit = ?,
+		memory_limit = ?,
+		restart_policy = ?,
 		healthcheck_path = ?,
 		healthcheck_interval = ?,
+		healthcheck_timeout = ?,
+		healthcheck_retries = ?,
 		status = ?,
 		updated_at = CURRENT_TIMESTAMP
 	WHERE id = ?
 	`
 	_, err := db.Exec(query,
-		app.Name,
-		app.Description,
-		app.GitProviderID,
-		app.GitRepository,
-		app.GitBranch,
-		app.GitCloneURL,
-		app.DeploymentStrategy,
-		app.Port,
-		app.RootDirectory,
-		app.BuildCommand,
-		app.StartCommand,
-		app.DockerfilePath,
-		app.HealthcheckPath,
-		app.HealthcheckInterval,
-		app.Status,
-		app.ID,
+		app.Name, app.Description, app.AppType, app.TemplateName,
+		app.GitProviderID, app.GitRepository, app.GitBranch, app.GitCloneURL,
+		app.DeploymentStrategy, app.Port, app.RootDirectory,
+		app.BuildCommand, app.StartCommand, app.DockerfilePath,
+		app.CPULimit, app.MemoryLimit, app.RestartPolicy,
+		app.HealthcheckPath, app.HealthcheckInterval, app.HealthcheckTimeout,
+		app.HealthcheckRetries, app.Status, app.ID,
 	)
 	return err
 }
@@ -236,7 +282,9 @@ func GetAppIDByDeploymentID(depID int64) (int64, error) {
 }
 
 func GetAppRepoInfo(appId int64) (string, string, int64, string, error) {
-	var repo, branch, name string
+	var repo sql.NullString
+	var branch sql.NullString
+	var name string
 	var projectId int64
 
 	err := db.QueryRow(`
@@ -247,18 +295,29 @@ func GetAppRepoInfo(appId int64) (string, string, int64, string, error) {
 		return "", "", 0, "", err
 	}
 
-	return repo, branch, projectId, name, nil
+	repoStr := ""
+	if repo.Valid {
+		repoStr = repo.String
+	}
+
+	branchStr := ""
+	if branch.Valid {
+		branchStr = branch.String
+	}
+
+	return repoStr, branchStr, projectId, name, nil
 }
 
 func GetAppRepoAndBranch(appID int64) (string, string, error) {
-	var repoName, branch string
+	var repoName sql.NullString
+	var branch string
 	err := db.QueryRow(`SELECT git_repository, COALESCE(git_branch, 'main') FROM apps WHERE id = ?`, appID).
 		Scan(&repoName, &branch)
 	if err != nil {
 		return "", "", err
 	}
-	if repoName == "" {
-		return "", "", err
+	if !repoName.Valid || repoName.String == "" {
+		return "", "", fmt.Errorf("app has no git repository configured")
 	}
-	return repoName, branch, nil
+	return repoName.String, branch, nil
 }

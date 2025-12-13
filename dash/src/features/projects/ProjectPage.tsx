@@ -3,8 +3,11 @@ import { FullScreenLoading } from "@/components/common";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useProject, useApplications } from "@/hooks";
+import { toast } from "sonner";
+import type { Project } from "@/types";
+import type { App, CreateAppRequest } from "@/types/app";
 import { AppCard } from "./components/AppCard";
+import { CreateAppModal } from "./components/CreateAppModal";
 
 export const ProjectPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -24,9 +27,18 @@ export const ProjectPage = () => {
     autoFetch: true,
   });
 
-  const createNewApp = async ({ name, description }: { name: string; description: string }) => {
-    const result = await createApp({ name, description, projectId });
-    if (result) {
+  const createNewApp = async (appData: CreateAppRequest) => {
+    try {
+      const response = await fetch(`/api/apps/create`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(appData),
+        credentials: "include",
+      });
+      const data = await response.json();
+      if (!data.success) throw new Error(data.error || "Failed to create app");
+
+      toast.success("App created successfully");
       setIsAddNewAppModalOpen(false);
     }
   };
@@ -135,15 +147,11 @@ export const ProjectPage = () => {
         onSubmit={(data) => handleUpdateProject(data as any)}
       />
 
-      <FormModal
+      <CreateAppModal
         isOpen={isAddNewAppModalOpen}
         onClose={() => setIsAddNewAppModalOpen(false)}
-        title="Create New App"
-        fields={[
-          { label: "App Name", name: "name", type: "text" },
-          { label: "Description", name: "description", type: "textarea" },
-        ]}
-        onSubmit={(data) => createNewApp(data as any)}
+        projectId={projectId}
+        onSubmit={createNewApp}
       />
     </div>
   );

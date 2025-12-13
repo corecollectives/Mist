@@ -123,7 +123,8 @@ export const useContainerLogs = ({
       setError('Failed to establish connection');
       setIsLoading(false);
     }
-  }, [appId, enabled, onError]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appId, enabled]);
 
   useEffect(() => {
     if (!enabled) {
@@ -132,6 +133,17 @@ export const useContainerLogs = ({
 
     if (!wsRef.current || wsRef.current.readyState === WebSocket.CLOSED) {
       connectWebSocket();
+    } else {
+      // Close connection when disabled
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
+      }
+      setIsConnected(false);
+      setIsLoading(false);
     }
 
     return () => {
@@ -143,6 +155,7 @@ export const useContainerLogs = ({
         wsRef.current = null;
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, appId]);
 
   const clearLogs = () => {

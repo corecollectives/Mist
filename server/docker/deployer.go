@@ -210,7 +210,7 @@ func UpdateDeployment(dep *models.Deployment, db *sql.DB) error {
 }
 
 func GetLogsPath(commitHash string, depId int64) string {
-	return filepath.Join(constants.Constants["LogPath"], commitHash+strconv.FormatInt(depId, 10)+"_build_logs")
+	return filepath.Join(constants.Constants["LogPath"].(string), commitHash+strconv.FormatInt(depId, 10)+"_build_logs")
 }
 
 func UpdateAppStatus(appID int64, status string, db *sql.DB) error {

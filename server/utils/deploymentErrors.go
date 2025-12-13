@@ -5,7 +5,6 @@ import (
 	"time"
 )
 
-// DeploymentStage represents the current stage of deployment
 type DeploymentStage string
 
 const (
@@ -18,7 +17,6 @@ const (
 	StageRollingBack DeploymentStage = "rolling_back"
 )
 
-// DeploymentError represents an error during deployment with context
 type DeploymentError struct {
 	Stage     DeploymentStage
 	DeployID  int64
@@ -34,7 +32,6 @@ func (de *DeploymentError) Error() string {
 		de.Timestamp.Format(time.RFC3339), de.DeployID, de.Stage, de.Message, de.Err)
 }
 
-// NewDeploymentError creates a new deployment error
 func NewDeploymentError(stage DeploymentStage, depID, appID int64, err error, message string, retryable bool) *DeploymentError {
 	return &DeploymentError{
 		Stage:     stage,
@@ -47,7 +44,6 @@ func NewDeploymentError(stage DeploymentStage, depID, appID int64, err error, me
 	}
 }
 
-// GetProgressFromStage returns the progress percentage based on deployment stage
 func GetProgressFromStage(stage string) int {
 	switch DeploymentStage(stage) {
 	case StagePending:
@@ -67,7 +63,6 @@ func GetProgressFromStage(stage string) int {
 	}
 }
 
-// GetStageMessage returns a user-friendly message for each stage
 func GetStageMessage(stage string) string {
 	switch DeploymentStage(stage) {
 	case StagePending:

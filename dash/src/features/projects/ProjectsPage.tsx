@@ -3,17 +3,17 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { toast } from 'sonner';
 
 import { useAuth } from '@/providers';
+import { useProjects } from '@/hooks';
 
 import { Button } from '../../components/ui/button';
 import { Card, CardContent } from '../../components/ui/card';
-import { FormModal } from '../../components/FormModal';
+import { FormModal } from '@/components/common/form-modal';
 import { Plus, Search } from 'lucide-react';
 import { Input } from '../../components/ui/input';
 import { FullScreenLoading } from '@/components/common';
 
 import { canEditProject, canDeleteProject, validateProjectData, filterProjects, sortProjects } from '../projects/utils';
 import type { Project, ProjectCreateInput } from '../../types';
-import { SUCCESS_MESSAGES, ERROR_MESSAGES } from '../../constants';
 import { ProjectCard } from './components/ProjectCard';
 
 
@@ -39,10 +39,8 @@ const EmptyState: React.FC<{ onCreateProject: () => void; canCreate: boolean }> 
 
 export const ProjectsPage: React.FC = () => {
   const { user } = useAuth();
+  const { projects, loading, error, createProject, updateProject, deleteProject, fetchProjects } = useProjects();
 
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -56,25 +54,6 @@ export const ProjectsPage: React.FC = () => {
     return sortProjects(filtered, sortBy, sortOrder);
   }, [projects, searchTerm, sortBy, sortOrder]);
 
-  const fetchProjects = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const response = await fetch("/api/projects/getAll", {
-        credentials: 'include'
-      });
-      const data = await response.json();
-      if (!data.success) throw new Error(data.error || "Failed to fetch projects");
-      setProjects(data.data);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to fetch projects";
-      setError(errorMessage);
-      toast.error(errorMessage);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   useEffect(() => {
     fetchProjects();
 
@@ -82,59 +61,30 @@ export const ProjectsPage: React.FC = () => {
     return () => {
       document.body.style.overflow = '';
     };
-  }, []);
+  }, [fetchProjects]);
 
   const handleCreateOrUpdateProject = async (projectData: ProjectCreateInput) => {
-    try {
-      const validation = validateProjectData(projectData);
-      if (!validation.isValid) {
-        const firstError = Object.values(validation.errors)[0];
-        toast.error(firstError);
-        return;
-      }
+    const validation = validateProjectData(projectData);
+    if (!validation.isValid) {
+      const firstError = Object.values(validation.errors)[0];
+      toast.error(firstError);
+      return;
+    }
 
-      const isEditing = !!editingProject;
-      const url = isEditing ? `/api/projects/update?id=${editingProject.id}` : "/api/projects/create";
-      const method = isEditing ? "PUT" : "POST";
+    const isEditing = !!editingProject;
+    const result = isEditing 
+      ? await updateProject(editingProject.id, projectData)
+      : await createProject(projectData);
 
-      const response = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(projectData),
-        credentials: 'include'
-      });
-
-      const data = await response.json();
-      if (!data.success) throw new Error(data.error || "Failed to save project");
-
-      const message = isEditing ? SUCCESS_MESSAGES.PROJECT_UPDATED : SUCCESS_MESSAGES.PROJECT_CREATED;
-      toast.success(message);
+    if (result) {
       setIsModalOpen(false);
       setEditingProject(null);
-      fetchProjects(); // Refresh the projects list
-    } catch (error) {
-      console.error('Error saving project:', error);
-      toast.error(error instanceof Error ? error.message : ERROR_MESSAGES.GENERIC_ERROR);
     }
   };
 
   const handleDeleteProject = async (projectId: number) => {
     if (!confirm('Are you sure you want to delete this project?')) return;
-
-    try {
-      const response = await fetch(`/api/projects/delete?id=${projectId}`, {
-        method: "DELETE",
-        credentials: 'include'
-      });
-      const data = await response.json();
-      if (!data.success) throw new Error(data.error || "Failed to delete project");
-
-      toast.success(SUCCESS_MESSAGES.PROJECT_DELETED);
-      fetchProjects(); // Refresh the projects list
-    } catch (error) {
-      console.error('Error deleting project:', error);
-      toast.error(error instanceof Error ? error.message : ERROR_MESSAGES.GENERIC_ERROR);
-    }
+    await deleteProject(projectId);
   };
 
   const handleEditProject = (project: Project) => {
@@ -147,7 +97,7 @@ export const ProjectsPage: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  if (isLoading && projects.length === 0) {
+  if (loading && projects.length === 0) {
     return <FullScreenLoading />;
   }
 

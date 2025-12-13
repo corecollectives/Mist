@@ -4,6 +4,7 @@ export interface User {
   username: string;
   email: string;
   role: 'owner' | 'admin' | 'user';
+  avatarUrl?: string | null;
   isAdmin?: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -28,3 +29,14 @@ export interface UserCreateInput {
 }
 
 export type CreateUserData = UserCreateInput;
+
+export interface UpdateProfileData {
+  username?: string;
+  email?: string;
+}
+
+export interface UpdatePasswordData {
+  userId: number;
+  currentPassword: string;
+  newPassword: string;
+}

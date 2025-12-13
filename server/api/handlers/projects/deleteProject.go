@@ -39,7 +39,14 @@ func DeleteProject(w http.ResponseWriter, r *http.Request) {
 
 	if project.OwnerID != userData.ID {
 		handlers.SendResponse(w, http.StatusForbidden, false, nil, "Only the project owner can delete the project", "forbidden")
+		return
 	}
+
+	models.LogUserAudit(userData.ID, "delete", "project", &projectId, map[string]interface{}{
+		"name":        project.Name,
+		"description": project.Description,
+	})
+
 	err = models.DeleteProjectByID(projectId)
 	if err != nil {
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to delete project", err.Error())

@@ -1,4 +1,4 @@
-import { FormModal } from '@/components/FormModal';
+import { FormModal } from '@/components/common/form-modal';
 import { getAvailableRoles } from '../utils';
 import type { User, CreateUserData } from '@/types';
 

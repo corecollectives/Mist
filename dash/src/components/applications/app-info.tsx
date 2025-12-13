@@ -33,6 +33,7 @@ interface Props {
     html_url: string
     author?: string
     timestamp?: string
+    message?: string
   } | null
 }
 
@@ -95,14 +96,12 @@ export const AppInfo = ({ app, latestCommit }: Props) => {
 
   const statusConfig = getStatusConfig(app.status)
 
-  // Fetch preview URL when component mounts or app changes
   useEffect(() => {
     const fetchPreviewUrl = async () => {
       try {
         const data = await applicationsService.getPreviewUrl(app.id)
         setPreviewUrl(data.url)
       } catch (error) {
-        // Silently fail if no preview URL available
         console.error("Failed to fetch preview URL:", error)
       }
     }

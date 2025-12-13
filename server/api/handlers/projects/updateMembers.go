@@ -63,5 +63,10 @@ func UpdateMembers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	models.LogUserAudit(userData.ID, "update", "project", &projectId, map[string]interface{}{
+		"action":  "members_update",
+		"userIds": input.UserIDs,
+	})
+
 	handlers.SendResponse(w, http.StatusOK, true, updatedProject.ToJSON(), "Project members updated successfully", "")
 }

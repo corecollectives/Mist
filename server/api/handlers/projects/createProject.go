@@ -56,5 +56,10 @@ func CreateProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	models.LogUserAudit(userData.ID, "create", "project", &project.ID, map[string]interface{}{
+		"name":        project.Name,
+		"description": project.Description,
+	})
+
 	handlers.SendResponse(w, http.StatusCreated, true, project.ToJSON(), "Project created successfully", "")
 }

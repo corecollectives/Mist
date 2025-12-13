@@ -81,6 +81,12 @@ func AddDeployHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Info().Int64("deployment_id", deployment.ID).Int("app_id", req.AppId).Msg("Deployment added to queue")
 
+	models.LogUserAudit(user.ID, "create", "deployment", &deployment.ID, map[string]interface{}{
+		"app_id":         deployment.AppID,
+		"commit_hash":    deployment.CommitHash,
+		"commit_message": deployment.CommitMessage,
+	})
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(deployment)

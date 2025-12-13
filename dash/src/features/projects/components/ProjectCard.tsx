@@ -58,7 +58,7 @@ export const ProjectCard: React.FC<{
             <DropdownMenuContent align="end">
               {canEdit && (
                 <DropdownMenuItem
-                  onClick={(e) => {
+                  onClick={(e: React.MouseEvent) => {
                     e.stopPropagation();
                     onEdit(project);
                   }}
@@ -69,7 +69,7 @@ export const ProjectCard: React.FC<{
               {canDelete && (
                 <DropdownMenuItem
                   className="text-destructive"
-                  onClick={(e) => {
+                  onClick={(e: React.MouseEvent) => {
                     e.stopPropagation();
                     onDelete(project.id);
                   }}

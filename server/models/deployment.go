@@ -199,7 +199,6 @@ func GetCommitHashByDeploymentID(depID int64) (string, error) {
 	return commitHash, nil
 }
 
-// UpdateDeploymentStatus updates the deployment status, stage, progress and error message
 func UpdateDeploymentStatus(depID int64, status, stage string, progress int, errorMsg *string) error {
 	query := `
 	UPDATE deployments 
@@ -214,7 +213,6 @@ func UpdateDeploymentStatus(depID int64, status, stage string, progress int, err
 	return err
 }
 
-// MarkDeploymentStarted marks the deployment as started
 func MarkDeploymentStarted(depID int64) error {
 	query := `UPDATE deployments SET started_at = CURRENT_TIMESTAMP WHERE id = ?`
 	_, err := db.Exec(query, depID)

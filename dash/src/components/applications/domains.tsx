@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Trash2, Plus, Pencil, X, Check, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { applicationsService } from "@/services";
+import { useDomains } from "@/hooks";
 import type { Domain } from "@/types";
 
 interface DomainsProps {
@@ -14,28 +14,15 @@ interface DomainsProps {
 }
 
 export const Domains = ({ appId }: DomainsProps) => {
-  const [domains, setDomains] = useState<Domain[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { domains, loading, createDomain, updateDomain, deleteDomain } = useDomains({ 
+    appId, 
+    autoFetch: true 
+  });
+
   const [newDomain, setNewDomain] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editDomain, setEditDomain] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
-
-  const fetchDomains = async () => {
-    try {
-      setLoading(true);
-      const data = await applicationsService.getDomains(appId);
-      setDomains(data);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to fetch domains");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchDomains();
-  }, [appId]);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,17 +31,10 @@ export const Domains = ({ appId }: DomainsProps) => {
       return;
     }
 
-    try {
-      await applicationsService.createDomain({
-        appId,
-        domain: newDomain.trim(),
-      });
-      toast.success("Domain added");
+    const result = await createDomain(newDomain.trim());
+    if (result) {
       setNewDomain("");
       setShowAddForm(false);
-      await fetchDomains();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to add domain");
     }
   };
 
@@ -64,16 +44,9 @@ export const Domains = ({ appId }: DomainsProps) => {
       return;
     }
 
-    try {
-      await applicationsService.updateDomain({
-        id,
-        domain: editDomain.trim(),
-      });
-      toast.success("Domain updated");
+    const result = await updateDomain(id, editDomain.trim());
+    if (result) {
       setEditingId(null);
-      await fetchDomains();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to update domain");
     }
   };
 
@@ -81,14 +54,7 @@ export const Domains = ({ appId }: DomainsProps) => {
     if (!confirm("Are you sure you want to delete this domain?")) {
       return;
     }
-
-    try {
-      await applicationsService.deleteDomain(id);
-      toast.success("Domain deleted");
-      await fetchDomains();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to delete domain");
-    }
+    await deleteDomain(id);
   };
 
   const startEdit = (domain: Domain) => {

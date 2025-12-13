@@ -58,5 +58,10 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   3600 * 24 * 30,
 	})
+
+	models.LogUserAudit(user.ID, "login", "user", &user.ID, map[string]interface{}{
+		"email": user.Email,
+	})
+
 	handlers.SendResponse(w, http.StatusOK, true, user, "Login successful", "")
 }

@@ -48,6 +48,11 @@ func CreateDomain(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	models.LogUserAudit(userInfo.ID, "create", "domain", &domain.ID, map[string]interface{}{
+		"appId":  req.AppID,
+		"domain": domain.Domain,
+	})
+
 	handlers.SendResponse(w, http.StatusOK, true, domain, "Domain created successfully", "")
 }
 
@@ -129,11 +134,23 @@ func UpdateDomain(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	oldDomain := domain.Domain
+
 	err = models.UpdateDomain(req.ID, strings.TrimSpace(req.Domain))
 	if err != nil {
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to update domain", err.Error())
 		return
 	}
+
+	models.LogUserAudit(userInfo.ID, "update", "domain", &req.ID, map[string]interface{}{
+		"appId": domain.AppID,
+		"before": map[string]interface{}{
+			"domain": oldDomain,
+		},
+		"after": map[string]interface{}{
+			"domain": strings.TrimSpace(req.Domain),
+		},
+	})
 
 	handlers.SendResponse(w, http.StatusOK, true, nil, "Domain updated successfully", "")
 }
@@ -180,6 +197,11 @@ func DeleteDomain(w http.ResponseWriter, r *http.Request) {
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to delete domain", err.Error())
 		return
 	}
+
+	models.LogUserAudit(userInfo.ID, "delete", "domain", &req.ID, map[string]interface{}{
+		"appId":  domain.AppID,
+		"domain": domain.Domain,
+	})
 
 	handlers.SendResponse(w, http.StatusOK, true, nil, "Domain deleted successfully", "")
 }

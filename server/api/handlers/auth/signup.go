@@ -78,6 +78,13 @@ func SignUpHandler(w http.ResponseWriter, r *http.Request) {
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   3600 * 24 * 30,
 	})
+
+	models.LogUserAudit(user.ID, "signup", "user", &user.ID, map[string]interface{}{
+		"username": user.Username,
+		"email":    user.Email,
+		"role":     user.Role,
+	})
+
 	handlers.SendResponse(w, http.StatusCreated, true, user, "User signed up successfully", "")
 
 }

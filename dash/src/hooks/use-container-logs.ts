@@ -36,6 +36,12 @@ export const useContainerLogs = ({
   const connectWebSocket = useCallback(() => {
     if (!enabled) return;
 
+    // Prevent duplicate connections
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      console.log('[ContainerLogs] WebSocket already connected, skipping');
+      return;
+    }
+
     try {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const host = window.location.host;
@@ -51,7 +57,6 @@ export const useContainerLogs = ({
       };
 
       ws.onmessage = (event) => {
-        // Handle ping messages
         if (event.data instanceof Blob) {
           return;
         }
@@ -61,7 +66,6 @@ export const useContainerLogs = ({
 
           switch (logEvent.type) {
             case 'log':
-              // Only add non-empty log lines
               if (logEvent.data.line && logEvent.data.line.trim()) {
                 setLogs((prev) => [...prev, logEvent.data.line!]);
               }
@@ -101,7 +105,6 @@ export const useContainerLogs = ({
         setIsConnected(false);
         wsRef.current = null;
 
-        // Try to reconnect with exponential backoff
         if (enabled && reconnectAttemptsRef.current < 5) {
           const delay = Math.min(1000 * Math.pow(2, reconnectAttemptsRef.current), 10000);
           reconnectAttemptsRef.current++;
@@ -123,7 +126,11 @@ export const useContainerLogs = ({
   }, [appId, enabled, onError]);
 
   useEffect(() => {
-    if (enabled) {
+    if (!enabled) {
+      return;
+    }
+
+    if (!wsRef.current || wsRef.current.readyState === WebSocket.CLOSED) {
       connectWebSocket();
     }
 
@@ -133,9 +140,10 @@ export const useContainerLogs = ({
       }
       if (wsRef.current) {
         wsRef.current.close();
+        wsRef.current = null;
       }
     };
-  }, [enabled, connectWebSocket]);
+  }, [enabled, appId]);
 
   const clearLogs = () => {
     setLogs([]);

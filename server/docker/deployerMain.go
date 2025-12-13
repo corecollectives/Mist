@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/corecollectives/mist/constants"
 	"github.com/corecollectives/mist/models"
@@ -67,7 +68,7 @@ func DeployerMain(Id int64, db *sql.DB, logFile *os.File, logger *utils.Deployme
 		"project_id": app.ProjectID,
 	})
 
-	appContextPath := constants.Constants["RootPath"] + "/" + fmt.Sprintf("projects/%d/apps/%s", app.ProjectID, app.Name)
+	appContextPath := filepath.Join(constants.Constants["RootPath"].(string), fmt.Sprintf("projects/%d/apps/%s", app.ProjectID, app.Name))
 	imageTag := dep.CommitHash
 	containerName := fmt.Sprintf("app-%d", app.ID)
 

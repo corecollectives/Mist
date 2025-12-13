@@ -57,6 +57,11 @@ func StopContainerHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	models.LogUserAudit(userInfo.ID, "stop", "container", &appId, map[string]interface{}{
+		"app_name":       app.Name,
+		"container_name": containerName,
+	})
+
 	handlers.SendResponse(w, http.StatusOK, true, map[string]any{
 		"message": "Container stopped successfully",
 	}, "Container stopped successfully", "")
@@ -109,6 +114,11 @@ func StartContainerHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	models.LogUserAudit(userInfo.ID, "start", "container", &appId, map[string]interface{}{
+		"app_name":       app.Name,
+		"container_name": containerName,
+	})
+
 	handlers.SendResponse(w, http.StatusOK, true, map[string]any{
 		"message": "Container started successfully",
 	}, "Container started successfully", "")
@@ -160,6 +170,11 @@ func RestartContainerHandler(w http.ResponseWriter, r *http.Request) {
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to update app status", err.Error())
 		return
 	}
+
+	models.LogUserAudit(userInfo.ID, "restart", "container", &appId, map[string]interface{}{
+		"app_name":       app.Name,
+		"container_name": containerName,
+	})
 
 	handlers.SendResponse(w, http.StatusOK, true, map[string]any{
 		"message": "Container restarted successfully",

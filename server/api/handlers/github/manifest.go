@@ -97,6 +97,14 @@ func CallBackHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	userID := int64(stateData.UserId)
+	models.LogUserAudit(userID, "create", "github_app", &githubApp.AppID, map[string]interface{}{
+		"appName": app.Name,
+		"appSlug": app.Slug,
+		"appId":   app.ID,
+		"owner":   app.Owner.Login,
+	})
+
 	newState := GenerateState(app.ID, stateData.UserId)
 	redirectURL := fmt.Sprintf("https://github.com/apps/%s/installations/new?state=%s", app.Slug, newState)
 	http.Redirect(w, r, redirectURL, http.StatusSeeOther)

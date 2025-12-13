@@ -84,5 +84,10 @@ func UpdateProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	models.LogUserAudit(userData.ID, "update", "project", &project.ID, map[string]interface{}{
+		"name":        project.Name,
+		"description": project.Description,
+	})
+
 	handlers.SendResponse(w, http.StatusOK, true, updatedProject.ToJSON(), "Project updated successfully", "")
 }

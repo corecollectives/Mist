@@ -5,16 +5,21 @@ import (
 
 	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/api/handlers/applications"
+	"github.com/corecollectives/mist/api/handlers/auditlogs"
 	"github.com/corecollectives/mist/api/handlers/auth"
 	"github.com/corecollectives/mist/api/handlers/deployments"
 	"github.com/corecollectives/mist/api/handlers/github"
 	"github.com/corecollectives/mist/api/handlers/projects"
 	"github.com/corecollectives/mist/api/handlers/users"
 	"github.com/corecollectives/mist/api/middleware"
+	"github.com/corecollectives/mist/constants"
 	"github.com/corecollectives/mist/websockets"
 )
 
 func RegisterRoutes(mux *http.ServeMux) {
+
+	avatarDir := constants.Constants["AvatarDirPath"].(string)
+	mux.Handle("/uploads/avatar/", http.StripPrefix("/uploads/avatar/", http.FileServer(http.Dir(avatarDir))))
 
 	mux.Handle("/api/ws/stats", middleware.AuthMiddleware()(http.HandlerFunc(websockets.StatWsHandler)))
 	mux.HandleFunc("/api/ws/container/logs", websockets.ContainerLogsHandler)
@@ -28,6 +33,10 @@ func RegisterRoutes(mux *http.ServeMux) {
 	mux.Handle("POST /api/users/create", middleware.AuthMiddleware()(http.HandlerFunc(users.CreateUser)))
 	mux.Handle("GET /api/users/getAll", middleware.AuthMiddleware()(http.HandlerFunc(users.GetUsers)))
 	mux.Handle("GET /api/users/getFromId", middleware.AuthMiddleware()(http.HandlerFunc(users.GetUserById)))
+	mux.Handle("PUT /api/users/update", middleware.AuthMiddleware()(http.HandlerFunc(users.UpdateUser)))
+	mux.Handle("PUT /api/users/password", middleware.AuthMiddleware()(http.HandlerFunc(users.UpdatePassword)))
+	mux.Handle("POST /api/users/avatar", middleware.AuthMiddleware()(http.HandlerFunc(users.UploadAvatar)))
+	mux.Handle("DELETE /api/users/avatar", middleware.AuthMiddleware()(http.HandlerFunc(users.DeleteAvatar)))
 	mux.Handle("DELETE /api/users/delete", middleware.AuthMiddleware()(http.HandlerFunc(users.DeleteUser)))
 
 	mux.Handle("POST /api/projects/create", middleware.AuthMiddleware()(http.HandlerFunc(projects.CreateProject)))
@@ -73,5 +82,8 @@ func RegisterRoutes(mux *http.ServeMux) {
 	mux.Handle("POST /api/deployments/create", middleware.AuthMiddleware()(http.HandlerFunc(deployments.AddDeployHandler)))
 	mux.Handle("POST /api/deployments/getByAppId", middleware.AuthMiddleware()(http.HandlerFunc(deployments.GetByApplicationID)))
 	mux.Handle("GET /api/deployments/logs", middleware.AuthMiddleware()(http.HandlerFunc(deployments.GetCompletedDeploymentLogsHandler)))
+
+	mux.Handle("GET /api/audit-logs", middleware.AuthMiddleware()(http.HandlerFunc(auditlogs.GetAllAuditLogs)))
+	mux.Handle("GET /api/audit-logs/resource", middleware.AuthMiddleware()(http.HandlerFunc(auditlogs.GetAuditLogsByResource)))
 
 }

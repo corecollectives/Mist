@@ -9,7 +9,7 @@ import (
 	"github.com/corecollectives/mist/models"
 )
 
-var logPath string = constants.Constants["LogPath"]
+var logPath string = constants.Constants["LogPath"].(string)
 
 func CreateDockerBuildLogFile(depID int64) (*os.File, string, error) {
 	commitHash, err := models.GetCommitHashByDeploymentID(depID)

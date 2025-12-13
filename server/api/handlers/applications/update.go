@@ -100,5 +100,25 @@ func UpdateApplication(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	changes := make(map[string]interface{})
+	if req.Name != nil {
+		changes["name"] = *req.Name
+	}
+	if req.GitRepository != nil {
+		changes["git_repository"] = *req.GitRepository
+	}
+	if req.GitBranch != nil {
+		changes["git_branch"] = *req.GitBranch
+	}
+	if req.Port != nil {
+		changes["port"] = *req.Port
+	}
+	if req.Status != nil {
+		changes["status"] = *req.Status
+	}
+	models.LogUserAudit(userInfo.ID, "update", "application", &app.ID, map[string]interface{}{
+		"changes": changes,
+	})
+
 	handlers.SendResponse(w, http.StatusOK, true, app.ToJson(), "Application updated successfully", "")
 }

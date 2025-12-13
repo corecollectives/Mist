@@ -15,8 +15,8 @@ export function CreateUserModal({
   onSubmit, 
   currentUser 
 }: CreateUserModalProps) {
-  const handleSubmit = async (formData: Record<string, any>) => {
-    await onSubmit(formData as CreateUserData);
+  const handleSubmit = async (formData: Record<string, unknown>) => {
+    await onSubmit(formData as unknown as CreateUserData);
   };
 
   return (

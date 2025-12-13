@@ -18,14 +18,14 @@ export const GitProviderTab = ({ app }: GitProviderTabProps) => {
   const [provider, setProvider] = useState("github")
 
   // Github App State
-  const [_, setGithubApp] = useState<any>(null)
+  const [, setGithubApp] = useState<{ name: string; slug: string } | null>(null)
   const [isInstalled, setIsInstalled] = useState<boolean>(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   // Repo + Branch
-  const [repos, setRepos] = useState<any[]>([])
-  const [branches, setBranches] = useState<any[]>([])
+  const [repos, setRepos] = useState<Array<{ id: number; full_name: string }>>([])
+  const [branches, setBranches] = useState<Array<{ name: string }>>([])
   const [selectedRepo, setSelectedRepo] = useState(app.gitRepository || "")
   const [selectedBranch, setSelectedBranch] = useState(app.gitBranch || "")
   const [isRepoLoading, setIsRepoLoading] = useState(true)
@@ -45,7 +45,8 @@ export const GitProviderTab = ({ app }: GitProviderTabProps) => {
       } else {
         setError(data.error || "Failed to load GitHub App details")
       }
-    } catch (err) {
+    } catch (error) {
+      console.error('Failed to load GitHub App details:', error);
       setError("Failed to load GitHub App details")
     } finally {
       setIsLoading(false)

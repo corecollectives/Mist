@@ -37,7 +37,11 @@ export const useAuditLogs = (
       setLoading(true);
       setError(null);
       
-      const params: any = {
+      const params: {
+        limit: number;
+        offset: number;
+        resourceType?: string;
+      } = {
         limit,
         offset: page * limit,
       };

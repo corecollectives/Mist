@@ -21,12 +21,12 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        changeorigin: true,
+        changeOrigin: true,
         target: process.env.vite_api_url || 'http://localhost:8080/',
         ws: true,
       },
       '/uploads': {
-        changeorigin: true,
+        changeOrigin: true,
         target: process.env.vite_api_url || 'http://localhost:8080/',
         ws: true,
       },

@@ -11,11 +11,6 @@ import { DeploymentsTab } from "@/components/deployments";
 
 export const AppPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [app, setApp] = useState<App | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [latestCommit, setLatestCommit] = useState();
-  const [previewUrl, setPreviewUrl] = useState<string>("");
   const [activeTab, setActiveTab] = useState("info");
 
   const params = useParams();
@@ -55,38 +50,6 @@ export const AppPage = () => {
       setIsModalOpen(false);
     }
   };
-
-  useEffect(() => {
-    // Only fetch latest commit for non-database apps
-    if (app && app.appType !== 'database') {
-      fetchLatestCommit()
-    }
-    fetchAppDetails()
-  }, [params.appId]);
-
-  // Fetch preview URL when app changes
-  useEffect(() => {
-    const fetchPreviewUrl = async () => {
-      if (!app || app.status !== "running") return
-      
-      try {
-        const response = await fetch(`/api/apps/getPreviewUrl`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ appId: app.id }),
-        })
-        const data = await response.json()
-        if (data.success) {
-          setPreviewUrl(data.data.url)
-        }
-      } catch (err) {
-        console.error("Failed to fetch preview URL:", err)
-      }
-    }
-
-    fetchPreviewUrl()
-  }, [app]);
 
 
 
@@ -142,7 +105,7 @@ export const AppPage = () => {
                 <AppInfo app={app} latestCommit={latestCommit} />
               </div>
               <div>
-                <AppStats appId={app.id} appStatus={app.status} app={app} previewUrl={previewUrl} onStatusChange={fetchAppDetails} />
+                <AppStats appId={app.id} appStatus={app.status} app={app} previewUrl={previewUrl} onStatusChange={refreshApp} />
               </div>
             </div>
           </TabsContent>
@@ -168,7 +131,7 @@ export const AppPage = () => {
           </TabsContent>
 
           <TabsContent value="settings" className="space-y-6">
-            <AppSettings app={app} onUpdate={fetchAppDetails} />
+            <AppSettings app={app} onUpdate={refreshApp} />
             {app.appType === 'web' && <Domains appId={app.id} />}
           </TabsContent>
         </Tabs>
@@ -183,7 +146,7 @@ export const AppPage = () => {
           { label: "App Name", name: "name", type: "text", defaultValue: app.name },
           { label: "Description", name: "description", type: "textarea", defaultValue: app.description || "" },
         ]}
-        onSubmit={(data) => handleUpdateApp(data as any)}
+        onSubmit={(data) => handleUpdateApp(data as { name: string; description: string })}
       />
     </div>
   );

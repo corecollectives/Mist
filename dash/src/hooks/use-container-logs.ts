@@ -65,29 +65,33 @@ export const useContainerLogs = ({
           const logEvent: ContainerLogEvent = JSON.parse(event.data);
 
           switch (logEvent.type) {
-            case 'log':
+            case 'log': {
               if (logEvent.data.line && logEvent.data.line.trim()) {
                 setLogs((prev) => [...prev, logEvent.data.line!]);
               }
               break;
+            }
 
-            case 'status':
+            case 'status': {
               if (logEvent.data.state) {
                 setContainerState(logEvent.data.state);
               }
               break;
+            }
 
-            case 'error':
+            case 'error': {
               const errorMsg = logEvent.data.message || 'Unknown error';
               console.error('[ContainerLogs] Error:', errorMsg);
               setError(errorMsg);
               onError?.(errorMsg);
               break;
+            }
 
-            case 'end':
+            case 'end': {
               console.log('[ContainerLogs] Log stream ended');
               setError('Log stream ended');
               break;
+            }
           }
         } catch (err) {
           console.error('[ContainerLogs] Error parsing message:', err);

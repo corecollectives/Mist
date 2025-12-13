@@ -63,8 +63,8 @@ export const ProjectsPage: React.FC = () => {
     };
   }, [fetchProjects]);
 
-  const handleCreateOrUpdateProject = async (projectData: ProjectCreateInput) => {
-    const validation = validateProjectData(projectData);
+  const handleCreateOrUpdateProject = async (projectData: Record<string, unknown>) => {
+    const validation = validateProjectData(projectData as unknown as ProjectCreateInput);
     if (!validation.isValid) {
       const firstError = Object.values(validation.errors)[0];
       toast.error(firstError);
@@ -73,8 +73,8 @@ export const ProjectsPage: React.FC = () => {
 
     const isEditing = !!editingProject;
     const result = isEditing 
-      ? await updateProject(editingProject.id, projectData)
-      : await createProject(projectData);
+      ? await updateProject(editingProject.id, projectData as unknown as ProjectCreateInput)
+      : await createProject(projectData as unknown as ProjectCreateInput);
 
     if (result) {
       setIsModalOpen(false);

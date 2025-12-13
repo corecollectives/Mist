@@ -20,7 +20,7 @@ interface Field {
   defaultValue?: string | string[] | number
 }
 
-interface FormModalProps<T extends Record<string, any>> {
+interface FormModalProps<T extends Record<string, unknown>> {
   isOpen: boolean
   onClose: () => void
   title: string
@@ -28,7 +28,7 @@ interface FormModalProps<T extends Record<string, any>> {
   onSubmit: (data: T) => void | Promise<void>
 }
 
-export function FormModal<T extends Record<string, any>>({
+export function FormModal<T extends Record<string, unknown>>({
   isOpen,
   onClose,
   title,
@@ -36,7 +36,7 @@ export function FormModal<T extends Record<string, any>>({
   onSubmit,
 }: FormModalProps<T>) {
   const initialState = Object.fromEntries(fields.map((f) => [f.name, f.defaultValue ?? ""]))
-  const [formData, setFormData] = useState<Record<string, any>>(initialState)
+  const [formData, setFormData] = useState<Record<string, string | string[] | number>>(initialState)
   const [tagInput, setTagInput] = useState("")
   const [tags, setTags] = useState<string[]>([])
 

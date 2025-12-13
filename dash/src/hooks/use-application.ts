@@ -13,7 +13,13 @@ interface UseApplicationReturn {
   app: App | null;
   loading: boolean;
   error: string | null;
-  latestCommit: any;
+  latestCommit: {
+    sha: string;
+    html_url: string;
+    author?: string;
+    timestamp?: string;
+    message?: string;
+  } | null;
   previewUrl: string;
   fetchApp: () => Promise<void>;
   fetchLatestCommit: () => Promise<void>;
@@ -29,7 +35,13 @@ export const useApplication = (options: UseApplicationOptions): UseApplicationRe
   const [app, setApp] = useState<App | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [latestCommit, setLatestCommit] = useState<any>(null);
+  const [latestCommit, setLatestCommit] = useState<{
+    sha: string;
+    html_url: string;
+    author?: string;
+    timestamp?: string;
+    message?: string;
+  } | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>('');
 
   const fetchApp = useCallback(async () => {

@@ -60,8 +60,8 @@ export default function DashboardPage() {
         }
       };
 
-      ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
+      ws.onerror = (wsError) => {
+        console.error('WebSocket error:', wsError);
         setError('Failed to connect to real-time data');
         setIsLoading(false);
       };
@@ -74,7 +74,8 @@ export default function DashboardPage() {
       };
 
       setWsConnection(ws);
-    } catch (err) {
+    } catch (error) {
+      console.error('Failed to establish WebSocket connection:', error);
       setError('Failed to establish WebSocket connection');
       setIsLoading(false);
     }

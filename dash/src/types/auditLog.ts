@@ -15,10 +15,10 @@ export interface AuditLog {
 }
 
 export interface AuditLogDetails {
-  before?: any;
-  after?: any;
+  before?: Record<string, unknown>;
+  after?: Record<string, unknown>;
   reason?: string;
-  extra?: any;
+  extra?: Record<string, unknown>;
   trigger_type?: string;
   repository?: string;
   branch?: string;
@@ -26,8 +26,8 @@ export interface AuditLogDetails {
   commit_hash?: string;
   commit_message?: string;
   app_id?: number;
-  changes?: any;
-  [key: string]: any;
+  changes?: Record<string, unknown>;
+  [key: string]: unknown;
 }
 
 export interface AuditLogsResponse {

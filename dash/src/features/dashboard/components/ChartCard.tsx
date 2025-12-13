@@ -11,15 +11,20 @@ interface ChartCardProps {
 }
 
 export function ChartCard({ title, data, dataKey, color, formatter }: ChartCardProps) {
-  const customTooltip = ({ active, payload, label }: any) => {
+  const customTooltip = ({ active, payload, label }: { 
+    active?: boolean; 
+    payload?: Array<{ value: number; color: string }>; 
+    label?: string | number;
+  }) => {
     if (active && payload && payload.length) {
       const value = payload[0].value;
       const formattedValue = formatter ? formatter(value) : value;
+      const timestamp = typeof label === 'number' ? label : parseInt(String(label), 10);
       
       return (
         <div className="bg-popover p-3 border border-border rounded-md">
           <p className="text-foreground">
-            {new Date(label * 1000).toLocaleTimeString()}
+            {new Date(timestamp * 1000).toLocaleTimeString()}
           </p>
           <p style={{ color: payload[0].color }}>
             {title}: {formattedValue}

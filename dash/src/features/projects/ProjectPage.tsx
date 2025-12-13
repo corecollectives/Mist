@@ -4,10 +4,10 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import type { Project } from "@/types";
-import type { App, CreateAppRequest } from "@/types/app";
+import type { CreateAppRequest } from "@/types/app";
 import { AppCard } from "./components/AppCard";
 import { CreateAppModal } from "./components/CreateAppModal";
+import { useApplications, useProject } from "@/hooks";
 
 export const ProjectPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -22,7 +22,7 @@ export const ProjectPage = () => {
     autoFetch: true,
   });
 
-  const { apps, loading: fetchingApps, createApp } = useApplications({
+  const { apps, loading: fetchingApps } = useApplications({
     projectId,
     autoFetch: true,
   });
@@ -40,6 +40,9 @@ export const ProjectPage = () => {
 
       toast.success("App created successfully");
       setIsAddNewAppModalOpen(false);
+    }
+    catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to create app");
     }
   };
 
@@ -84,7 +87,7 @@ export const ProjectPage = () => {
           {project.projectMembers && (
             <div className="mt-3 flex flex-wrap gap-2 items-center">
               <span className="text-sm font-medium text-foreground">Members:</span>
-              {project.projectMembers.map((member: any) => (
+              {project.projectMembers.map((member: { username: string }) => (
                 <span
                   key={member.username}
                   className="bg-secondary text-secondary-foreground px-2 py-1 rounded-full text-xs"
@@ -144,7 +147,7 @@ export const ProjectPage = () => {
           { label: "Description", name: "description", type: "textarea", defaultValue: project.description },
           { name: "tags", label: "Tags", type: "tags", defaultValue: project.tags || [] },
         ]}
-        onSubmit={(data) => handleUpdateProject(data as any)}
+        onSubmit={(data) => handleUpdateProject(data as { name: string; description: string; tags: string[] })}
       />
 
       <CreateAppModal

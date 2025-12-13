@@ -29,13 +29,23 @@ export const AppSettings = ({ app, onUpdate }: AppSettingsProps) => {
     try {
       setSaving(true);
 
-      const updates: any = {
+      const updates: Partial<{
+        rootDirectory: string;
+        dockerfilePath: string | null;
+        buildCommand: string | null;
+        startCommand: string | null;
+        healthcheckPath: string | null;
+        restartPolicy: RestartPolicy;
+        port: number;
+        cpuLimit: number | null;
+        memoryLimit: number | null;
+      }> = {
         rootDirectory,
         dockerfilePath: dockerfilePath || null,
         buildCommand: buildCommand || null,
         startCommand: startCommand || null,
         healthcheckPath: healthcheckPath || null,
-        restartPolicy,
+        restartPolicy: restartPolicy as RestartPolicy,
       };
 
       if (port) {

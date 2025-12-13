@@ -68,7 +68,6 @@ export const useDeploymentMonitor = ({
 
       if (deployment.status === 'failed' && deployment.error_message) {
         setError(deployment.error_message);
-      } else if (deployment.status === 'success') {
       }
 
       setIsLoading(false);
@@ -114,14 +113,15 @@ export const useDeploymentMonitor = ({
           const deploymentEvent: DeploymentEvent = JSON.parse(event.data);
 
           switch (deploymentEvent.type) {
-            case 'log':
+            case 'log': {
               const logData = deploymentEvent.data as LogUpdate;
               if (logData.line && logData.line.trim()) {
                 setLogs((prev) => [...prev, logData.line]);
               }
               break;
+            }
 
-            case 'status':
+            case 'status': {
               const statusData = deploymentEvent.data as StatusUpdate;
               setStatus(statusData);
 
@@ -139,13 +139,15 @@ export const useDeploymentMonitor = ({
                 onError?.(statusData.error_message);
               }
               break;
+            }
 
-            case 'error':
-              const errorMsg = (deploymentEvent.data as any).message || 'Unknown error';
+            case 'error': {
+              const errorMsg = (deploymentEvent.data as { message?: string }).message || 'Unknown error';
               console.error('[DeploymentMonitor] Error event:', errorMsg);
               setError(errorMsg);
               onError?.(errorMsg);
               break;
+            }
           }
         } catch (err) {
           console.error('[DeploymentMonitor] Error parsing message:', err);

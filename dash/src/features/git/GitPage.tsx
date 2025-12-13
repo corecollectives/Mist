@@ -43,8 +43,9 @@ export default function GitPage() {
       });
       await response.json();
       // Repositories fetched successfully
-    } catch (err) {
+    } catch (error) {
       // Silent fail - repositories are optional
+      console.debug('Failed to fetch repositories:', error);
     }
   };
 
@@ -63,7 +64,8 @@ export default function GitPage() {
   const handleCreateApp = async () => {
     try {
       window.open('/api/github/app/create', '_blank');
-    } catch (err) {
+    } catch (error) {
+      console.error('Failed to open GitHub app creation:', error);
     }
   };
 

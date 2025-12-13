@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Database, Server, Layers, HardDrive, MessageSquare, Package } from "lucide-react";
+import { Database, Server, Layers, HardDrive, MessageSquare, Package, type LucideIcon } from "lucide-react";
 import { templatesApi } from "@/api/endpoints/templates";
 import type { CreateAppRequest, ServiceTemplate } from "@/types/app";
 import { toast } from "sonner";
@@ -16,7 +16,7 @@ interface DatabaseFormProps {
   onBack: () => void;
 }
 
-const categoryIcons: Record<string, any> = {
+const categoryIcons: Record<string, LucideIcon> = {
   database: Database,
   cache: Layers,
   queue: MessageSquare,

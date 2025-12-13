@@ -71,7 +71,13 @@ export const applicationsService = {
     return data.data;
   },
 
-  async getLatestCommit(appId: number, projectId: number): Promise<any> {
+  async getLatestCommit(appId: number, projectId: number): Promise<{
+    sha: string;
+    html_url: string;
+    author?: string;
+    timestamp?: string;
+    message?: string;
+  }> {
     const response = await fetch(`${API_BASE}/apps/getLatestCommit`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

@@ -68,7 +68,7 @@ export const formatChangeDetails = (details: AuditLogDetails) => {
     return null;
   }
   
-  const changes = details.changes as Record<string, any>;
+  const changes = details.changes as Record<string, unknown>;
   const keys = Object.keys(changes);
   
   if (keys.length === 0) return null;

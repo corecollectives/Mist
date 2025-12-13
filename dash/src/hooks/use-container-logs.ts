@@ -32,13 +32,19 @@ export const useContainerLogs = ({
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<number>(0);
   const reconnectAttemptsRef = useRef(0);
+  const onErrorRef = useRef(onError);
+  const intentionalCloseRef = useRef(false);
+
+  // Keep onError ref up to date without triggering reconnects
+  useEffect(() => {
+    onErrorRef.current = onError;
+  }, [onError]);
 
   const connectWebSocket = useCallback(() => {
     if (!enabled) return;
 
     // Prevent duplicate connections
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      console.log('[ContainerLogs] WebSocket already connected, skipping');
+    if (wsRef.current && (wsRef.current.readyState === WebSocket.OPEN || wsRef.current.readyState === WebSocket.CONNECTING)) {
       return;
     }
 
@@ -49,7 +55,6 @@ export const useContainerLogs = ({
       wsRef.current = ws;
 
       ws.onopen = () => {
-        console.log('[ContainerLogs] WebSocket connected');
         setIsConnected(true);
         setError(null);
         setIsLoading(false);
@@ -83,12 +88,11 @@ export const useContainerLogs = ({
               const errorMsg = logEvent.data.message || 'Unknown error';
               console.error('[ContainerLogs] Error:', errorMsg);
               setError(errorMsg);
-              onError?.(errorMsg);
+              onErrorRef.current?.(errorMsg);
               break;
             }
 
             case 'end': {
-              console.log('[ContainerLogs] Log stream ended');
               setError('Log stream ended');
               break;
             }
@@ -105,15 +109,14 @@ export const useContainerLogs = ({
       };
 
       ws.onclose = () => {
-        console.log('[ContainerLogs] WebSocket closed');
         setIsConnected(false);
         wsRef.current = null;
 
-        if (enabled && reconnectAttemptsRef.current < 5) {
+        // Only reconnect if this wasn't an intentional close
+        if (!intentionalCloseRef.current && enabled && reconnectAttemptsRef.current < 5) {
           const delay = Math.min(1000 * Math.pow(2, reconnectAttemptsRef.current), 10000);
           reconnectAttemptsRef.current++;
 
-          console.log(`[ContainerLogs] Reconnecting in ${delay}ms (attempt ${reconnectAttemptsRef.current})`);
           reconnectTimeoutRef.current = window.setTimeout(() => {
             connectWebSocket();
           }, delay);
@@ -121,33 +124,40 @@ export const useContainerLogs = ({
           setError('Failed to connect after multiple attempts');
           setIsLoading(false);
         }
+        
+        // Reset the flag
+        intentionalCloseRef.current = false;
       };
     } catch (err) {
       console.error('[ContainerLogs] Error creating WebSocket:', err);
       setError('Failed to establish connection');
       setIsLoading(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appId, enabled]);
 
   useEffect(() => {
     if (!enabled) {
-      return;
-    }
-
-    if (!wsRef.current || wsRef.current.readyState === WebSocket.CLOSED) {
-      connectWebSocket();
-    } else {
       // Close connection when disabled
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
       }
       if (wsRef.current) {
+        intentionalCloseRef.current = true;
         wsRef.current.close();
         wsRef.current = null;
       }
       setIsConnected(false);
       setIsLoading(false);
+      return;
+    }
+
+    // Only connect if not already connected or connecting
+    const shouldConnect = !wsRef.current || 
+      wsRef.current.readyState === WebSocket.CLOSED || 
+      wsRef.current.readyState === WebSocket.CLOSING;
+    
+    if (shouldConnect) {
+      connectWebSocket();
     }
 
     return () => {
@@ -155,6 +165,7 @@ export const useContainerLogs = ({
         clearTimeout(reconnectTimeoutRef.current);
       }
       if (wsRef.current) {
+        intentionalCloseRef.current = true;
         wsRef.current.close();
         wsRef.current = null;
       }
@@ -168,6 +179,7 @@ export const useContainerLogs = ({
 
   const disconnect = () => {
     if (wsRef.current) {
+      intentionalCloseRef.current = true;
       wsRef.current.close();
     }
     setIsConnected(false);

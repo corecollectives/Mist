@@ -12,10 +12,6 @@ PORT=8080
 MIST_FILE="/var/lib/mist/mist.db"
 SERVICE_FILE="/etc/systemd/system/$APP_NAME.service"
 
-TRAEFIK_DIR="/var/lib/mist/traefik"
-TRAEFIK_COMPOSE_FILE="$INSTALL_DIR/traefik-compose.yml"
-TRAEFIK_NETWORK="traefik-net"
-
 echo "🔍 Detecting package manager..."
 if command -v apt >/dev/null; then
     PKG_INSTALL="sudo apt update && sudo apt install -y git curl build-essential wget unzip"
@@ -26,7 +22,7 @@ elif command -v yum >/dev/null; then
 elif command -v pacman >/dev/null; then
     PKG_INSTALL="sudo pacman -Sy --noconfirm git curl base-devel wget unzip"
 else
-    echo "❌ Unsupported Linux distro."
+    echo "❌ Unsupported Linux distro. Please install git, curl, and build tools manually."
     exit 1
 fi
 
@@ -34,33 +30,12 @@ echo "📦 Installing dependencies..."
 eval $PKG_INSTALL
 
 # -------------------------------
-# Install Docker
-# -------------------------------
-if ! command -v docker &>/dev/null; then
-    echo "🐳 Installing Docker..."
-    curl -fsSL https://get.docker.com | sh
-    sudo systemctl enable docker
-    sudo systemctl start docker
-    sudo usermod -aG docker $USER
-fi
-
-# -------------------------------
-# Install Docker Compose plugin
-# -------------------------------
-if ! docker compose version &>/dev/null; then
-    echo "🧩 Installing Docker Compose plugin..."
-    sudo mkdir -p /usr/local/lib/docker/cli-plugins
-    sudo curl -SL https://github.com/docker/compose/releases/download/v2.29.2/docker-compose-linux-x86_64 \
-        -o /usr/local/lib/docker/cli-plugins/docker-compose
-    sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
-fi
-
-# -------------------------------
 # Install Go
 # -------------------------------
 if ! command -v go &>/dev/null; then
     echo "🐹 Installing Go..."
-    wget -q https://go.dev/dl/go1.22.11.linux-amd64.tar.gz -O /tmp/go.tar.gz
+    GO_URL="https://go.dev/dl/go1.22.11.linux-amd64.tar.gz"
+    wget -q $GO_URL -O /tmp/go.tar.gz
     sudo rm -rf /usr/local/go
     sudo tar -C /usr/local -xzf /tmp/go.tar.gz
     export PATH=$PATH:/usr/local/go/bin
@@ -78,19 +53,34 @@ if ! command -v bun &>/dev/null; then
 fi
 
 # -------------------------------
-# Clone or update Mist
+# Clone or update Mist repo
 # -------------------------------
 if [ -d "$INSTALL_DIR/.git" ]; then
-    echo "🔄 Updating Mist..."
+    echo "🔄 Updating existing Mist installation..."
     cd $INSTALL_DIR
     git fetch origin $BRANCH
     git reset --hard origin/$BRANCH
 else
-    echo "📥 Cloning Mist..."
+    echo "📥 Cloning Mist repository..."
     sudo mkdir -p $INSTALL_DIR
     sudo chown $USER:$USER $INSTALL_DIR
     git clone -b $BRANCH --single-branch $REPO $INSTALL_DIR
 fi
+
+# ===============================
+# ✅ ADDED: Create Traefik network
+# ===============================
+echo "🌐 Ensuring traefik-net Docker network exists..."
+if ! docker network inspect traefik-net >/dev/null 2>&1; then
+    docker network create traefik-net
+fi
+
+# ===============================
+# ✅ ADDED: Start Traefik
+# ===============================
+echo "🚦 Starting Traefik..."
+cd $INSTALL_DIR
+docker compose -f traefik-compose.yml up -d
 
 # -------------------------------
 # Build frontend
@@ -99,8 +89,11 @@ echo "🧱 Building frontend..."
 cd $INSTALL_DIR/$VITE_FRONTEND_DIR
 bun install
 bun run build
+cd ..
 
-mkdir -p "$INSTALL_DIR/$GO_BACKEND_DIR/static"
+if [ ! -d "$GO_BACKEND_DIR/static" ]; then
+    mkdir -p "$GO_BACKEND_DIR/static"
+fi
 rm -rf "$INSTALL_DIR/$GO_BACKEND_DIR/static/*"
 cp -r "$VITE_FRONTEND_DIR/dist/"* "$INSTALL_DIR/$GO_BACKEND_DIR/static/"
 
@@ -113,55 +106,48 @@ go mod tidy
 go build -o "$GO_BINARY_NAME"
 
 # -------------------------------
-# Setup Mist database
+# Setup database file
 # -------------------------------
-echo "🗃️ Ensuring database exists..."
+echo "🗃️ Ensuring Mist database file exists..."
 sudo mkdir -p $(dirname $MIST_FILE)
 sudo touch $MIST_FILE
 sudo chown $USER:$USER $MIST_FILE
 
 # -------------------------------
-# Create Traefik network
+# Open firewall port
 # -------------------------------
-echo "🌐 Creating Traefik network..."
-if ! docker network inspect $TRAEFIK_NETWORK >/dev/null 2>&1; then
-    docker network create $TRAEFIK_NETWORK
-fi
-
-# -------------------------------
-# Start Traefik
-# -------------------------------
-echo "🚦 Starting Traefik..."
-sudo mkdir -p $TRAEFIK_DIR
-
-cd $INSTALL_DIR
-docker compose -f "$TRAEFIK_COMPOSE_FILE" up -d
-
-# -------------------------------
-# Open firewall
-# -------------------------------
-echo "🌐 Configuring firewall..."
+echo "🌐 Checking firewall rules..."
 if command -v ufw &>/dev/null; then
-    sudo ufw allow 80/tcp
-    sudo ufw allow 443/tcp
     sudo ufw allow $PORT/tcp
     sudo ufw reload
+elif command -v firewall-cmd &>/dev/null; then
+    sudo firewall-cmd --permanent --add-port=${PORT}/tcp
+    sudo firewall-cmd --reload
+elif command -v iptables &>/dev/null; then
+    sudo iptables -C INPUT -p tcp --dport $PORT -j ACCEPT 2>/dev/null || \
+        sudo iptables -A INPUT -p tcp --dport $PORT -j ACCEPT
+    if command -v netfilter-persistent &>/dev/null; then
+        sudo netfilter-persistent save
+    fi
+else
+    echo "⚠️ No recognized firewall found. Ensure port $PORT is open manually if needed."
 fi
 
 # -------------------------------
-# Create systemd service
+# Create or update systemd service
 # -------------------------------
-echo "🛠️ Creating systemd service..."
+echo "🛠️ Creating/Updating systemd service..."
 sudo bash -c "cat > $SERVICE_FILE" <<EOL
 [Unit]
-Description=Mist Backend
-After=network.target docker.service
-Requires=docker.service
+Description=$APP_NAME Service
+After=network.target
 
 [Service]
+Type=simple
 WorkingDirectory=$INSTALL_DIR/$GO_BACKEND_DIR
 ExecStart=$INSTALL_DIR/$GO_BACKEND_DIR/$GO_BINARY_NAME
 Restart=always
+RestartSec=5
 User=$USER
 Environment=PORT=$PORT
 
@@ -170,11 +156,10 @@ WantedBy=multi-user.target
 EOL
 
 sudo systemctl daemon-reload
-sudo systemctl enable mist
-sudo systemctl restart mist
+sudo systemctl enable $APP_NAME
+sudo systemctl restart $APP_NAME
 
-echo ""
-echo "✅ Mist installed successfully"
-echo "🌍 Backend: http://localhost:$PORT"
-echo "🔐 Traefik running with automatic HTTPS"
-echo ""
+echo "✅ $APP_NAME updated and running on port $PORT!"
+echo "📍 Installation path: $INSTALL_DIR"
+echo "🧩 Service: systemctl status $APP_NAME"
+echo "🌐 Access the application at http://<your-server-ip>:$PORT"

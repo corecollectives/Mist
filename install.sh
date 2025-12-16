@@ -11,23 +11,28 @@ GO_BINARY_NAME="mist"
 PORT=8080
 MIST_FILE="/var/lib/mist/mist.db"
 SERVICE_FILE="/etc/systemd/system/$APP_NAME.service"
+TRAEFIK_COMPOSE="traefik-compose.yml"
 
 echo "🔍 Detecting package manager..."
 if command -v apt >/dev/null; then
-    PKG_INSTALL="sudo apt update && sudo apt install -y git curl build-essential wget unzip"
+    PKG_INSTALL="sudo apt update && sudo apt install -y git curl build-essential wget unzip docker.io docker-compose"
 elif command -v dnf >/dev/null; then
-    PKG_INSTALL="sudo dnf install -y git curl gcc make wget unzip"
+    PKG_INSTALL="sudo dnf install -y git curl gcc make wget unzip docker docker-compose"
 elif command -v yum >/dev/null; then
-    PKG_INSTALL="sudo yum install -y git curl gcc make wget unzip"
+    PKG_INSTALL="sudo yum install -y git curl gcc make wget unzip docker docker-compose"
 elif command -v pacman >/dev/null; then
-    PKG_INSTALL="sudo pacman -Sy --noconfirm git curl base-devel wget unzip"
+    PKG_INSTALL="sudo pacman -Sy --noconfirm git curl base-devel wget unzip docker docker-compose"
 else
-    echo "❌ Unsupported Linux distro. Please install git, curl, and build tools manually."
+    echo "❌ Unsupported Linux distro. Please install git, curl, docker, and build tools manually."
     exit 1
 fi
 
 echo "📦 Installing dependencies..."
 eval $PKG_INSTALL
+
+# Start and enable Docker
+sudo systemctl enable docker --now
+sudo usermod -aG docker $USER
 
 # -------------------------------
 # Install Go
@@ -68,6 +73,24 @@ else
 fi
 
 # -------------------------------
+# Setup Traefik (before building Mist)
+# -------------------------------
+echo "🌐 Setting up Traefik reverse proxy..."
+cd $INSTALL_DIR
+
+# Create traefik network
+docker network create traefik-net 2>/dev/null || echo "✅ traefik-net already exists"
+
+# Start Traefik with docker-compose
+if [ -f "$TRAEFIK_COMPOSE" ]; then
+    echo "🚀 Starting Traefik..."
+    docker compose -f $TRAEFIK_COMPOSE up -d
+    echo "✅ Traefik running on ports 80/443"
+else
+    echo "⚠️ $TRAEFIK_COMPOSE not found, skipping Traefik setup"
+fi
+
+# -------------------------------
 # Build frontend
 # -------------------------------
 echo "🧱 Building frontend..."
@@ -97,25 +120,31 @@ echo "🗃️ Ensuring Mist database file exists..."
 sudo mkdir -p $(dirname $MIST_FILE)
 sudo touch $MIST_FILE
 sudo chown $USER:$USER $MIST_FILE
+sudo chmod 666 $MIST_FILE  # SQLite needs full access
 
 # -------------------------------
-# Open firewall port
+# Create mist data directories
+# -------------------------------
+sudo mkdir -p /var/lib/mist/uploads/avatar /var/lib/mist/projects /var/lib/mist/logs
+sudo chown -R $USER:$USER /var/lib/mist
+sudo chmod -R 775 /var/lib/mist
+
+# -------------------------------
+# Open firewall ports (Traefik + Mist)
 # -------------------------------
 echo "🌐 Checking firewall rules..."
 if command -v ufw &>/dev/null; then
+    sudo ufw allow 80/tcp
+    sudo ufw allow 443/tcp
     sudo ufw allow $PORT/tcp
     sudo ufw reload
 elif command -v firewall-cmd &>/dev/null; then
+    sudo firewall-cmd --permanent --add-port=80/tcp
+    sudo firewall-cmd --permanent --add-port=443/tcp
     sudo firewall-cmd --permanent --add-port=${PORT}/tcp
     sudo firewall-cmd --reload
-elif command -v iptables &>/dev/null; then
-    sudo iptables -C INPUT -p tcp --dport $PORT -j ACCEPT 2>/dev/null || \
-        sudo iptables -A INPUT -p tcp --dport $PORT -j ACCEPT
-    if command -v netfilter-persistent &>/dev/null; then
-        sudo netfilter-persistent save
-    fi
 else
-    echo "⚠️ No recognized firewall found. Ensure port $PORT is open manually if needed."
+    echo "⚠️ No recognized firewall found. Ensure ports 80, 443, $PORT are open."
 fi
 
 # -------------------------------
@@ -125,7 +154,8 @@ echo "🛠️ Creating/Updating systemd service..."
 sudo bash -c "cat > $SERVICE_FILE" <<EOL
 [Unit]
 Description=$APP_NAME Service
-After=network.target
+After=network.target docker.service
+Requires=docker.service
 
 [Service]
 Type=simple
@@ -134,7 +164,9 @@ ExecStart=$INSTALL_DIR/$GO_BACKEND_DIR/$GO_BINARY_NAME
 Restart=always
 RestartSec=5
 User=$USER
+Group=$USER
 Environment=PORT=$PORT
+Environment=DB_PATH=$MIST_FILE
 
 [Install]
 WantedBy=multi-user.target
@@ -144,6 +176,9 @@ sudo systemctl daemon-reload
 sudo systemctl enable $APP_NAME
 sudo systemctl restart $APP_NAME
 
-echo "✅ $APP_NAME updated and running on port $PORT!"
+echo "✅ $APP_NAME updated and running!"
 echo "📍 Installation path: $INSTALL_DIR"
-echo "🧩 Service: systemctl status $APP_NAME"
+echo "🌐 Traefik: http://localhost (ports 80/443)"
+echo "🧩 Mist service: systemctl status $APP_NAME"
+echo "🐳 Docker networks: docker network ls | grep traefik-net"
+echo "🔍 Traefik dashboard: http://localhost:8080/dashboard/ (if enabled)"

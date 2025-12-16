@@ -112,8 +112,22 @@ func RunContainer(app *models.App, imageTag, containerName string, domains []str
 
 			runArgs = append(runArgs,
 				"-l", fmt.Sprintf("traefik.http.routers.%s.rule=%s", containerName, hostRule),
-				"-l", fmt.Sprintf("traefik.http.routers.%s.entrypoints=web", containerName),
+				"-l", fmt.Sprintf("traefik.http.routers.%s.entrypoints=websecure", containerName),
+				"-l", fmt.Sprintf("traefik.http.routers.%s.tls=true", containerName),
+				"-l", fmt.Sprintf("traefik.http.routers.%s.tls.certresolver=le", containerName),
 				"-l", fmt.Sprintf("traefik.http.services.%s.loadbalancer.server.port=%d", containerName, Port),
+			)
+
+			//force http to https redirect
+
+			runArgs = append(runArgs,
+				
+				"-l", fmt.Sprintf("traefik.http.routers.%s-http.rule=%s", containerName, hostRule),
+				"-l", fmt.Sprintf("traefik.http.routers.%s-http.entrypoints=web", containerName),
+				"-l", fmt.Sprintf("traefik.http.routers.%s-http.middlewares=%s-https-redirect", containerName, containerName),
+
+				
+				"-l", fmt.Sprintf("traefik.http.middlewares.%s-https-redirect.redirectscheme.scheme=https", containerName),
 			)
 		} else {
 			runArgs = append(runArgs,

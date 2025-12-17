@@ -113,7 +113,6 @@ func (d *Deployment) CreateDeployment() error {
 	id := utils.GenerateRandomId()
 	d.ID = id
 
-	// Get next deployment number for this app
 	var maxDeploymentNum int
 	err := db.QueryRow(`SELECT COALESCE(MAX(deployment_number), 0) FROM deployments WHERE app_id = ?`, d.AppID).Scan(&maxDeploymentNum)
 	if err == nil {
@@ -163,6 +162,56 @@ func GetDeploymentByID(depID int64) (*Deployment, error) {
 	}
 
 	return &d, nil
+}
+
+func GetDeploymentByCommitHash(commitHash string) (*Deployment, error) {
+	query := `
+	SELECT id, app_id, commit_hash, commit_message, commit_author, triggered_by,
+	       deployment_number, container_id, container_name, image_tag,
+	       logs, build_logs_path, status, stage, progress, error_message,
+	       created_at, started_at, finished_at, duration, is_active, rolled_back_from
+	FROM deployments
+	WHERE commit_hash = ?
+	LIMIT 1
+	`
+	var d Deployment
+	if err := db.QueryRow(query, commitHash).Scan(
+		&d.ID, &d.AppID, &d.CommitHash, &d.CommitMessage, &d.CommitAuthor,
+		&d.TriggeredBy, &d.DeploymentNumber, &d.ContainerID, &d.ContainerName,
+		&d.ImageTag, &d.Logs, &d.BuildLogsPath, &d.Status, &d.Stage, &d.Progress,
+		&d.ErrorMessage, &d.CreatedAt, &d.StartedAt, &d.FinishedAt, &d.Duration,
+		&d.IsActive, &d.RolledBackFrom,
+	); err != nil {
+		return nil, err
+	}
+
+	return &d, nil
+
+}
+
+func GetDeploymentByAppIDAndCommitHash(appID int64, commitHash string) (*Deployment, error) {
+	query := `
+	SELECT id, app_id, commit_hash, commit_message, commit_author, triggered_by,
+	       deployment_number, container_id, container_name, image_tag,
+	       logs, build_logs_path, status, stage, progress, error_message,
+	       created_at, started_at, finished_at, duration, is_active, rolled_back_from
+	FROM deployments
+	WHERE app_id = ? AND commit_hash = ?
+	LIMIT 1
+	`
+	var d Deployment
+	if err := db.QueryRow(query, appID, commitHash).Scan(
+		&d.ID, &d.AppID, &d.CommitHash, &d.CommitMessage, &d.CommitAuthor,
+		&d.TriggeredBy, &d.DeploymentNumber, &d.ContainerID, &d.ContainerName,
+		&d.ImageTag, &d.Logs, &d.BuildLogsPath, &d.Status, &d.Stage, &d.Progress,
+		&d.ErrorMessage, &d.CreatedAt, &d.StartedAt, &d.FinishedAt, &d.Duration,
+		&d.IsActive, &d.RolledBackFrom,
+	); err != nil {
+		return nil, err
+	}
+
+	return &d, nil
+
 }
 
 func GetActiveDeploymentByAppID(appID int64) (*Deployment, error) {
@@ -219,20 +268,16 @@ func MarkDeploymentStarted(depID int64) error {
 	return err
 }
 
-// MarkDeploymentActive marks a deployment as the active one (deactivates others)
 func MarkDeploymentActive(depID int64, appID int64) error {
-	// First, deactivate all deployments for this app
 	_, err := db.Exec(`UPDATE deployments SET is_active = 0 WHERE app_id = ?`, appID)
 	if err != nil {
 		return err
 	}
 
-	// Then, activate the specified deployment
 	_, err = db.Exec(`UPDATE deployments SET is_active = 1 WHERE id = ?`, depID)
 	return err
 }
 
-// UpdateContainerInfo updates container and image information
 func UpdateContainerInfo(depID int64, containerID, containerName, imageTag string) error {
 	query := `
 	UPDATE deployments 

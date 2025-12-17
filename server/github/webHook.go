@@ -1,6 +1,7 @@
 package github
 
 import (
+	"database/sql"
 	"errors"
 	"strings"
 
@@ -37,6 +38,25 @@ func CreateDeploymentFromGithubPushEvent(evt PushEvent) (int64, error) {
 			Str("branch", branch).
 			Msg("No application found for this repository and branch")
 		return 0, errors.New("no application found for this repository and branch")
+	}
+
+	// if deployment already exist, means we don't need to create another
+	// github might be sending extra req that might cause multiple deployments that is unncecary
+	dep, err := models.GetDeploymentByAppIDAndCommitHash(appID, commit)
+	if err != nil && err != sql.ErrNoRows {
+		log.Error().Err(err).
+			Int64("app_id", appID).
+			Str("commit", commit).
+			Msg("Error checking for existing deployment")
+		return 0, err
+	}
+	if dep != nil && dep.ID != 0 {
+		log.Warn().
+			Int64("dep_id", dep.ID).
+			Int64("app_id", appID).
+			Str("commit", commit).
+			Msg("Deployment already exists for this commit, skipping duplicate")
+		return 0, nil
 	}
 
 	commitMsg := evt.HeadCommit.Message

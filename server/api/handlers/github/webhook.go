@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	"github.com/corecollectives/mist/github"
-	"github.com/corecollectives/mist/models"
 	"github.com/corecollectives/mist/queue"
 )
 
@@ -53,15 +52,11 @@ func GithubWebhook(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Failed to handle push event: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
-		queue := queue.GetQueue()
-		queue.AddJob(depId)
 
-		models.LogWebhookAudit("create", "deployment", &depId, map[string]interface{}{
-			"repository": evt.Repository.FullName,
-			"branch":     evt.Ref,
-			"commit":     evt.HeadCommit.ID,
-			"pusher":     evt.Pusher.Name,
-		})
+		if depId != 0 {
+			queue := queue.GetQueue()
+			queue.AddJob(depId)
+		}
 	}
 
 	w.WriteHeader(http.StatusOK)

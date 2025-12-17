@@ -100,7 +100,7 @@ func GetRepositories(w http.ResponseWriter, r *http.Request) {
 }
 
 func regenerateInstallationToken(appJWT string, installationID int64) (string, time.Time, error) {
-	url := "https://api.github.com/app/installations/" + string(installationID) + "/access_tokens"
+	url := fmt.Sprintf("https://api.github.com/app/installations/%d/access_tokens", installationID)
 
 	req, _ := http.NewRequest("POST", url, nil)
 	req.Header.Set("Authorization", "Bearer "+appJWT)

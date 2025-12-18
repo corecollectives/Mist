@@ -10,6 +10,7 @@ import (
 	"github.com/corecollectives/mist/api/handlers/deployments"
 	"github.com/corecollectives/mist/api/handlers/github"
 	"github.com/corecollectives/mist/api/handlers/projects"
+	"github.com/corecollectives/mist/api/handlers/system"
 	"github.com/corecollectives/mist/api/handlers/templates"
 	"github.com/corecollectives/mist/api/handlers/users"
 	"github.com/corecollectives/mist/api/middleware"
@@ -90,5 +91,12 @@ func RegisterRoutes(mux *http.ServeMux) {
 	mux.Handle("GET /api/templates/get", middleware.AuthMiddleware()(http.HandlerFunc(templates.GetServiceTemplateByName)))
 	mux.Handle("GET /api/audit-logs", middleware.AuthMiddleware()(http.HandlerFunc(auditlogs.GetAllAuditLogs)))
 	mux.Handle("GET /api/audit-logs/resource", middleware.AuthMiddleware()(http.HandlerFunc(auditlogs.GetAuditLogsByResource)))
+
+	mux.Handle("GET /api/system/version", middleware.AuthMiddleware()(http.HandlerFunc(system.GetSystemVersion)))
+	mux.Handle("GET /api/system/health", middleware.AuthMiddleware()(http.HandlerFunc(system.GetSystemHealth)))
+	mux.Handle("GET /api/system/updates/check", middleware.AuthMiddleware()(http.HandlerFunc(system.CheckForUpdates)))
+	mux.Handle("POST /api/system/updates/trigger", middleware.AuthMiddleware()(http.HandlerFunc(system.TriggerUpdate)))
+	mux.Handle("GET /api/system/updates/history", middleware.AuthMiddleware()(http.HandlerFunc(system.GetUpdateHistory)))
+	mux.Handle("GET /api/system/updates/status", middleware.AuthMiddleware()(http.HandlerFunc(system.GetUpdateStatus)))
 
 }

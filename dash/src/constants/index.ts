@@ -53,6 +53,7 @@ export const ROUTES = {
   USERS: '/users',
   GIT: '/git',
   SETTINGS: '/settings',
+  PROFILE: '/profile',
   LOGS: '/logs',
   DEPLOYMENTS: '/deployments',
   DATABASES: '/databases',

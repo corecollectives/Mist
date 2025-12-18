@@ -19,6 +19,7 @@ import { SettingsPage } from "./pages/Settings";
 import { AuditLogsPage } from "./features/auditLogs";
 import { ProjectPage } from "./features/projects/ProjectPage";
 import { AppPage } from "./features/applications/AppPage";
+import { ProfilePage } from "./pages/Profile";
 
 export default function App() {
   const { setupRequired, user } = useAuth();
@@ -53,7 +54,7 @@ export default function App() {
               <Route path="/logs" element={<LogsPage />} />
               <Route path="/audit-logs" element={<AuditLogsPage />} />
               <Route path="/settings" element={<SettingsPage />} />
-              <Route path="/profile" element={<SettingsPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
               <Route path="/callback" element={<CallbackPage />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />

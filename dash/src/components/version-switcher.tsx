@@ -1,10 +1,24 @@
+import { useEffect, useState } from "react"
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar"
+import { systemService } from "@/services"
 
-export function VersionSwitcher({
-  defaultVersion,
-}: {
-  defaultVersion: string
-}) {
+export function VersionSwitcher() {
+  const [version, setVersion] = useState<string>("...")
+
+  useEffect(() => {
+    const fetchVersion = async () => {
+      try {
+        const versionInfo = await systemService.getVersion()
+        setVersion(versionInfo.version)
+      } catch (error) {
+        console.error("Failed to fetch version:", error)
+        setVersion("unknown")
+      }
+    }
+
+    fetchVersion()
+  }, [])
+
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -15,7 +29,7 @@ export function VersionSwitcher({
           <img src="/mist.png" alt="Mist Icon" className="size-10" />
           <div className="flex flex-col gap-0.5 leading-none">
             <span className="font-medium">Mist</span>
-            <span className="text-sm text-muted-foreground">v{defaultVersion}</span>
+            <span className="text-sm text-muted-foreground">v{version}</span>
           </div>
         </SidebarMenuButton>
       </SidebarMenuItem>

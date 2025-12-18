@@ -35,7 +35,6 @@ const useNavData = () => {
   const location = useLocation()
 
   const data = {
-    versions: ["1.0.1", "1.1.0-alpha", "2.0.0-beta1"],
     navMain: [
       {
         title: "Home",
@@ -128,7 +127,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar {...props} collapsible="icon" variant="floating">
       <SidebarHeader>
-        <VersionSwitcher defaultVersion={data.versions[0]} />
+        <VersionSwitcher />
       </SidebarHeader>
 
       <SidebarContent>

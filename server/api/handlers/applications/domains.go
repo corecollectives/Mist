@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/api/middleware"
 	"github.com/corecollectives/mist/models"
+	"github.com/corecollectives/mist/utils"
 )
 
 func CreateDomain(w http.ResponseWriter, r *http.Request) {
@@ -210,4 +212,144 @@ func DeleteDomain(w http.ResponseWriter, r *http.Request) {
 	})
 
 	handlers.SendResponse(w, http.StatusOK, true, nil, "Domain deleted successfully", "")
+}
+
+func VerifyDomainDNS(w http.ResponseWriter, r *http.Request) {
+	userInfo, ok := middleware.GetUser(r)
+	if !ok {
+		handlers.SendResponse(w, http.StatusUnauthorized, false, nil, "Not logged in", "Unauthorized")
+		return
+	}
+
+	var req struct {
+		ID int64 `json:"id"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		handlers.SendResponse(w, http.StatusBadRequest, false, nil, "Invalid request body", "Could not parse JSON")
+		return
+	}
+
+	if req.ID == 0 {
+		handlers.SendResponse(w, http.StatusBadRequest, false, nil, "ID is required", "Missing fields")
+		return
+	}
+
+	domain, err := models.GetDomainByID(req.ID)
+	if err != nil {
+		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to get domain", err.Error())
+		return
+	}
+
+	isApplicationOwner, err := models.IsUserApplicationOwner(userInfo.ID, domain.AppID)
+	if err != nil {
+		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to verify application ownership", err.Error())
+		return
+	}
+	if !isApplicationOwner {
+		handlers.SendResponse(w, http.StatusForbidden, false, nil, "You do not have permission to access this application", "Forbidden")
+		return
+	}
+
+	valid, validationErr := utils.ValidateDNSWithTimeout(domain.Domain, 5*time.Second)
+
+	var errorMsg *string
+	if validationErr != nil {
+		errStr := validationErr.Error()
+		errorMsg = &errStr
+	}
+
+	if err := models.UpdateDomainDnsStatus(req.ID, valid, errorMsg); err != nil {
+		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to update DNS status", err.Error())
+		return
+	}
+
+	updatedDomain, err := models.GetDomainByID(req.ID)
+	if err != nil {
+		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to retrieve domain", err.Error())
+		return
+	}
+
+	models.LogUserAudit(userInfo.ID, "verify", "domain", &req.ID, map[string]interface{}{
+		"appId":         domain.AppID,
+		"domain":        domain.Domain,
+		"dnsConfigured": valid,
+	})
+
+	serverIP, _ := utils.GetServerIP()
+
+	response := map[string]interface{}{
+		"domain":   updatedDomain,
+		"valid":    valid,
+		"serverIP": serverIP,
+	}
+
+	if !valid {
+		response["error"] = errorMsg
+	}
+
+	handlers.SendResponse(w, http.StatusOK, true, response, "DNS verification completed", "")
+}
+
+func GetDNSInstructions(w http.ResponseWriter, r *http.Request) {
+	userInfo, ok := middleware.GetUser(r)
+	if !ok {
+		handlers.SendResponse(w, http.StatusUnauthorized, false, nil, "Not logged in", "Unauthorized")
+		return
+	}
+
+	var req struct {
+		ID int64 `json:"id"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		handlers.SendResponse(w, http.StatusBadRequest, false, nil, "Invalid request body", "Could not parse JSON")
+		return
+	}
+
+	if req.ID == 0 {
+		handlers.SendResponse(w, http.StatusBadRequest, false, nil, "ID is required", "Missing fields")
+		return
+	}
+
+	domain, err := models.GetDomainByID(req.ID)
+	if err != nil {
+		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to get domain", err.Error())
+		return
+	}
+
+	isApplicationOwner, err := models.IsUserApplicationOwner(userInfo.ID, domain.AppID)
+	if err != nil {
+		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to verify application ownership", err.Error())
+		return
+	}
+	if !isApplicationOwner {
+		handlers.SendResponse(w, http.StatusForbidden, false, nil, "You do not have permission to access this application", "Forbidden")
+		return
+	}
+
+	serverIP, err := utils.GetServerIP()
+	if err != nil {
+		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to get server IP", err.Error())
+		return
+	}
+
+	instructions := map[string]interface{}{
+		"domain":   domain.Domain,
+		"serverIP": serverIP,
+		"records": []map[string]string{
+			{
+				"type":  "A",
+				"name":  "@",
+				"value": serverIP,
+			},
+			{
+				"type":  "A",
+				"name":  "www",
+				"value": serverIP,
+			},
+		},
+	}
+
+	handlers.SendResponse(w, http.StatusOK, true, instructions, "DNS instructions retrieved", "")
 }

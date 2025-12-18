@@ -76,6 +76,10 @@ export type Domain = {
   appId: number;
   domain: string;
   sslStatus: string;
+  dnsConfigured: boolean;
+  dnsVerifiedAt?: string;
+  lastDnsCheck?: string;
+  dnsCheckError?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -88,6 +92,25 @@ export type CreateDomainRequest = {
 export type UpdateDomainRequest = {
   id: number;
   domain: string;
+};
+
+export type DNSRecord = {
+  type: string;
+  name: string;
+  value: string;
+};
+
+export type DNSInstructions = {
+  domain: string;
+  serverIP: string;
+  records: DNSRecord[];
+};
+
+export type DNSVerificationResponse = {
+  domain: Domain;
+  valid: boolean;
+  serverIP: string;
+  error?: string;
 };
 
 export type ContainerStatus = {

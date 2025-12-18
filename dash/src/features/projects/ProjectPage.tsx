@@ -22,7 +22,8 @@ export const ProjectPage = () => {
     autoFetch: true,
   });
 
-  const { apps, loading: fetchingApps } = useApplications({
+  const { apps, loading: fetchingApps, fetchApps
+  } = useApplications({
     projectId,
     autoFetch: true,
   });
@@ -39,6 +40,7 @@ export const ProjectPage = () => {
       if (!data.success) throw new Error(data.error || "Failed to create app");
 
       toast.success("App created successfully");
+      fetchApps()
       setIsAddNewAppModalOpen(false);
     }
     catch (err) {

@@ -89,10 +89,11 @@ export const AppPage = () => {
       {/* App Info */}
       <main className="flex-1 overflow-y-auto py-6">
         <Tabs defaultValue="info" className="w-full" onValueChange={setActiveTab}>
-          <TabsList className={`grid w-full ${app.appType === 'database' ? 'grid-cols-5' : 'grid-cols-6'} mb-6`}>
+          <TabsList className={`grid w-full ${app.appType === 'database' ? 'grid-cols-5' : app.appType === 'web' ? 'grid-cols-7' : 'grid-cols-6'} mb-6`}>
             <TabsTrigger value="info">Info</TabsTrigger>
             {app.appType !== 'database' && <TabsTrigger value="git">Git</TabsTrigger>}
             <TabsTrigger value="environment">Environment</TabsTrigger>
+            {app.appType === 'web' && <TabsTrigger value="domains">Domains</TabsTrigger>}
             <TabsTrigger value="deployments">Deployments</TabsTrigger>
             <TabsTrigger value="logs">Logs</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
@@ -121,6 +122,13 @@ export const AppPage = () => {
             <EnvironmentVariables appId={app.id} />
           </TabsContent>
 
+          {/* ✅ DOMAINS TAB */}
+          {app.appType === 'web' && (
+            <TabsContent value="domains" className="space-y-6">
+              <Domains appId={app.id} />
+            </TabsContent>
+          )}
+
           {/* ✅ DEPLOYMENTS TAB */}
           <TabsContent value="deployments">
             <DeploymentsTab appId={app.id} app={app} />
@@ -132,7 +140,6 @@ export const AppPage = () => {
 
           <TabsContent value="settings" className="space-y-6">
             <AppSettings app={app} onUpdate={refreshApp} />
-            {app.appType === 'web' && <Domains appId={app.id} />}
           </TabsContent>
         </Tabs>
       </main>

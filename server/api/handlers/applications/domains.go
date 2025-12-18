@@ -142,6 +142,12 @@ func UpdateDomain(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	updatedDomain, err := models.GetDomainByID(req.ID)
+	if err != nil {
+		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to retrieve updated domain", err.Error())
+		return
+	}
+
 	models.LogUserAudit(userInfo.ID, "update", "domain", &req.ID, map[string]interface{}{
 		"appId": domain.AppID,
 		"before": map[string]interface{}{
@@ -152,7 +158,7 @@ func UpdateDomain(w http.ResponseWriter, r *http.Request) {
 		},
 	})
 
-	handlers.SendResponse(w, http.StatusOK, true, nil, "Domain updated successfully", "")
+	handlers.SendResponse(w, http.StatusOK, true, updatedDomain, "Domain updated successfully", "")
 }
 
 func DeleteDomain(w http.ResponseWriter, r *http.Request) {

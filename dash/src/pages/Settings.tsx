@@ -1,209 +1,81 @@
-import { useState, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/providers';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { User, Mail, Lock, Shield, Calendar, AlertCircle, CheckCircle2, Camera, Trash2, Upload } from 'lucide-react';
-import { usersService } from '@/services';
+import { AlertCircle, CheckCircle2, Globe, ShieldAlert } from 'lucide-react';
+import { settingsService } from '@/services';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 export const SettingsPage = () => {
-  const { user, setUser } = useAuth();
-  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
-  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
-  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [isUpdatingSystemSettings, setIsUpdatingSystemSettings] = useState(false);
 
-  const [username, setUsername] = useState(user?.username || '');
-  const [email, setEmail] = useState(user?.email || '');
-  const [profileError, setProfileError] = useState('');
+  // System settings state
+  const [wildcardDomain, setWildcardDomain] = useState('');
+  const [mistAppName, setMistAppName] = useState('mist');
+  const [systemSettingsError, setSystemSettingsError] = useState('');
+  const [isLoadingSystemSettings, setIsLoadingSystemSettings] = useState(true);
 
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [passwordError, setPasswordError] = useState('');
+  // Check if user is owner
+  useEffect(() => {
+    if (!user) {
+      navigate('/');
+      return;
+    }
 
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+    if (user.role !== 'owner') {
+      toast.error('Only owners can access system settings');
+      navigate('/');
+      return;
+    }
 
-  const handleUpdateProfile = async (e: React.FormEvent) => {
+    loadSystemSettings();
+  }, [user, navigate]);
+
+  const loadSystemSettings = async () => {
+    try {
+      const settings = await settingsService.getSystemSettings();
+      setWildcardDomain(settings.wildcardDomain || '');
+      setMistAppName(settings.mistAppName);
+    } catch (error) {
+      console.error('Failed to load system settings:', error);
+      toast.error('Failed to load system settings');
+    } finally {
+      setIsLoadingSystemSettings(false);
+    }
+  };
+
+  const handleUpdateSystemSettings = async (e: React.FormEvent) => {
     e.preventDefault();
-    setProfileError('');
+    setSystemSettingsError('');
 
-    if (!username.trim() || !email.trim()) {
-      setProfileError('Username and email are required');
+    if (!mistAppName.trim()) {
+      setSystemSettingsError('Mist app name is required');
       return;
     }
 
-    if (!user) return;
-
-    setIsUpdatingProfile(true);
+    setIsUpdatingSystemSettings(true);
 
     try {
-      const updatedUser = await usersService.update(user.id, {
-        username: username.trim(),
-        email: email.trim(),
-      });
-
-      setUser(updatedUser);
-      toast.success('Profile updated successfully');
+      const settings = await settingsService.updateSystemSettings(
+        wildcardDomain.trim() || null,
+        mistAppName.trim()
+      );
+      setWildcardDomain(settings.wildcardDomain || '');
+      setMistAppName(settings.mistAppName);
+      toast.success('System settings updated successfully');
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to update profile';
-      setProfileError(message);
+      const message = error instanceof Error ? error.message : 'Failed to update system settings';
+      setSystemSettingsError(message);
       toast.error(message);
     } finally {
-      setIsUpdatingProfile(false);
+      setIsUpdatingSystemSettings(false);
     }
-  };
-
-  const handleUpdatePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setPasswordError('');
-
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      setPasswordError('All password fields are required');
-      return;
-    }
-
-    if (newPassword.length < 6) {
-      setPasswordError('New password must be at least 6 characters long');
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      setPasswordError('New passwords do not match');
-      return;
-    }
-
-    if (!user) return;
-
-    setIsUpdatingPassword(true);
-
-    try {
-      await usersService.updatePassword(user.id, currentPassword, newPassword);
-      
-      // Clear form
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-      
-      toast.success('Password updated successfully');
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to update password';
-      setPasswordError(message);
-      toast.error(message);
-    } finally {
-      setIsUpdatingPassword(false);
-    }
-  };
-
-  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Validate file type
-    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-    if (!validTypes.includes(file.type)) {
-      toast.error('Invalid file type. Please upload JPG, PNG, GIF, or WebP');
-      return;
-    }
-
-    // Validate file size (5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('File size must be less than 5MB');
-      return;
-    }
-
-    // Show preview
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setAvatarPreview(reader.result as string);
-    };
-    reader.readAsDataURL(file);
-
-    // Upload
-    setIsUploadingAvatar(true);
-    try {
-      const result = await usersService.uploadAvatar(file);
-      console.log('Upload result:', result);
-      console.log('Avatar URL:', result.avatarUrl);
-      console.log('Updated user:', result.user);
-      setUser(result.user);
-      toast.success('Avatar updated successfully');
-      setAvatarPreview(null);
-    } catch (error) {
-      console.error('Avatar upload error:', error);
-      const message = error instanceof Error ? error.message : 'Failed to upload avatar';
-      toast.error(message);
-      setAvatarPreview(null);
-    } finally {
-      setIsUploadingAvatar(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    }
-  };
-
-  const handleDeleteAvatar = async () => {
-    if (!user?.avatarUrl) return;
-
-    setIsUploadingAvatar(true);
-    try {
-      const updatedUser = await usersService.deleteAvatar();
-      setUser(updatedUser);
-      toast.success('Avatar removed successfully');
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to delete avatar';
-      toast.error(message);
-    } finally {
-      setIsUploadingAvatar(false);
-    }
-  };
-
-  const triggerFileInput = () => {
-    fileInputRef.current?.click();
-  };
-
-  const getAvatarDisplay = () => {
-    if (avatarPreview) return avatarPreview;
-    if (user?.avatarUrl) {
-      console.log('User avatar URL:', user.avatarUrl);
-      return user.avatarUrl;
-    }
-    console.log('No avatar URL found for user');
-    return null;
-  };
-
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(word => word[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  };
-
-  const getRoleBadge = (role: string) => {
-    const roleConfig = {
-      owner: { label: 'Owner', className: 'bg-purple-500 text-white' },
-      admin: { label: 'Admin', className: 'bg-blue-500 text-white' },
-      user: { label: 'User', className: 'bg-gray-500 text-white' },
-    };
-
-    const config = roleConfig[role as keyof typeof roleConfig] || roleConfig.user;
-    return <Badge className={config.className}>{config.label}</Badge>;
-  };
-
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
   };
 
   if (!user) {
@@ -214,310 +86,135 @@ export const SettingsPage = () => {
     );
   }
 
+  if (user.role !== 'owner') {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Card className="max-w-md">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ShieldAlert className="h-5 w-5 text-destructive" />
+              Access Denied
+            </CardTitle>
+            <CardDescription>
+              Only owners can access system settings
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={() => navigate('/')}>Go to Dashboard</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-background ">
+    <div className="min-h-screen bg-background">
       <div className="py-6 border-b border-border">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            Settings
+            System Settings
           </h1>
           <p className="text-muted-foreground mt-1">
-            Manage your account settings and preferences
+            Configure system-wide settings for your Mist instance
           </p>
         </div>
       </div>
 
       {/* Content */}
       <div className="py-6 max-w-4xl">
-        {/* Profile Picture Section */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Camera className="h-5 w-5 text-primary" />
-              Profile Picture
-            </CardTitle>
-            <CardDescription>
-              Upload a profile picture to personalize your account
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col sm:flex-row items-center gap-6">
-              {/* Avatar Display */}
-              <div className="relative">
-                <div className="h-32 w-32 rounded-full overflow-hidden border-4 border-border bg-muted flex items-center justify-center">
-                  {getAvatarDisplay() ? (
-                    <img
-                      src={getAvatarDisplay()!}
-                      alt="Profile"
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="text-4xl font-bold text-muted-foreground">
-                      {getInitials(user.username)}
-                    </div>
-                  )}
-                </div>
-                {isUploadingAvatar && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
-                    <span className="text-white text-2xl animate-spin">⏳</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Upload Controls */}
-              <div className="flex-1 space-y-3">
-                <div className="flex flex-wrap gap-2">
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
-                    onChange={handleAvatarChange}
-                    className="hidden"
-                  />
-                  <Button
-                    onClick={triggerFileInput}
-                    disabled={isUploadingAvatar}
-                    variant="outline"
-                  >
-                    <Upload className="h-4 w-4 mr-2" />
-                    Upload Photo
-                  </Button>
-                  {user.avatarUrl && (
-                    <Button
-                      onClick={handleDeleteAvatar}
-                      disabled={isUploadingAvatar}
-                      variant="outline"
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Remove
-                    </Button>
-                  )}
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Accepted formats: JPG, PNG, GIF, WebP. Max size: 5MB
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Account Overview */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5 text-primary" />
-              Account Information
-            </CardTitle>
-            <CardDescription>
-              Your account details and role information
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-center gap-3">
-                <User className="h-5 w-5 text-muted-foreground" />
-                <div>
-                  <p className="text-sm text-muted-foreground">Username</p>
-                  <p className="font-medium">{user.username}</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <Mail className="h-5 w-5 text-muted-foreground" />
-                <div>
-                  <p className="text-sm text-muted-foreground">Email</p>
-                  <p className="font-medium">{user.email}</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <Shield className="h-5 w-5 text-muted-foreground" />
-                <div>
-                  <p className="text-sm text-muted-foreground">Role</p>
-                  <div className="mt-1">{getRoleBadge(user.role)}</div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <Calendar className="h-5 w-5 text-muted-foreground" />
-                <div>
-                  <p className="text-sm text-muted-foreground">Member Since</p>
-                  <p className="font-medium">{formatDate(user.createdAt)}</p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Update Profile */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5 text-primary" />
-              Update Profile
-            </CardTitle>
-            <CardDescription>
-              Update your username and email address
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleUpdateProfile} className="space-y-4">
-              {profileError && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>{profileError}</AlertDescription>
-                </Alert>
-              )}
-
-              <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
-                <Input
-                  id="username"
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Enter username"
-                  disabled={isUpdatingProfile}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter email"
-                  disabled={isUpdatingProfile}
-                />
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Button
-                  type="submit"
-                  disabled={isUpdatingProfile || (username === user.username && email === user.email)}
-                >
-                  {isUpdatingProfile ? (
-                    <>
-                      <span className="animate-spin mr-2">⏳</span>
-                      Updating...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle2 className="h-4 w-4 mr-2" />
-                      Update Profile
-                    </>
-                  )}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setUsername(user.username);
-                    setEmail(user.email);
-                    setProfileError('');
-                  }}
-                  disabled={isUpdatingProfile}
-                >
-                  Reset
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-
-        {/* Change Password */}
+        {/* System Settings */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Lock className="h-5 w-5 text-primary" />
-              Change Password
+              <Globe className="h-5 w-5 text-primary" />
+              Wildcard Domain Configuration
             </CardTitle>
             <CardDescription>
-              Update your password to keep your account secure
+              Configure wildcard domain for automatic app domain generation
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleUpdatePassword} className="space-y-4">
-              {passwordError && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>{passwordError}</AlertDescription>
-                </Alert>
-              )}
-
-              <div className="space-y-2">
-                <Label htmlFor="currentPassword">Current Password</Label>
-                <Input
-                  id="currentPassword"
-                  type="password"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  placeholder="Enter current password"
-                  disabled={isUpdatingPassword}
-                />
+            {isLoadingSystemSettings ? (
+              <div className="flex items-center justify-center py-8">
+                <p className="text-muted-foreground">Loading settings...</p>
               </div>
+            ) : (
+              <form onSubmit={handleUpdateSystemSettings} className="space-y-6">
+                {systemSettingsError && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{systemSettingsError}</AlertDescription>
+                  </Alert>
+                )}
 
-              <Separator />
+                <div className="space-y-2">
+                  <Label htmlFor="wildcardDomain">Wildcard Domain</Label>
+                  <Input
+                    id="wildcardDomain"
+                    type="text"
+                    value={wildcardDomain}
+                    onChange={(e) => setWildcardDomain(e.target.value)}
+                    placeholder="*.exam.ple or exam.ple"
+                    disabled={isUpdatingSystemSettings}
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    When configured, apps will automatically get domains like <code className="bg-muted px-1 py-0.5 rounded">project-app.exam.ple</code>
+                  </p>
+                  <div className="mt-3 p-3 bg-muted rounded-md">
+                    <p className="text-sm font-medium mb-2">Example:</p>
+                    <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+                      <li>Wildcard domain: <code className="bg-background px-1 py-0.5 rounded">exam.ple</code></li>
+                      <li>Project name: <code className="bg-background px-1 py-0.5 rounded">crux</code></li>
+                      <li>App name: <code className="bg-background px-1 py-0.5 rounded">main</code></li>
+                      <li>Generated domain: <code className="bg-background px-1 py-0.5 rounded">crux-main.exam.ple</code></li>
+                    </ul>
+                  </div>
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="newPassword">New Password</Label>
-                <Input
-                  id="newPassword"
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Enter new password"
-                  disabled={isUpdatingPassword}
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="mistAppName">Mist App Name</Label>
+                  <Input
+                    id="mistAppName"
+                    type="text"
+                    value={mistAppName}
+                    onChange={(e) => setMistAppName(e.target.value)}
+                    placeholder="mist"
+                    disabled={isUpdatingSystemSettings}
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Subdomain name for the Mist dashboard. With wildcard domain <code className="bg-muted px-1 py-0.5 rounded">exam.ple</code> and name <code className="bg-muted px-1 py-0.5 rounded">mist</code>, 
+                    Mist will be available at <code className="bg-muted px-1 py-0.5 rounded">mist.exam.ple</code>
+                  </p>
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Confirm new password"
-                  disabled={isUpdatingPassword}
-                />
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Button
-                  type="submit"
-                  disabled={isUpdatingPassword || !currentPassword || !newPassword || !confirmPassword}
-                >
-                  {isUpdatingPassword ? (
-                    <>
-                      <span className="animate-spin mr-2">⏳</span>
-                      Updating...
-                    </>
-                  ) : (
-                    <>
-                      <Lock className="h-4 w-4 mr-2" />
-                      Update Password
-                    </>
-                  )}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setCurrentPassword('');
-                    setNewPassword('');
-                    setConfirmPassword('');
-                    setPasswordError('');
-                  }}
-                  disabled={isUpdatingPassword}
-                >
-                  Clear
-                </Button>
-              </div>
-            </form>
+                <div className="flex items-center gap-2 pt-4">
+                  <Button
+                    type="submit"
+                    disabled={isUpdatingSystemSettings || !mistAppName.trim()}
+                  >
+                    {isUpdatingSystemSettings ? (
+                      <>
+                        <span className="animate-spin mr-2">⏳</span>
+                        Updating...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="h-4 w-4 mr-2" />
+                        Update System Settings
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={loadSystemSettings}
+                    disabled={isUpdatingSystemSettings}
+                  >
+                    Reset
+                  </Button>
+                </div>
+              </form>
+            )}
           </CardContent>
         </Card>
       </div>

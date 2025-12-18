@@ -116,6 +116,22 @@ func CreateApplication(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Auto-generate domain if wildcard domain is configured (only for web apps)
+	if req.AppType == "web" {
+		project, err := models.GetProjectByID(req.ProjectID)
+		if err == nil {
+			autoDomain, err := models.GenerateAutoDomain(project.Name, app.Name)
+			if err == nil && autoDomain != "" {
+				// Create the auto-generated domain
+				_, err = models.CreateDomain(app.ID, autoDomain)
+				if err != nil {
+					// Log the error but don't fail the app creation
+					// The user can manually add domains later
+				}
+			}
+		}
+	}
+
 	if len(req.EnvVars) > 0 {
 		for key, value := range req.EnvVars {
 			_, err := models.CreateEnvVariable(app.ID, key, value)

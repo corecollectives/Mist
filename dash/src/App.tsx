@@ -16,6 +16,7 @@ import { DeploymentsPage } from "./pages/Deployments";
 import { DatabasesPage } from "./pages/Databases";
 import { LogsPage } from "./pages/Logs";
 import { SettingsPage } from "./pages/Settings";
+import { ProfilePage } from "./pages/Profile";
 import { AuditLogsPage } from "./features/auditLogs";
 import { ProjectPage } from "./features/projects/ProjectPage";
 import { AppPage } from "./features/applications/AppPage";
@@ -53,7 +54,7 @@ export default function App() {
               <Route path="/logs" element={<LogsPage />} />
               <Route path="/audit-logs" element={<AuditLogsPage />} />
               <Route path="/settings" element={<SettingsPage />} />
-              <Route path="/profile" element={<SettingsPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
               <Route path="/callback" element={<CallbackPage />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />

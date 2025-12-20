@@ -1,13 +1,17 @@
 package github
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 
 	"github.com/corecollectives/mist/github"
+	"github.com/corecollectives/mist/models"
 	"github.com/corecollectives/mist/queue"
+	"github.com/rs/zerolog/log"
 )
 
 type WebhookPayload struct {
@@ -18,8 +22,30 @@ type WebhookPayload struct {
 	Sender       *github.User        `json:"sender,omitempty"`
 }
 
+func verifyGitHubSignature(payload []byte, signature string, secret string) bool {
+	if secret == "" {
+		log.Warn().Msg("GitHub webhook secret not set - webhook signature verification disabled (security risk)")
+		return true
+	}
+
+	if signature == "" {
+		return false
+	}
+
+	if len(signature) < 7 || signature[:7] != "sha256=" {
+		return false
+	}
+
+	mac := hmac.New(sha256.New, []byte(secret))
+	mac.Write(payload)
+	expectedMAC := hex.EncodeToString(mac.Sum(nil))
+	receivedMAC := signature[7:]
+
+	return hmac.Equal([]byte(expectedMAC), []byte(receivedMAC))
+}
+
 func GithubWebhook(w http.ResponseWriter, r *http.Request) {
-	fmt.Println(" Received GitHub webhook")
+	log.Info().Msg("Received GitHub webhook")
 
 	eventType := r.Header.Get("X-GitHub-Event")
 	if eventType == "" {
@@ -30,6 +56,21 @@ func GithubWebhook(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "Failed to read body", http.StatusInternalServerError)
+		return
+	}
+
+	// Get webhook secret from database
+	settings, err := models.GetSystemSettings()
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to get system settings for webhook verification")
+		http.Error(w, "Configuration error", http.StatusInternalServerError)
+		return
+	}
+
+	signature := r.Header.Get("X-Hub-Signature-256")
+	if !verifyGitHubSignature(body, signature, settings.GithubWebhookSecret) {
+		log.Warn().Str("event", eventType).Msg("Invalid webhook signature")
+		http.Error(w, "Invalid signature", http.StatusUnauthorized)
 		return
 	}
 
@@ -46,9 +87,10 @@ func GithubWebhook(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		fmt.Printf("Processing push event for repo: %s\n", evt.Repository.FullName)
+		log.Info().Str("repo", evt.Repository.FullName).Msg("Processing push event")
 		depId, err := github.CreateDeploymentFromGithubPushEvent(evt)
 		if err != nil {
+			log.Error().Err(err).Str("repo", evt.Repository.FullName).Msg("Failed to create deployment from push event")
 			http.Error(w, "Failed to handle push event: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -56,6 +98,7 @@ func GithubWebhook(w http.ResponseWriter, r *http.Request) {
 		if depId != 0 {
 			queue := queue.GetQueue()
 			queue.AddJob(depId)
+			log.Info().Int64("deployment_id", depId).Msg("Deployment queued")
 		}
 	}
 

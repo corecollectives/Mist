@@ -97,6 +97,12 @@ func CallBackHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Save webhook secret to system_settings for easy access
+	if err := models.SetSystemSetting("github_webhook_secret", app.WebhookSecret); err != nil {
+		// Log error but don't fail the whole process
+		fmt.Printf("Warning: Failed to save webhook secret to system_settings: %v\n", err)
+	}
+
 	userID := int64(stateData.UserId)
 	models.LogUserAudit(userID, "create", "github_app", &githubApp.AppID, map[string]interface{}{
 		"appName": app.Name,

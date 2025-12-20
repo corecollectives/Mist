@@ -10,7 +10,7 @@ import (
 )
 
 func GetByApplicationID(w http.ResponseWriter, r *http.Request) {
-	_, ok := middleware.GetUser(r)
+	currentUser, ok := middleware.GetUser(r)
 	if !ok {
 		handlers.SendResponse(w, http.StatusUnauthorized, false, nil, "Not logged in", "Unauthorized")
 		return
@@ -32,6 +32,29 @@ func GetByApplicationID(w http.ResponseWriter, r *http.Request) {
 	app, err := models.GetApplicationByID(req.AppID)
 	if err != nil {
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to get application", err.Error())
+		return
+	}
+
+	project, err := models.GetProjectByID(app.ProjectID)
+	if err != nil {
+		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to get project", err.Error())
+		return
+	}
+
+	hasAccess := false
+	if project.OwnerID == currentUser.ID {
+		hasAccess = true
+	} else {
+		for _, member := range project.ProjectMembers {
+			if member.ID == currentUser.ID {
+				hasAccess = true
+				break
+			}
+		}
+	}
+
+	if !hasAccess {
+		handlers.SendResponse(w, http.StatusForbidden, false, nil, "Access denied", "You don't have access to this application")
 		return
 	}
 

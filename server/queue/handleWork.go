@@ -3,6 +3,7 @@ package queue
 import (
 	"database/sql"
 	"fmt"
+	"sync"
 
 	"github.com/corecollectives/mist/docker"
 	"github.com/corecollectives/mist/fs"
@@ -10,6 +11,9 @@ import (
 	"github.com/corecollectives/mist/models"
 	"github.com/corecollectives/mist/utils"
 )
+
+// to prevent concurrent deployments of same app
+var deploymentLocks sync.Map
 
 func (q *Queue) HandleWork(id int64, db *sql.DB) {
 	defer func() {
@@ -25,6 +29,13 @@ func (q *Queue) HandleWork(id int64, db *sql.DB) {
 		models.UpdateDeploymentStatus(id, "failed", "failed", 0, &errMsg)
 		return
 	}
+
+	if _, loaded := deploymentLocks.LoadOrStore(appId, true); loaded {
+		errMsg := fmt.Sprintf("Deployment already in progress for app %d", appId)
+		models.UpdateDeploymentStatus(id, "failed", "failed", 0, &errMsg)
+		return
+	}
+	defer deploymentLocks.Delete(appId)
 
 	app, err := models.GetApplicationByID(appId)
 	if err != nil {

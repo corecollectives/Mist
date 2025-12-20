@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/corecollectives/mist/api/handlers"
+	"github.com/corecollectives/mist/api/middleware"
 	"github.com/corecollectives/mist/models"
 )
 
@@ -16,6 +17,12 @@ type UpdateUserRequest struct {
 }
 
 func UpdateUser(w http.ResponseWriter, r *http.Request) {
+	currentUser, ok := middleware.GetUser(r)
+	if !ok {
+		handlers.SendResponse(w, http.StatusUnauthorized, false, nil, "Authentication required", "")
+		return
+	}
+
 	var req UpdateUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		handlers.SendResponse(w, http.StatusBadRequest, false, nil, "Invalid request body", err.Error())
@@ -25,6 +32,20 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	if req.ID == 0 {
 		handlers.SendResponse(w, http.StatusBadRequest, false, nil, "User ID is required", "")
 		return
+	}
+
+	if currentUser.ID != req.ID {
+		if currentUser.Role != "owner" && currentUser.Role != "admin" {
+			handlers.SendResponse(w, http.StatusForbidden, false, nil, "Access denied", "You can only update your own profile")
+			return
+		}
+	}
+
+	if req.Role != nil && *req.Role != "" {
+		if currentUser.Role != "owner" {
+			handlers.SendResponse(w, http.StatusForbidden, false, nil, "Access denied", "Only owner can change user roles")
+			return
+		}
 	}
 
 	user, err := models.GetUserByID(req.ID)
@@ -52,7 +73,7 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	models.LogUserAudit(req.ID, "update", "user", &req.ID, map[string]interface{}{
+	models.LogUserAudit(currentUser.ID, "update", "user", &req.ID, map[string]interface{}{
 		"before": map[string]interface{}{
 			"username": oldUsername,
 			"email":    oldEmail,

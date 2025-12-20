@@ -91,17 +91,19 @@ export const projectsService = {
   /**
    * Update project members
    */
-  async updateMembers(projectId: number, memberIds: number[]): Promise<void> {
-    const response = await fetch(`${API_BASE}/projects/updateMembers`, {
+  async updateMembers(projectId: number, userIds: number[]): Promise<Project> {
+    const response = await fetch(`${API_BASE}/projects/updateMembers?id=${projectId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({ projectId, memberIds }),
+      body: JSON.stringify({ userIds }),
     });
 
     const data = await response.json();
     if (!data.success) {
       throw new Error(data.error || 'Failed to update project members');
     }
+
+    return data.data;
   },
 };

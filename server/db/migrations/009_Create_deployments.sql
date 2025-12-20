@@ -41,11 +41,9 @@ CREATE TABLE IF NOT EXISTS deployments (
     FOREIGN KEY (rolled_back_from) REFERENCES deployments(id) ON DELETE SET NULL
 );
 
--- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_deployments_app_id ON deployments(app_id);
 CREATE INDEX IF NOT EXISTS idx_deployments_status ON deployments(status);
 CREATE INDEX IF NOT EXISTS idx_deployments_is_active ON deployments(is_active);
 CREATE INDEX IF NOT EXISTS idx_deployments_created_at ON deployments(created_at DESC);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_deployments_app_commit ON deployments(app_id, commit_hash);
 CREATE INDEX IF NOT EXISTS idx_deployments_commit_hash ON deployments(commit_hash);
 

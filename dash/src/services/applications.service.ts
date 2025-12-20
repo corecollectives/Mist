@@ -1,7 +1,10 @@
 import type {
   App,
   CreateAppRequest,
-  UpdateAppRequest
+  UpdateAppRequest,
+  Volume,
+  CreateVolumeRequest,
+  UpdateVolumeRequest
 } from '@/types';
 
 const API_BASE = '/api';
@@ -337,5 +340,67 @@ export const applicationsService = {
     }
 
     return data.data;
+  },
+
+  async getVolumes(appId: number): Promise<Volume[]> {
+    const response = await fetch(`${API_BASE}/apps/volumes/get`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ appId }),
+    });
+
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to fetch volumes');
+    }
+
+    return data.data || [];
+  },
+
+  async createVolume(request: CreateVolumeRequest): Promise<Volume> {
+    const response = await fetch(`${API_BASE}/apps/volumes/create`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(request),
+    });
+
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to create volume');
+    }
+
+    return data.data;
+  },
+
+  async updateVolume(request: UpdateVolumeRequest): Promise<Volume> {
+    const response = await fetch(`${API_BASE}/apps/volumes/update`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(request),
+    });
+
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to update volume');
+    }
+
+    return data.data;
+  },
+
+  async deleteVolume(id: number): Promise<void> {
+    const response = await fetch(`${API_BASE}/apps/volumes/delete`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ id }),
+    });
+
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to delete volume');
+    }
   },
 };

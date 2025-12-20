@@ -2,7 +2,6 @@ package users
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/corecollectives/mist/api/handlers"
@@ -21,8 +20,6 @@ func UpdatePassword(w http.ResponseWriter, r *http.Request) {
 		handlers.SendResponse(w, http.StatusBadRequest, false, nil, "Invalid request body", err.Error())
 		return
 	}
-
-	fmt.Println(req.CurrentPassword, req.NewPassword)
 
 	if req.UserID == 0 {
 		handlers.SendResponse(w, http.StatusBadRequest, false, nil, "User ID is required", "")

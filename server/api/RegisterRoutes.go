@@ -52,6 +52,7 @@ func RegisterRoutes(mux *http.ServeMux) {
 	mux.Handle("POST /api/apps/getByProjectId", middleware.AuthMiddleware()(http.HandlerFunc(applications.GetApplicationByProjectID)))
 	mux.Handle("POST /api/apps/getById", middleware.AuthMiddleware()(http.HandlerFunc(applications.GetApplicationById)))
 	mux.Handle("PUT /api/apps/update", middleware.AuthMiddleware()(http.HandlerFunc(applications.UpdateApplication)))
+	mux.Handle("DELETE /api/apps/delete", middleware.AuthMiddleware()(http.HandlerFunc(applications.DeleteApplication)))
 	mux.Handle("POST /api/apps/getLatestCommit", middleware.AuthMiddleware()(http.HandlerFunc(applications.GetLatestCommit)))
 	mux.Handle("POST /api/apps/getPreviewUrl", middleware.AuthMiddleware()(http.HandlerFunc(applications.GetPreviewURL)))
 
@@ -66,6 +67,11 @@ func RegisterRoutes(mux *http.ServeMux) {
 	mux.Handle("DELETE /api/apps/domains/delete", middleware.AuthMiddleware()(http.HandlerFunc(applications.DeleteDomain)))
 	mux.Handle("POST /api/apps/domains/verify", middleware.AuthMiddleware()(http.HandlerFunc(applications.VerifyDomainDNS)))
 	mux.Handle("POST /api/apps/domains/instructions", middleware.AuthMiddleware()(http.HandlerFunc(applications.GetDNSInstructions)))
+
+	mux.Handle("POST /api/apps/volumes/get", middleware.AuthMiddleware()(http.HandlerFunc(applications.GetVolumes)))
+	mux.Handle("POST /api/apps/volumes/create", middleware.AuthMiddleware()(http.HandlerFunc(applications.CreateVolume)))
+	mux.Handle("PUT /api/apps/volumes/update", middleware.AuthMiddleware()(http.HandlerFunc(applications.UpdateVolume)))
+	mux.Handle("DELETE /api/apps/volumes/delete", middleware.AuthMiddleware()(http.HandlerFunc(applications.DeleteVolume)))
 
 	mux.Handle("POST /api/apps/container/stop", middleware.AuthMiddleware()(http.HandlerFunc(applications.StopContainerHandler)))
 	mux.Handle("POST /api/apps/container/start", middleware.AuthMiddleware()(http.HandlerFunc(applications.StartContainerHandler)))
@@ -94,5 +100,6 @@ func RegisterRoutes(mux *http.ServeMux) {
 
 	mux.Handle("GET /api/settings/system", middleware.AuthMiddleware()(http.HandlerFunc(settings.GetSystemSettings)))
 	mux.Handle("PUT /api/settings/system", middleware.AuthMiddleware()(http.HandlerFunc(settings.UpdateSystemSettings)))
+	mux.Handle("POST /api/settings/docker/cleanup", middleware.AuthMiddleware()(http.HandlerFunc(settings.DockerCleanup)))
 
 }

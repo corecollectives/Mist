@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useApplication } from "@/hooks";
 import { TabsList, Tabs, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { AppInfo, GitProviderTab, EnvironmentVariables, Domains, AppSettings, LiveLogsViewer, AppStats } from "@/components/applications";
+import { AppInfo, GitProviderTab, EnvironmentVariables, Domains, AppSettings, LiveLogsViewer, AppStats, Volumes } from "@/components/applications";
 import { DeploymentsTab } from "@/components/deployments";
 
 
@@ -140,6 +140,7 @@ export const AppPage = () => {
 
           <TabsContent value="settings" className="space-y-6">
             <AppSettings app={app} onUpdate={refreshApp} />
+            <Volumes appId={app.id} appType={app.appType} />
           </TabsContent>
         </Tabs>
       </main>

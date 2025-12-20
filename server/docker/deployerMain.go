@@ -54,5 +54,30 @@ func DeployerMain(Id int64, db *sql.DB, logFile *os.File, logger *utils.Deployme
 	}
 
 	logger.Info("Deployment completed successfully")
+
+	// Run automatic cleanup if enabled in settings
+	settings, err := models.GetSystemSettings()
+	if err != nil {
+		logger.Warn(fmt.Sprintf("Failed to get system settings for cleanup: %v", err))
+	} else {
+		if settings.AutoCleanupContainers {
+			logger.Info("Running automatic container cleanup")
+			if err := CleanupStoppedContainers(); err != nil {
+				logger.Warn(fmt.Sprintf("Container cleanup failed: %v", err))
+			} else {
+				logger.Info("Container cleanup completed")
+			}
+		}
+
+		if settings.AutoCleanupImages {
+			logger.Info("Running automatic image cleanup")
+			if err := CleanupDanglingImages(); err != nil {
+				logger.Warn(fmt.Sprintf("Image cleanup failed: %v", err))
+			} else {
+				logger.Info("Image cleanup completed")
+			}
+		}
+	}
+
 	return "Deployment started", nil
 }

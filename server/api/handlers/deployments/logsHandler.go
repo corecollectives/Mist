@@ -3,9 +3,11 @@ package deployments
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/corecollectives/mist/api/handlers"
@@ -17,7 +19,43 @@ import (
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
-		return true
+		origin := r.Header.Get("Origin")
+
+		// Get system settings from database
+		settings, err := models.GetSystemSettings()
+		if err != nil {
+			log.Printf("ERROR: Failed to get system settings for WebSocket CORS: %v", err)
+			// Deny by default if we can't get settings
+			return false
+		}
+
+		// In non-production mode, allow localhost
+		if !settings.ProductionMode {
+			if strings.HasPrefix(origin, "http://localhost:") ||
+				strings.HasPrefix(origin, "http://127.0.0.1:") ||
+				origin == "" {
+				return true
+			}
+		}
+
+		// Check against allowed origins (comma-separated list)
+		if settings.AllowedOrigins != "" {
+			allowedList := strings.Split(settings.AllowedOrigins, ",")
+			for _, allowed := range allowedList {
+				allowed = strings.TrimSpace(allowed)
+				if origin == allowed {
+					return true
+				}
+			}
+		}
+
+		// Allow empty origin (same-origin requests)
+		if origin == "" {
+			return true
+		}
+
+		log.Printf("Deployment logs WebSocket rejected from origin: %s (allowed: %s)", origin, settings.AllowedOrigins)
+		return false
 	},
 }
 

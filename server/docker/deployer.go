@@ -189,6 +189,11 @@ func DeployApp(dep *models.Deployment, app *models.App, appContextPath, imageTag
 		logger.Error(err, "Failed to update app status (non-fatal)")
 	}
 
+	logger.Info("Cleaning up old Docker images")
+	if err := CleanupOldImages(app.ID, 5); err != nil {
+		logger.Error(err, "Failed to cleanup old images (non-fatal)")
+	}
+
 	logger.InfoWithFields("Deployment succeeded", map[string]interface{}{
 		"deployment_id": dep.ID,
 		"container":     containerName,

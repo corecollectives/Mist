@@ -1,12 +1,51 @@
 package models
 
 import (
+	"crypto/rand"
 	"database/sql"
+	"encoding/base64"
+	"fmt"
 )
 
 type SystemSettings struct {
-	WildcardDomain *string `json:"wildcardDomain"`
-	MistAppName    string  `json:"mistAppName"`
+	WildcardDomain        *string `json:"wildcardDomain"`
+	MistAppName           string  `json:"mistAppName"`
+	JwtSecret             string  `json:"-"`
+	GithubWebhookSecret   string  `json:"-"`
+	AllowedOrigins        string  `json:"allowedOrigins"`
+	ProductionMode        bool    `json:"productionMode"`
+	SecureCookies         bool    `json:"secureCookies"`
+	AutoCleanupContainers bool    `json:"autoCleanupContainers"`
+	AutoCleanupImages     bool    `json:"autoCleanupImages"`
+}
+
+func generateRandomSecret(length int) (string, error) {
+	bytes := make([]byte, length)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
+	return base64.URLEncoding.EncodeToString(bytes), nil
+}
+
+func GetSystemSetting(key string) (string, error) {
+	var value string
+	err := db.QueryRow(`SELECT value FROM system_settings WHERE key = ?`, key).Scan(&value)
+	if err == sql.ErrNoRows {
+		return "", nil
+	}
+	if err != nil {
+		return "", err
+	}
+	return value, nil
+}
+
+func SetSystemSetting(key, value string) error {
+	_, err := db.Exec(`
+		INSERT INTO system_settings (key, value, updated_at) 
+		VALUES (?, ?, CURRENT_TIMESTAMP)
+		ON CONFLICT(key) DO UPDATE SET value = ?, updated_at = CURRENT_TIMESTAMP
+	`, key, value, value)
+	return err
 }
 
 func GetSystemSettings() (*SystemSettings, error) {
@@ -30,6 +69,65 @@ func GetSystemSettings() (*SystemSettings, error) {
 		mistAppName = "mist"
 	}
 	settings.MistAppName = mistAppName
+
+	jwtSecret, err := GetSystemSetting("jwt_secret")
+	if err != nil {
+		return nil, err
+	}
+	if jwtSecret == "" {
+		jwtSecret, err = generateRandomSecret(64)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate JWT secret: %w", err)
+		}
+		if err := SetSystemSetting("jwt_secret", jwtSecret); err != nil {
+			return nil, fmt.Errorf("failed to save JWT secret: %w", err)
+		}
+		fmt.Println("INFO: Auto-generated JWT secret and saved to database")
+	}
+	settings.JwtSecret = jwtSecret
+
+	githubSecret, err := GetSystemSetting("github_webhook_secret")
+	if err != nil {
+		return nil, err
+	}
+	settings.GithubWebhookSecret = githubSecret
+
+	allowedOrigins, err := GetSystemSetting("allowed_origins")
+	if err != nil {
+		return nil, err
+	}
+	if allowedOrigins == "" {
+		allowedOrigins = "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173,http://127.0.0.1:3000"
+	}
+	settings.AllowedOrigins = allowedOrigins
+
+	prodMode, err := GetSystemSetting("production_mode")
+	if err != nil {
+		return nil, err
+	}
+	settings.ProductionMode = prodMode == "true"
+
+	secureCookies, err := GetSystemSetting("secure_cookies")
+	if err != nil {
+		return nil, err
+	}
+	if secureCookies == "" {
+		settings.SecureCookies = settings.ProductionMode
+	} else {
+		settings.SecureCookies = secureCookies == "true"
+	}
+
+	autoCleanupContainers, err := GetSystemSetting("auto_cleanup_containers")
+	if err != nil {
+		return nil, err
+	}
+	settings.AutoCleanupContainers = autoCleanupContainers == "true"
+
+	autoCleanupImages, err := GetSystemSetting("auto_cleanup_images")
+	if err != nil {
+		return nil, err
+	}
+	settings.AutoCleanupImages = autoCleanupImages == "true"
 
 	return &settings, nil
 }
@@ -58,6 +156,50 @@ func UpdateSystemSettings(wildcardDomain *string, mistAppName string) (*SystemSe
 	}
 
 	return GetSystemSettings()
+}
+
+func UpdateSecuritySettings(allowedOrigins string, productionMode, secureCookies bool) error {
+	if err := SetSystemSetting("allowed_origins", allowedOrigins); err != nil {
+		return err
+	}
+
+	prodModeStr := "false"
+	if productionMode {
+		prodModeStr = "true"
+	}
+	if err := SetSystemSetting("production_mode", prodModeStr); err != nil {
+		return err
+	}
+
+	secureCookiesStr := "false"
+	if secureCookies {
+		secureCookiesStr = "true"
+	}
+	if err := SetSystemSetting("secure_cookies", secureCookiesStr); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func UpdateDockerSettings(autoCleanupContainers, autoCleanupImages bool) error {
+	cleanupContainersStr := "false"
+	if autoCleanupContainers {
+		cleanupContainersStr = "true"
+	}
+	if err := SetSystemSetting("auto_cleanup_containers", cleanupContainersStr); err != nil {
+		return err
+	}
+
+	cleanupImagesStr := "false"
+	if autoCleanupImages {
+		cleanupImagesStr = "true"
+	}
+	if err := SetSystemSetting("auto_cleanup_images", cleanupImagesStr); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func GenerateAutoDomain(projectName, appName string) (string, error) {

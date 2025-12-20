@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"errors"
+	"log"
 	"net/http"
 	"time"
 
@@ -11,9 +12,25 @@ import (
 	"github.com/golang-jwt/jwt"
 )
 
-var jwtSecret = []byte("MaiHoonGian")
+var jwtSecret []byte
+
+func InitJWTSecret() error {
+	settings, err := models.GetSystemSettings()
+	if err != nil {
+		return err
+	}
+	jwtSecret = []byte(settings.JwtSecret)
+	log.Println("INFO: JWT secret loaded from database")
+	return nil
+}
 
 func GenerateJWT(userID int64, email, role string) (string, error) {
+	if len(jwtSecret) == 0 {
+		if err := InitJWTSecret(); err != nil {
+			return "", err
+		}
+	}
+
 	claims := jwt.MapClaims{
 		"user_id": userID,
 		"email":   email,
@@ -31,6 +48,12 @@ type JWTClaims struct {
 }
 
 func VerifyJWT(tokenStr string) (*JWTClaims, error) {
+	if len(jwtSecret) == 0 {
+		if err := InitJWTSecret(); err != nil {
+			return nil, err
+		}
+	}
+
 	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("unexpected signing method")

@@ -2,7 +2,6 @@ package auth
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -54,11 +53,10 @@ func SignUpHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	err = user.Create()
 	if err != nil {
-		println(err.Error())
+		log.Printf("Failed to create user: %v", err)
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to create user", "Internal Server Error")
 		return
 	}
-	fmt.Println(user)
 
 	token, err := middleware.GenerateJWT(user.ID, user.Email, user.Role)
 	if err != nil {
@@ -69,12 +67,19 @@ func SignUpHandler(w http.ResponseWriter, r *http.Request) {
 	if setupRequired {
 		store.SetSetupRequired(false)
 	}
+
+	settings, err := models.GetSystemSettings()
+	if err != nil {
+		log.Printf("Error getting system settings: %v", err)
+		settings = &models.SystemSettings{SecureCookies: false}
+	}
+
 	http.SetCookie(w, &http.Cookie{
 		Name:     "mist_token",
 		Value:    token,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   false,
+		Secure:   settings.SecureCookies,
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   3600 * 24 * 30,
 	})

@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Trash2, Plus, Pencil, X, Check } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Trash2, Plus, Pencil, X, Check, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { useEnvironmentVariables } from "@/hooks";
 import type { EnvVariable } from "@/types";
@@ -13,9 +14,9 @@ interface EnvironmentVariablesProps {
 }
 
 export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
-  const { envVars, loading, createEnvVar, updateEnvVar, deleteEnvVar } = useEnvironmentVariables({ 
-    appId, 
-    autoFetch: true 
+  const { envVars, loading, createEnvVar, updateEnvVar, deleteEnvVar } = useEnvironmentVariables({
+    appId,
+    autoFetch: true
   });
 
   const [newKey, setNewKey] = useState("");
@@ -24,6 +25,55 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
   const [editKey, setEditKey] = useState("");
   const [editValue, setEditValue] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
+  const [bulkMode, setBulkMode] = useState(false);
+  const [bulkText, setBulkText] = useState("");
+  const [parsedVars, setParsedVars] = useState<Array<{ key: string; value: string }>>([]);
+  const [isAdding, setIsAdding] = useState(false);
+
+  const parseEnvText = (text: string) => {
+    const lines = text.split('\n').filter(line => line.trim());
+    const parsed: Array<{ key: string; value: string }> = [];
+    const errors: string[] = [];
+
+    lines.forEach((line, index) => {
+      const trimmed = line.trim();
+
+      if (!trimmed || trimmed.startsWith('#')) {
+        return;
+      }
+
+      const match = trimmed.match(/^([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/);
+
+      if (match) {
+        let [, key, value] = match;
+
+        if ((value.startsWith('"') && value.endsWith('"')) ||
+          (value.startsWith("'") && value.endsWith("'"))) {
+          value = value.slice(1, -1);
+        }
+
+        parsed.push({ key: key.trim(), value: value.trim() });
+      } else {
+        errors.push(`Line ${index + 1}: Invalid format "${trimmed}"`);
+      }
+    });
+
+    if (errors.length > 0) {
+      toast.error(`Parsing errors:\n${errors.join('\n')}`);
+    }
+
+    return parsed;
+  };
+
+  const handleBulkTextChange = (text: string) => {
+    setBulkText(text);
+    if (text.trim()) {
+      const parsed = parseEnvText(text);
+      setParsedVars(parsed);
+    } else {
+      setParsedVars([]);
+    }
+  };
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,6 +88,42 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
       setNewValue("");
       setShowAddForm(false);
     }
+  };
+
+  const handleBulkAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (parsedVars.length === 0) {
+      toast.error("No valid environment variables to add");
+      return;
+    }
+
+    setIsAdding(true);
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const { key, value } of parsedVars) {
+      const result = await createEnvVar(key, value);
+      if (result) {
+        successCount++;
+      } else {
+        failCount++;
+      }
+    }
+
+    setIsAdding(false);
+
+    if (successCount > 0) {
+      toast.success(`Added ${successCount} environment variable${successCount > 1 ? 's' : ''}`);
+    }
+    if (failCount > 0) {
+      toast.error(`Failed to add ${failCount} variable${failCount > 1 ? 's' : ''}`);
+    }
+
+    setBulkText("");
+    setParsedVars([]);
+    setShowAddForm(false);
+    setBulkMode(false);
   };
 
   const handleUpdate = async (id: number) => {
@@ -95,49 +181,141 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
       </CardHeader>
       <CardContent className="space-y-4">
         {showAddForm && (
-          <form onSubmit={handleAdd} className="space-y-4 p-4 border rounded-lg bg-muted/50">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="new-key">Key</Label>
-                <Input
-                  id="new-key"
-                  placeholder="API_KEY"
-                  value={newKey}
-                  onChange={(e) => setNewKey(e.target.value)}
-                  autoFocus
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="new-value">Value</Label>
-                <Input
-                  id="new-value"
-                  placeholder="your-api-key-value"
-                  value={newValue}
-                  onChange={(e) => setNewValue(e.target.value)}
-                  type="password"
-                />
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <Button type="submit" size="sm">
-                <Check className="h-4 w-4 mr-2" />
-                Add
+          <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
+            <div className="flex items-center gap-2 pb-2 border-b">
+              <Button
+                type="button"
+                variant={!bulkMode ? "default" : "ghost"}
+                size="sm"
+                onClick={() => {
+                  setBulkMode(false);
+                  setBulkText("");
+                  setParsedVars([]);
+                }}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Single
               </Button>
               <Button
                 type="button"
-                variant="outline"
+                variant={bulkMode ? "default" : "ghost"}
                 size="sm"
                 onClick={() => {
-                  setShowAddForm(false);
+                  setBulkMode(true);
                   setNewKey("");
                   setNewValue("");
                 }}
               >
-                <X className="h-4 w-4 mr-2" />
-                Cancel
+                <FileText className="h-4 w-4 mr-2" />
+                Bulk Paste
               </Button>
             </div>
-          </form>
+
+            {!bulkMode ? (
+              <form onSubmit={handleAdd} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="new-key">Key</Label>
+                    <Input
+                      id="new-key"
+                      placeholder="API_KEY"
+                      value={newKey}
+                      onChange={(e) => setNewKey(e.target.value)}
+                      autoFocus
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="new-value">Value</Label>
+                    <Input
+                      id="new-value"
+                      placeholder="your-api-key-value"
+                      value={newValue}
+                      onChange={(e) => setNewValue(e.target.value)}
+                      type="password"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button type="submit" size="sm">
+                    <Check className="h-4 w-4 mr-2" />
+                    Add
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setShowAddForm(false);
+                      setNewKey("");
+                      setNewValue("");
+                    }}
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={handleBulkAdd} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="bulk-text">
+                    Paste Environment Variables
+                    <span className="text-xs text-muted-foreground ml-2">
+                      (Format: KEY=VALUE, one per line)
+                    </span>
+                  </Label>
+                  <Textarea
+                    id="bulk-text"
+                    placeholder="API_KEY=your-api-key&#10;DATABASE_URL=postgres://...&#10;PORT=3000"
+                    value={bulkText}
+                    onChange={(e) => handleBulkTextChange(e.target.value)}
+                    rows={8}
+                    className="font-mono text-sm"
+                    autoFocus
+                  />
+                </div>
+
+                {parsedVars.length > 0 && (
+                  <div className="space-y-2">
+                    <Label className="text-sm">
+                      Preview ({parsedVars.length} variable{parsedVars.length > 1 ? 's' : ''} detected)
+                    </Label>
+                    <div className="max-h-40 overflow-y-auto space-y-1 p-2 border rounded bg-background">
+                      {parsedVars.map((v, idx) => (
+                        <div key={idx} className="font-mono text-xs text-muted-foreground">
+                          <span className="font-semibold text-foreground">{v.key}</span>
+                          <span className="mx-1">=</span>
+                          <span>••••••••</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex gap-2">
+                  <Button type="submit" size="sm" disabled={parsedVars.length === 0 || isAdding}>
+                    <Check className="h-4 w-4 mr-2" />
+                    {isAdding ? "Adding..." : `Add ${parsedVars.length} Variable${parsedVars.length > 1 ? 's' : ''}`}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setShowAddForm(false);
+                      setBulkMode(false);
+                      setBulkText("");
+                      setParsedVars([]);
+                    }}
+                    disabled={isAdding}
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            )}
+          </div>
         )}
 
         {envVars.length === 0 && !showAddForm ? (

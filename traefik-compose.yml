@@ -2,18 +2,7 @@ services:
   traefik:
     image: traefik:v3.1
     container_name: traefik
-    command:
-      - "--api.dashboard=true"
-      - "--api.insecure=true"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--entrypoints.web.address=:80"
-      - "--entrypoints.websecure.address=:443"
-      
-      - "--certificatesresolvers.le.acme.httpchallenge=true"
-      - "--certificatesresolvers.le.acme.httpchallenge.entrypoint=web"
-      - "--certificatesresolvers.le.acme.email=riderspooky69@gmail.com"
-      - "--certificatesresolvers.le.acme.storage=/letsencrypt/acme.json"
+    restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
@@ -21,6 +10,8 @@ services:
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
       - "./letsencrypt:/letsencrypt"
+      - "/var/lib/mist/traefik:/etc/traefik/dynamic:ro"
+      - "./traefik-static.yml:/etc/traefik/traefik.yml:ro"
     networks:
       - traefik-net
 networks:

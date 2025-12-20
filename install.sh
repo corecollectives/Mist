@@ -12,6 +12,11 @@ PORT=8080
 MIST_FILE="/var/lib/mist/mist.db"
 SERVICE_FILE="/etc/systemd/system/$APP_NAME.service"
 
+# Prompt for Let's Encrypt email
+echo "📧 Let's Encrypt Configuration"
+read -p "Enter your email for Let's Encrypt certificates (default: admin@example.com): " LETSENCRYPT_EMAIL
+LETSENCRYPT_EMAIL=${LETSENCRYPT_EMAIL:-admin@example.com}
+
 echo "🔍 Detecting package manager..."
 if command -v apt >/dev/null; then
     PKG_INSTALL="sudo apt update && sudo apt install -y git curl build-essential wget unzip"
@@ -76,10 +81,16 @@ if ! docker network inspect traefik-net >/dev/null 2>&1; then
 fi
 
 # ===============================
+# Configure Traefik static config
+# ===============================
+echo "⚙️ Configuring Traefik..."
+cd $INSTALL_DIR
+sed -i "s/email: admin@example.com/email: $LETSENCRYPT_EMAIL/" traefik-static.yml
+
+# ===============================
 # ✅ ADDED: Start Traefik
 # ===============================
 echo "🚦 Starting Traefik..."
-cd $INSTALL_DIR
 docker compose -f traefik-compose.yml up -d
 
 # -------------------------------
@@ -112,6 +123,13 @@ echo "🗃️ Ensuring Mist database file exists..."
 sudo mkdir -p $(dirname $MIST_FILE)
 sudo touch $MIST_FILE
 sudo chown $USER:$USER $MIST_FILE
+
+# -------------------------------
+# Setup Traefik configuration directory
+# -------------------------------
+echo "🚦 Setting up Traefik configuration directory..."
+sudo mkdir -p /var/lib/mist/traefik
+sudo chown $USER:$USER /var/lib/mist/traefik
 
 # -------------------------------
 # Open firewall port

@@ -7,6 +7,7 @@ import (
 	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/api/middleware"
 	"github.com/corecollectives/mist/models"
+	"github.com/corecollectives/mist/utils"
 )
 
 func GetSystemSettings(w http.ResponseWriter, r *http.Request) {
@@ -74,6 +75,11 @@ func UpdateSystemSettings(w http.ResponseWriter, r *http.Request) {
 	settings, err := models.UpdateSystemSettings(req.WildcardDomain, req.MistAppName)
 	if err != nil {
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to update system settings", err.Error())
+		return
+	}
+
+	if err := utils.GenerateDynamicConfig(settings.WildcardDomain, settings.MistAppName); err != nil {
+		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to generate Traefik configuration", err.Error())
 		return
 	}
 

@@ -221,6 +221,38 @@ export const applicationsService = {
     return data.data;
   },
 
+  async verifyDomainDNS(id: number) {
+    const response = await fetch(`${API_BASE}/apps/domains/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ id }),
+    });
+
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to verify domain DNS');
+    }
+
+    return data.data;
+  },
+
+  async getDNSInstructions(id: number) {
+    const response = await fetch(`${API_BASE}/apps/domains/instructions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ id }),
+    });
+
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to get DNS instructions');
+    }
+
+    return data.data;
+  },
+
   async getPreviewUrl(appId: number): Promise<{ url: string; domain: string }> {
     const response = await fetch(`${API_BASE}/apps/getPreviewUrl`, {
       method: 'POST',

@@ -63,6 +63,8 @@ func RegisterRoutes(mux *http.ServeMux) {
 	mux.Handle("POST /api/apps/domains/get", middleware.AuthMiddleware()(http.HandlerFunc(applications.GetDomains)))
 	mux.Handle("PUT /api/apps/domains/update", middleware.AuthMiddleware()(http.HandlerFunc(applications.UpdateDomain)))
 	mux.Handle("DELETE /api/apps/domains/delete", middleware.AuthMiddleware()(http.HandlerFunc(applications.DeleteDomain)))
+	mux.Handle("POST /api/apps/domains/verify", middleware.AuthMiddleware()(http.HandlerFunc(applications.VerifyDomainDNS)))
+	mux.Handle("POST /api/apps/domains/instructions", middleware.AuthMiddleware()(http.HandlerFunc(applications.GetDNSInstructions)))
 
 	mux.Handle("POST /api/apps/container/stop", middleware.AuthMiddleware()(http.HandlerFunc(applications.StopContainerHandler)))
 	mux.Handle("POST /api/apps/container/start", middleware.AuthMiddleware()(http.HandlerFunc(applications.StartContainerHandler)))

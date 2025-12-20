@@ -3,10 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Trash2, Plus, Pencil, X, Check, ExternalLink } from "lucide-react";
+import { Trash2, Plus, Pencil, X, Check, ExternalLink, ChevronDown, ChevronUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { useDomains } from "@/hooks";
+import { DNSValidation } from "./dns-validation";
 import type { Domain } from "@/types";
 
 interface DomainsProps {
@@ -23,6 +24,7 @@ export const Domains = ({ appId }: DomainsProps) => {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editDomain, setEditDomain] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
+  const [expandedDomain, setExpandedDomain] = useState<number | null>(null);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,6 +80,25 @@ export const Domains = ({ appId }: DomainsProps) => {
       default:
         return "outline";
     }
+  };
+
+  const getDnsStatusBadge = (domain: Domain) => {
+    if (domain.dnsConfigured) {
+      return (
+        <Badge variant="default" className="text-xs">
+          DNS Configured
+        </Badge>
+      );
+    }
+    return (
+      <Badge variant="secondary" className="text-xs">
+        DNS Pending
+      </Badge>
+    );
+  };
+
+  const toggleDomainExpansion = (domainId: number) => {
+    setExpandedDomain(expandedDomain === domainId ? null : domainId);
   };
 
   if (loading) {
@@ -146,9 +167,9 @@ export const Domains = ({ appId }: DomainsProps) => {
         ) : (
           <div className="space-y-2">
             {domains.map((domain) => (
-              <div key={domain.id} className="p-4 border rounded-lg bg-card">
+              <div key={domain.id} className="border rounded-lg bg-card">
                 {editingId === domain.id ? (
-                  <div className="space-y-4">
+                  <div className="p-4 space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor={`edit-domain-${domain.id}`}>Domain</Label>
                       <Input
@@ -169,38 +190,65 @@ export const Domains = ({ appId }: DomainsProps) => {
                     </div>
                   </div>
                 ) : (
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3 flex-1">
-                      <a
-                        href={`https://${domain.domain}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="font-mono font-semibold hover:underline flex items-center gap-1"
-                      >
-                        {domain.domain}
-                        <ExternalLink className="h-3 w-3" />
-                      </a>
-                      <Badge variant={getSslStatusColor(domain.sslStatus)}>
-                        {domain.sslStatus}
-                      </Badge>
+                  <>
+                    <div className="p-4 flex items-center justify-between">
+                      <div className="flex items-center gap-3 flex-1">
+                        <a
+                          href={`https://${domain.domain}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-mono font-semibold hover:underline flex items-center gap-1"
+                        >
+                          {domain.domain}
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={getSslStatusColor(domain.sslStatus)}>
+                            SSL: {domain.sslStatus}
+                          </Badge>
+                          {getDnsStatusBadge(domain)}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => toggleDomainExpansion(domain.id)}
+                        >
+                          {expandedDomain === domain.id ? (
+                            <ChevronUp className="h-4 w-4" />
+                          ) : (
+                            <ChevronDown className="h-4 w-4" />
+                          )}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => startEdit(domain)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleDelete(domain.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => startEdit(domain)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleDelete(domain.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
+                    {expandedDomain === domain.id && (
+                      <div className="px-4 pb-4">
+                        <DNSValidation 
+                          domain={domain} 
+                          onVerified={() => {
+                            // Refresh domains list to show updated status
+                            window.location.reload();
+                          }}
+                        />
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             ))}

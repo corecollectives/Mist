@@ -2,6 +2,7 @@ export { AppInfo } from './app-info';
 export { GitProviderTab } from './git-config';
 export { EnvironmentVariables } from './environment-variables';
 export { Domains } from './domains';
+export { DNSValidation } from './dns-validation';
 export { AppSettings } from './app-settings';
 export { ContainerControls } from './container-controls';
 export { LiveLogsViewer } from './live-logs-viewer';

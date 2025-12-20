@@ -17,6 +17,7 @@ interface UseDomainsReturn {
   updateDomain: (id: number, domain: string) => Promise<Domain | null>;
   deleteDomain: (id: number) => Promise<boolean>;
   refreshDomains: () => Promise<void>;
+  updateDomainInState: (updatedDomain: Domain) => void;
 }
 
 export const useDomains = (options: UseDomainsOptions): UseDomainsReturn => {
@@ -82,6 +83,10 @@ export const useDomains = (options: UseDomainsOptions): UseDomainsReturn => {
 
   const refreshDomains = useCallback(() => fetchDomains(), [fetchDomains]);
 
+  const updateDomainInState = useCallback((updatedDomain: Domain) => {
+    setDomains(prev => prev.map(d => d.id === updatedDomain.id ? updatedDomain : d));
+  }, []);
+
   useEffect(() => {
     if (autoFetch) {
       fetchDomains();
@@ -97,5 +102,6 @@ export const useDomains = (options: UseDomainsOptions): UseDomainsReturn => {
     updateDomain,
     deleteDomain,
     refreshDomains,
+    updateDomainInState,
   };
 };

@@ -15,7 +15,7 @@ interface DomainsProps {
 }
 
 export const Domains = ({ appId }: DomainsProps) => {
-  const { domains, loading, createDomain, updateDomain, deleteDomain } = useDomains({
+  const { domains, loading, createDomain, updateDomain, deleteDomain, updateDomainInState } = useDomains({
     appId,
     autoFetch: true
   });
@@ -241,8 +241,8 @@ export const Domains = ({ appId }: DomainsProps) => {
                       <div className="px-4 pb-4">
                         <DNSValidation
                           domain={domain}
-                          onVerified={() => {
-                            // window.location.reload();
+                          onVerified={(updatedDomain) => {
+                            updateDomainInState(updatedDomain);
                           }}
                         />
                       </div>

@@ -105,7 +105,6 @@ func (a *App) InsertInDB() error {
 	id := utils.GenerateRandomId()
 	a.ID = id
 
-	// Set defaults
 	if a.AppType == "" {
 		a.AppType = AppTypeWeb
 	}
@@ -320,4 +319,10 @@ func GetAppRepoAndBranch(appID int64) (string, string, error) {
 		return "", "", fmt.Errorf("app has no git repository configured")
 	}
 	return repoName.String, branch, nil
+}
+
+func DeleteApplication(appID int64) error {
+	query := `DELETE FROM apps WHERE id = ?`
+	_, err := db.Exec(query, appID)
+	return err
 }

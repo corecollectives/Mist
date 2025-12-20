@@ -1,10 +1,12 @@
 package docker
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os/exec"
 	"strings"
+	"time"
 )
 
 type ContainerStatus struct {
@@ -83,8 +85,14 @@ func StopContainer(containerName string) error {
 		return fmt.Errorf("container %s does not exist", containerName)
 	}
 
-	cmd := exec.Command("docker", "stop", containerName)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "docker", "stop", containerName)
 	if err := cmd.Run(); err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			return fmt.Errorf("docker stop timed out after 2 minutes for container %s", containerName)
+		}
 		return fmt.Errorf("failed to stop container: %w", err)
 	}
 
@@ -96,8 +104,14 @@ func StartContainer(containerName string) error {
 		return fmt.Errorf("container %s does not exist", containerName)
 	}
 
-	cmd := exec.Command("docker", "start", containerName)
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "docker", "start", containerName)
 	if err := cmd.Run(); err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			return fmt.Errorf("docker start timed out after 1 minute for container %s", containerName)
+		}
 		return fmt.Errorf("failed to start container: %w", err)
 	}
 
@@ -109,8 +123,14 @@ func RestartContainer(containerName string) error {
 		return fmt.Errorf("container %s does not exist", containerName)
 	}
 
-	cmd := exec.Command("docker", "restart", containerName)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "docker", "restart", containerName)
 	if err := cmd.Run(); err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			return fmt.Errorf("docker restart timed out after 3 minutes for container %s", containerName)
+		}
 		return fmt.Errorf("failed to restart container: %w", err)
 	}
 

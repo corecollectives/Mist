@@ -151,3 +151,29 @@ export type ServiceTemplate = {
   createdAt: string;
   updatedAt: string;
 };
+
+export type Volume = {
+  id: number;
+  appId: number;
+  name: string;
+  hostPath: string;
+  containerPath: string;
+  readOnly: boolean;
+  createdAt: string;
+};
+
+export type CreateVolumeRequest = {
+  appId: number;
+  name: string;
+  hostPath: string;
+  containerPath: string;
+  readOnly?: boolean;
+};
+
+export type UpdateVolumeRequest = {
+  id: number;
+  name: string;
+  hostPath: string;
+  containerPath: string;
+  readOnly: boolean;
+};

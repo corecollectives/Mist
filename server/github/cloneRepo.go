@@ -1,10 +1,12 @@
 package github
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/corecollectives/mist/models"
 )
@@ -37,7 +39,7 @@ func CloneRepo(appId int64, logFile *os.File) error {
 	path := fmt.Sprintf("/var/lib/mist/projects/%d/apps/%s", projectId, name)
 
 	if _, err := os.Stat(path + "/.git"); err == nil {
-		fmt.Println("Repository exists → removing directory...")
+		fmt.Println("Repository exists -> removing directory...")
 
 		if err := os.RemoveAll(path); err != nil {
 			return fmt.Errorf("failed to remove existing repository: %w", err)
@@ -50,7 +52,11 @@ func CloneRepo(appId int64, logFile *os.File) error {
 	}
 
 	fmt.Println("Cloning repository...")
-	cmd := exec.Command("git", "clone", "--branch", branch, repoURL, path)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "git", "clone", "--branch", branch, repoURL, path)
 	output, err := cmd.CombinedOutput()
 	lines := strings.Split(string(output), "\n")
 	for _, line := range lines {
@@ -60,6 +66,9 @@ func CloneRepo(appId int64, logFile *os.File) error {
 	}
 	fmt.Println(string(output))
 	if err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			return fmt.Errorf("git clone timed out after 10 minutes")
+		}
 		return fmt.Errorf("error cloning repository: %v\n%s", err, string(output))
 	}
 

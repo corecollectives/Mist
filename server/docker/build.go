@@ -1,10 +1,12 @@
 package docker
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/corecollectives/mist/models"
 )
@@ -19,11 +21,19 @@ func BuildImage(imageTag, contextPath string, envVars map[string]string, logfile
 	buildArgs = append(buildArgs, contextPath)
 
 	fmt.Println(buildArgs)
-	cmd := exec.Command("docker", buildArgs...)
+
+	// Create context with 15-minute timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "docker", buildArgs...)
 	cmd.Stdout = logfile
 	cmd.Stderr = logfile
 
 	if err := cmd.Run(); err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			return fmt.Errorf("docker build timed out after 15 minutes")
+		}
 		exitCode := -1
 		if exitErr, ok := err.(*exec.ExitError); ok {
 			exitCode = exitErr.ExitCode()
@@ -39,14 +49,21 @@ func StopRemoveContainer(containerName string, logfile *os.File) error {
 		return nil
 	}
 
-	stopCmd := exec.Command("docker", "stop", containerName)
+	// Create context with 2-minute timeout for container stop
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+
+	stopCmd := exec.CommandContext(ctx, "docker", "stop", containerName)
 	stopCmd.Stdout = logfile
 	stopCmd.Stderr = logfile
 	if err := stopCmd.Run(); err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			return fmt.Errorf("docker stop timed out after 2 minutes for container %s", containerName)
+		}
 		return fmt.Errorf("failed to stop container %s: %w", containerName, err)
 	}
 
-	removeCmd := exec.Command("docker", "rm", containerName)
+	removeCmd := exec.CommandContext(ctx, "docker", "rm", containerName)
 	removeCmd.Stdout = logfile
 	removeCmd.Stderr = logfile
 	if err := removeCmd.Run(); err != nil {
@@ -91,13 +108,24 @@ func RunContainer(app *models.App, imageTag, containerName string, domains []str
 		runArgs = append(runArgs, "-m", fmt.Sprintf("%dm", *app.MemoryLimit))
 	}
 
+	// Add volumes from the volumes table (user-configurable)
+	volumes, err := models.GetVolumesByAppID(app.ID)
+	if err == nil {
+		for _, vol := range volumes {
+			volumeArg := fmt.Sprintf("%s:%s", vol.HostPath, vol.ContainerPath)
+			if vol.ReadOnly {
+				volumeArg += ":ro"
+			}
+			runArgs = append(runArgs, "-v", volumeArg)
+		}
+	}
+
 	for key, value := range envVars {
 		runArgs = append(runArgs, "-e", fmt.Sprintf("%s=%s", key, value))
 	}
 
 	switch app.AppType {
 	case models.AppTypeWeb:
-		// Web apps: Always use Traefik for routing if domains exist, otherwise expose port
 		if len(domains) > 0 {
 			runArgs = append(runArgs,
 				"--network", "traefik-net",
@@ -118,15 +146,12 @@ func RunContainer(app *models.App, imageTag, containerName string, domains []str
 				"-l", fmt.Sprintf("traefik.http.services.%s.loadbalancer.server.port=%d", containerName, Port),
 			)
 
-			//force http to https redirect
-
 			runArgs = append(runArgs,
-				
+
 				"-l", fmt.Sprintf("traefik.http.routers.%s-http.rule=%s", containerName, hostRule),
 				"-l", fmt.Sprintf("traefik.http.routers.%s-http.entrypoints=web", containerName),
 				"-l", fmt.Sprintf("traefik.http.routers.%s-http.middlewares=%s-https-redirect", containerName, containerName),
 
-				
 				"-l", fmt.Sprintf("traefik.http.middlewares.%s-https-redirect.redirectscheme.scheme=https", containerName),
 			)
 		} else {
@@ -149,11 +174,17 @@ func RunContainer(app *models.App, imageTag, containerName string, domains []str
 
 	runArgs = append(runArgs, imageTag)
 
-	cmd := exec.Command("docker", runArgs...)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "docker", runArgs...)
 	cmd.Stdout = logfile
 	cmd.Stderr = logfile
 
 	if err := cmd.Run(); err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			return fmt.Errorf("docker run timed out after 5 minutes")
+		}
 		exitCode := -1
 		if exitErr, ok := err.(*exec.ExitError); ok {
 			exitCode = exitErr.ExitCode()
@@ -165,11 +196,17 @@ func RunContainer(app *models.App, imageTag, containerName string, domains []str
 }
 
 func PullDockerImage(imageName string, logfile *os.File) error {
-	pullCmd := exec.Command("docker", "pull", imageName)
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
+	defer cancel()
+
+	pullCmd := exec.CommandContext(ctx, "docker", "pull", imageName)
 	pullCmd.Stdout = logfile
 	pullCmd.Stderr = logfile
 
 	if err := pullCmd.Run(); err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			return fmt.Errorf("docker pull timed out after 15 minutes for image %s", imageName)
+		}
 		exitCode := -1
 		if exitErr, ok := err.(*exec.ExitError); ok {
 			exitCode = exitErr.ExitCode()

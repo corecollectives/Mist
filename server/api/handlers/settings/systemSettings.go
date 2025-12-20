@@ -54,8 +54,13 @@ func UpdateSystemSettings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		WildcardDomain *string `json:"wildcardDomain"`
-		MistAppName    string  `json:"mistAppName"`
+		WildcardDomain        *string `json:"wildcardDomain"`
+		MistAppName           string  `json:"mistAppName"`
+		AllowedOrigins        *string `json:"allowedOrigins"`
+		ProductionMode        *bool   `json:"productionMode"`
+		SecureCookies         *bool   `json:"secureCookies"`
+		AutoCleanupContainers *bool   `json:"autoCleanupContainers"`
+		AutoCleanupImages     *bool   `json:"autoCleanupImages"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -78,16 +83,95 @@ func UpdateSystemSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if req.AllowedOrigins != nil || req.ProductionMode != nil || req.SecureCookies != nil {
+		currentSettings, err := models.GetSystemSettings()
+		if err != nil {
+			handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to retrieve current settings", err.Error())
+			return
+		}
+
+		allowedOrigins := currentSettings.AllowedOrigins
+		if req.AllowedOrigins != nil {
+			allowedOrigins = *req.AllowedOrigins
+		}
+
+		productionMode := currentSettings.ProductionMode
+		if req.ProductionMode != nil {
+			productionMode = *req.ProductionMode
+		}
+
+		secureCookies := currentSettings.SecureCookies
+		if req.SecureCookies != nil {
+			secureCookies = *req.SecureCookies
+		}
+
+		if err := models.UpdateSecuritySettings(allowedOrigins, productionMode, secureCookies); err != nil {
+			handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to update security settings", err.Error())
+			return
+		}
+
+		settings, err = models.GetSystemSettings()
+		if err != nil {
+			handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to retrieve updated settings", err.Error())
+			return
+		}
+	}
+
+	if req.AutoCleanupContainers != nil || req.AutoCleanupImages != nil {
+		currentSettings, err := models.GetSystemSettings()
+		if err != nil {
+			handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to retrieve current settings", err.Error())
+			return
+		}
+
+		autoCleanupContainers := currentSettings.AutoCleanupContainers
+		if req.AutoCleanupContainers != nil {
+			autoCleanupContainers = *req.AutoCleanupContainers
+		}
+
+		autoCleanupImages := currentSettings.AutoCleanupImages
+		if req.AutoCleanupImages != nil {
+			autoCleanupImages = *req.AutoCleanupImages
+		}
+
+		if err := models.UpdateDockerSettings(autoCleanupContainers, autoCleanupImages); err != nil {
+			handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to update Docker settings", err.Error())
+			return
+		}
+
+		settings, err = models.GetSystemSettings()
+		if err != nil {
+			handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to retrieve updated settings", err.Error())
+			return
+		}
+	}
+
 	if err := utils.GenerateDynamicConfig(settings.WildcardDomain, settings.MistAppName); err != nil {
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to generate Traefik configuration", err.Error())
 		return
 	}
 
 	dummyID := int64(1)
-	models.LogUserAudit(userInfo.ID, "update", "system_settings", &dummyID, map[string]any{
+	auditData := map[string]any{
 		"wildcardDomain": req.WildcardDomain,
 		"mistAppName":    req.MistAppName,
-	})
+	}
+	if req.AllowedOrigins != nil {
+		auditData["allowedOrigins"] = *req.AllowedOrigins
+	}
+	if req.ProductionMode != nil {
+		auditData["productionMode"] = *req.ProductionMode
+	}
+	if req.SecureCookies != nil {
+		auditData["secureCookies"] = *req.SecureCookies
+	}
+	if req.AutoCleanupContainers != nil {
+		auditData["autoCleanupContainers"] = *req.AutoCleanupContainers
+	}
+	if req.AutoCleanupImages != nil {
+		auditData["autoCleanupImages"] = *req.AutoCleanupImages
+	}
+	models.LogUserAudit(userInfo.ID, "update", "system_settings", &dummyID, auditData)
 
 	handlers.SendResponse(w, http.StatusOK, true, settings, "System settings updated successfully", "")
 }

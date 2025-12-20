@@ -2,17 +2,55 @@ package websockets
 
 import (
 	"encoding/json"
-	"fmt"
-	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
+
+	"github.com/corecollectives/mist/models"
+	"github.com/gorilla/websocket"
 )
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
-		return true
+		origin := r.Header.Get("Origin")
+
+		// Get system settings from database
+		settings, err := models.GetSystemSettings()
+		if err != nil {
+			log.Printf("ERROR: Failed to get system settings for WebSocket CORS: %v", err)
+			// Deny by default if we can't get settings
+			return false
+		}
+
+		// In non-production mode, allow localhost
+		if !settings.ProductionMode {
+			if strings.HasPrefix(origin, "http://localhost:") ||
+				strings.HasPrefix(origin, "http://127.0.0.1:") ||
+				origin == "" {
+				return true
+			}
+		}
+
+		// Check against allowed origins (comma-separated list)
+		if settings.AllowedOrigins != "" {
+			allowedList := strings.Split(settings.AllowedOrigins, ",")
+			for _, allowed := range allowedList {
+				allowed = strings.TrimSpace(allowed)
+				if origin == allowed {
+					return true
+				}
+			}
+		}
+
+		// Allow empty origin (same-origin requests)
+		if origin == "" {
+			return true
+		}
+
+		log.Printf("WebSocket connection rejected from origin: %s (allowed: %s)", origin, settings.AllowedOrigins)
+		return false
 	},
 }
 
@@ -22,8 +60,7 @@ var mu sync.Mutex
 func StatWsHandler(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		http.NotFound(w, r)
-		fmt.Println("Upgrade error:", err)
+		log.Printf("WebSocket upgrade error: %v", err)
 		return
 	}
 	mu.Lock()
@@ -55,19 +92,19 @@ func BroadcastMetrics() {
 		}
 		metrics, err := GetStats()
 		if err != nil {
-			log.Println("Error in getting the metrics: ", err)
+			log.Printf("Error getting metrics: %v", err)
 			continue
 		}
 		msg, err := json.Marshal(metrics)
 		if err != nil {
-			log.Println("error in marshallung metrics: ", err)
+			log.Printf("Error marshalling metrics: %v", err)
 			continue
 		}
 		mu.Lock()
 		for client := range StatClients {
 			client.SetWriteDeadline(time.Now().Add(3 * time.Second))
 			if err := client.WriteMessage(websocket.TextMessage, msg); err != nil {
-				log.Println("Error sending message, removing client:", err)
+				log.Printf("Error sending message to client: %v", err)
 				client.Close()
 				delete(StatClients, client)
 			}

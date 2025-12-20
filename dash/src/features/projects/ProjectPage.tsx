@@ -7,17 +7,21 @@ import { toast } from "sonner";
 import type { CreateAppRequest } from "@/types/app";
 import { AppCard } from "./components/AppCard";
 import { CreateAppModal } from "./components/CreateAppModal";
+import { ManageMembersModal } from "./components/ManageMembersModal";
 import { useApplications, useProject } from "@/hooks";
+import { useAuth } from "@/providers";
 
 export const ProjectPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAddNewAppModalOpen, setIsAddNewAppModalOpen] = useState(false);
+  const [isManageMembersModalOpen, setIsManageMembersModalOpen] = useState(false);
 
   const params = useParams();
   const navigate = useNavigate();
   const projectId = parseInt(params.projectId!);
+  const { user } = useAuth();
 
-  const { project, loading, error, updateProject, deleteProject: deleteProjectFn } = useProject({
+  const { project, loading, error, updateProject, deleteProject: deleteProjectFn, refreshProject } = useProject({
     projectId,
     autoFetch: true,
   });
@@ -79,6 +83,9 @@ export const ProjectPage = () => {
 
   if (!project) return null;
 
+  // Check if current user is the project owner
+  const isProjectOwner = user && Number(user.id) === Number(project.ownerId);
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
       {/* Header */}
@@ -89,17 +96,24 @@ export const ProjectPage = () => {
           {project.projectMembers && (
             <div className="mt-3 flex flex-wrap gap-2 items-center">
               <span className="text-sm font-medium text-foreground">Members:</span>
-              {project.projectMembers.map((member: { username: string }) => (
+              {project.projectMembers.map((member: { username: string; id: number }) => (
                 <span
-                  key={member.username}
+                  key={member.id}
                   className="bg-secondary text-secondary-foreground px-2 py-1 rounded-full text-xs"
                 >
                   {member.username}
                 </span>
               ))}
-              <Button variant="secondary" size="sm" className="ml-2">
-                Manage Members
-              </Button>
+              {isProjectOwner && (
+                <Button 
+                  variant="secondary" 
+                  size="sm" 
+                  className="ml-2"
+                  onClick={() => setIsManageMembersModalOpen(true)}
+                >
+                  Manage Members
+                </Button>
+              )}
             </div>
           )}
         </div>
@@ -157,6 +171,13 @@ export const ProjectPage = () => {
         onClose={() => setIsAddNewAppModalOpen(false)}
         projectId={projectId}
         onSubmit={createNewApp}
+      />
+
+      <ManageMembersModal
+        isOpen={isManageMembersModalOpen}
+        onClose={() => setIsManageMembersModalOpen(false)}
+        project={project}
+        onSuccess={refreshProject}
       />
     </div>
   );

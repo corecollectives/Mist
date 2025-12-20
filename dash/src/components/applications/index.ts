@@ -7,3 +7,4 @@ export { AppSettings } from './app-settings';
 export { ContainerControls } from './container-controls';
 export { LiveLogsViewer } from './live-logs-viewer';
 export { AppStats } from './app-stats';
+export { Volumes } from './volumes';

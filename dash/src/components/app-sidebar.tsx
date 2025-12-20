@@ -77,7 +77,7 @@ const useNavData = () => {
             isActive: location.pathname === "/users",
           },
           {
-            title: "Mist",
+            title: "System",
             url: "/settings",
             icon: Settings,
             isActive: location.pathname === "/settings",

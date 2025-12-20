@@ -10,6 +10,7 @@ import (
 	"github.com/corecollectives/mist/api/handlers/deployments"
 	"github.com/corecollectives/mist/api/handlers/github"
 	"github.com/corecollectives/mist/api/handlers/projects"
+	"github.com/corecollectives/mist/api/handlers/settings"
 	"github.com/corecollectives/mist/api/handlers/templates"
 	"github.com/corecollectives/mist/api/handlers/users"
 	"github.com/corecollectives/mist/api/middleware"
@@ -90,5 +91,8 @@ func RegisterRoutes(mux *http.ServeMux) {
 	mux.Handle("GET /api/templates/get", middleware.AuthMiddleware()(http.HandlerFunc(templates.GetServiceTemplateByName)))
 	mux.Handle("GET /api/audit-logs", middleware.AuthMiddleware()(http.HandlerFunc(auditlogs.GetAllAuditLogs)))
 	mux.Handle("GET /api/audit-logs/resource", middleware.AuthMiddleware()(http.HandlerFunc(auditlogs.GetAuditLogsByResource)))
+
+	mux.Handle("GET /api/settings/system", middleware.AuthMiddleware()(http.HandlerFunc(settings.GetSystemSettings)))
+	mux.Handle("PUT /api/settings/system", middleware.AuthMiddleware()(http.HandlerFunc(settings.UpdateSystemSettings)))
 
 }

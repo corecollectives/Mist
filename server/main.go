@@ -34,5 +34,16 @@ func main() {
 
 	log.Info().Msg("Store initialized successfully")
 
+	settings, err := models.GetSystemSettings()
+	if err != nil {
+		log.Warn().Err(err).Msg("Failed to load system settings for Traefik initialization")
+	} else {
+		if err := utils.InitializeTraefikConfig(settings.WildcardDomain, settings.MistAppName); err != nil {
+			log.Warn().Err(err).Msg("Failed to initialize Traefik configuration")
+		} else {
+			log.Info().Msg("Traefik configuration initialized successfully")
+		}
+	}
+
 	api.InitApiServer()
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/rs/zerolog/log"
 )
@@ -27,70 +28,68 @@ func GenerateDynamicConfig(wildcardDomain *string, mistAppName string) error {
 		return fmt.Errorf("failed to write dynamic config: %w", err)
 	}
 
-	log.Info().Str("path", dynamicConfigPath).Msg("Generated Traefik dynamic config")
+	log.Info().
+		Str("path", dynamicConfigPath).
+		Msg("Generated Traefik dynamic config")
+
 	return nil
 }
 
 func generateDynamicYAML(wildcardDomain *string, mistAppName string) string {
-	config := `http:
-  routers:`
+	var b strings.Builder
 
+	b.WriteString(`http:
+  routers:
+`)
+
+	var mistDomain string
 	if wildcardDomain != nil && *wildcardDomain != "" {
-		domain := *wildcardDomain
+		domain := strings.TrimPrefix(*wildcardDomain, "*")
+		domain = strings.TrimPrefix(domain, ".")
 
-		if len(domain) > 0 && domain[0] == '*' {
-			domain = domain[1:]
-		}
-		if len(domain) > 0 && domain[0] == '.' {
-			domain = domain[1:]
-		}
+		mistDomain = mistAppName + "." + domain
 
-		mistDomain := mistAppName + "." + domain
-
-		config += fmt.Sprintf(`
+		b.WriteString(fmt.Sprintf(`
     mist-dashboard:
-      rule: "Host(%s%s%s)"
+      rule: "Host(`+"`%s`"+`)"
       entryPoints:
         - websecure
       service: mist-dashboard
       tls:
         certResolver: le
-`, "`", mistDomain, "`")
 
-		config += fmt.Sprintf(`
     mist-dashboard-http:
-      rule: "Host(%s%s%s)"
+      rule: "Host(`+"`%s`"+`)"
       entryPoints:
         - web
       middlewares:
         - https-redirect
       service: mist-dashboard
-`, "`", mistDomain, "`")
+`, mistDomain, mistDomain))
 	}
 
-	config += `
+	b.WriteString(`
+  services:
+`)
 
-  services:`
-
-	if wildcardDomain != nil && *wildcardDomain != "" {
-		config += `
+	if mistDomain != "" {
+		b.WriteString(`
     mist-dashboard:
       loadBalancer:
         servers:
-    			- url: "http://172.17.0.1:8080"
-`
+          - url: "http://172.17.0.1:8080"
+`)
 	}
 
-	config += `
-
+	b.WriteString(`
   middlewares:
     https-redirect:
       redirectScheme:
         scheme: https
         permanent: true
-`
+`)
 
-	return config
+	return b.String()
 }
 
 func InitializeTraefikConfig(wildcardDomain *string, mistAppName string) error {

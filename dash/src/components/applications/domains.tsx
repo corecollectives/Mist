@@ -15,9 +15,9 @@ interface DomainsProps {
 }
 
 export const Domains = ({ appId }: DomainsProps) => {
-  const { domains, loading, createDomain, updateDomain, deleteDomain } = useDomains({ 
-    appId, 
-    autoFetch: true 
+  const { domains, loading, createDomain, updateDomain, deleteDomain } = useDomains({
+    appId,
+    autoFetch: true
   });
 
   const [newDomain, setNewDomain] = useState("");
@@ -239,11 +239,10 @@ export const Domains = ({ appId }: DomainsProps) => {
                     </div>
                     {expandedDomain === domain.id && (
                       <div className="px-4 pb-4">
-                        <DNSValidation 
-                          domain={domain} 
+                        <DNSValidation
+                          domain={domain}
                           onVerified={() => {
-                            // Refresh domains list to show updated status
-                            window.location.reload();
+                            // window.location.reload();
                           }}
                         />
                       </div>

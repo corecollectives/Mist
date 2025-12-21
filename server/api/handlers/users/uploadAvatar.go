@@ -13,12 +13,13 @@ import (
 	"github.com/corecollectives/mist/constants"
 	"github.com/corecollectives/mist/models"
 	"github.com/corecollectives/mist/utils"
+	"github.com/rs/zerolog/log"
 )
 
 func init() {
 	avatarDir := constants.Constants["AvatarDirPath"].(string)
 	if err := os.MkdirAll(avatarDir, 0755); err != nil {
-		fmt.Printf("Warning: Failed to create avatar directory: %v\n", err)
+		log.Warn().Err(err).Str("path", avatarDir).Msg("Failed to create avatar directory")
 	}
 }
 
@@ -138,7 +139,7 @@ func DeleteAvatar(w http.ResponseWriter, r *http.Request) {
 		filePath := filepath.Join(avatarDir, filename)
 		if _, err := os.Stat(filePath); err == nil {
 			if err := os.Remove(filePath); err != nil {
-				fmt.Printf("Warning: Failed to delete avatar file: %v\n", err)
+				log.Warn().Err(err).Str("file", filePath).Msg("Failed to delete avatar file")
 			}
 		}
 	}

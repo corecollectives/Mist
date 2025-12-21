@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/corecollectives/mist/models"
+	"github.com/rs/zerolog/log"
 )
 
 func BuildImage(imageTag, contextPath string, envVars map[string]string, logfile *os.File) error {
@@ -20,9 +21,8 @@ func BuildImage(imageTag, contextPath string, envVars map[string]string, logfile
 
 	buildArgs = append(buildArgs, contextPath)
 
-	fmt.Println(buildArgs)
+	log.Debug().Strs("build_args", buildArgs).Str("image_tag", imageTag).Msg("Building Docker image")
 
-	// Create context with 15-minute timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	defer cancel()
 
@@ -49,7 +49,6 @@ func StopRemoveContainer(containerName string, logfile *os.File) error {
 		return nil
 	}
 
-	// Create context with 2-minute timeout for container stop
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 

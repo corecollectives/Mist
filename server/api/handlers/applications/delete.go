@@ -15,6 +15,7 @@ import (
 	"github.com/corecollectives/mist/constants"
 	"github.com/corecollectives/mist/docker"
 	"github.com/corecollectives/mist/models"
+	"github.com/rs/zerolog/log"
 )
 
 func DeleteApplication(w http.ResponseWriter, r *http.Request) {
@@ -65,12 +66,12 @@ func DeleteApplication(w http.ResponseWriter, r *http.Request) {
 
 		stopCmd := exec.CommandContext(ctx, "docker", "stop", containerName)
 		if err := stopCmd.Run(); err != nil {
-			fmt.Printf("Warning: Failed to stop container %s: %v\n", containerName, err)
+			log.Warn().Err(err).Str("container", containerName).Msg("Failed to stop container during app deletion")
 		}
 
 		removeCmd := exec.CommandContext(ctx, "docker", "rm", containerName)
 		if err := removeCmd.Run(); err != nil {
-			fmt.Printf("Warning: Failed to remove container %s: %v\n", containerName, err)
+			log.Warn().Err(err).Str("container", containerName).Msg("Failed to remove container during app deletion")
 		}
 	}
 
@@ -83,14 +84,14 @@ func DeleteApplication(w http.ResponseWriter, r *http.Request) {
 	if err == nil && len(output) > 0 {
 		rmiCmd := exec.CommandContext(ctx, "sh", "-c", fmt.Sprintf("docker images -q --filter 'reference=%s*' | xargs -r docker rmi -f", imagePattern))
 		if err := rmiCmd.Run(); err != nil {
-			fmt.Printf("Warning: Failed to remove images for app %d: %v\n", app.ID, err)
+			log.Warn().Err(err).Int64("app_id", app.ID).Msg("Failed to remove Docker images during app deletion")
 		}
 	}
 
 	appPath := fmt.Sprintf("/var/lib/mist/projects/%d/apps/%s", app.ProjectID, app.Name)
 	if _, err := os.Stat(appPath); err == nil {
 		if err := os.RemoveAll(appPath); err != nil {
-			fmt.Printf("Warning: Failed to remove app directory %s: %v\n", appPath, err)
+			log.Warn().Err(err).Str("path", appPath).Msg("Failed to remove app directory during deletion")
 		}
 	}
 
@@ -100,7 +101,7 @@ func DeleteApplication(w http.ResponseWriter, r *http.Request) {
 	if err == nil {
 		for _, match := range matches {
 			if err := os.Remove(match); err != nil {
-				fmt.Printf("Warning: Failed to remove log file %s: %v\n", match, err)
+				log.Warn().Err(err).Str("log_file", match).Msg("Failed to remove log file during app deletion")
 			}
 		}
 	}

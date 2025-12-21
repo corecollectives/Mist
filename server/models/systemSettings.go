@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"encoding/base64"
 	"fmt"
+
+	"github.com/rs/zerolog/log"
 )
 
 type SystemSettings struct {
@@ -82,7 +84,7 @@ func GetSystemSettings() (*SystemSettings, error) {
 		if err := SetSystemSetting("jwt_secret", jwtSecret); err != nil {
 			return nil, fmt.Errorf("failed to save JWT secret: %w", err)
 		}
-		fmt.Println("INFO: Auto-generated JWT secret and saved to database")
+		log.Info().Msg("Auto-generated JWT secret and saved to database")
 	}
 	settings.JwtSecret = jwtSecret
 

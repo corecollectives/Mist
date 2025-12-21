@@ -1,8 +1,6 @@
 package api
 
 import (
-	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -10,6 +8,7 @@ import (
 
 	"github.com/corecollectives/mist/api/middleware"
 	"github.com/corecollectives/mist/websockets"
+	"github.com/rs/zerolog/log"
 )
 
 func InitApiServer() {
@@ -34,6 +33,8 @@ func InitApiServer() {
 		Handler:           handler,
 		ReadHeaderTimeout: 5 * time.Second,
 	}
-	fmt.Println("Server is running on port 8080")
-	log.Fatal(server.ListenAndServe())
+	log.Info().Msg("Server is running on port 8080")
+	if err := server.ListenAndServe(); err != nil {
+		log.Fatal().Err(err).Msg("Server failed to start")
+	}
 }

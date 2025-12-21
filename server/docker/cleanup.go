@@ -7,6 +7,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/rs/zerolog/log"
 )
 
 func CleanupOldImages(appID int64, keepCount int) error {
@@ -71,7 +73,7 @@ func CleanupOldImages(appID int64, keepCount int) error {
 			rmiCtx, rmiCancel := context.WithTimeout(context.Background(), 1*time.Minute)
 			rmiCmd := exec.CommandContext(rmiCtx, "docker", "rmi", "-f", img.name)
 			if err := rmiCmd.Run(); err != nil {
-				fmt.Printf("Warning: Failed to remove image %s: %v\n", img.name, err)
+				log.Warn().Err(err).Str("image", img.name).Msg("Failed to remove old image")
 			}
 			rmiCancel()
 		}

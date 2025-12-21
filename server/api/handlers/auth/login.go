@@ -3,13 +3,13 @@ package auth
 import (
 	"database/sql"
 	"encoding/json"
-	"log"
 	"net/http"
 	"strings"
 
 	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/api/middleware"
 	"github.com/corecollectives/mist/models"
+	"github.com/rs/zerolog/log"
 )
 
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
@@ -32,7 +32,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		handlers.SendResponse(w, http.StatusUnauthorized, false, nil, "Invalid email or password", "Unauthorized")
 		return
 	} else if err != nil {
-		log.Printf("db query error: %v", err)
+		log.Error().Err(err).Str("email", cred.Email).Msg("Database error during login")
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Database error", "Internal Server Error")
 		return
 	}
@@ -44,14 +44,14 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	token, err := middleware.GenerateJWT(user.ID, user.Email, user.Role)
 	if err != nil {
-		log.Printf("Error generating token: %v", err)
+		log.Error().Err(err).Msg("Failed to generate JWT token during login")
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to generate token", "Internal Server Error")
 		return
 	}
 
 	settings, err := models.GetSystemSettings()
 	if err != nil {
-		log.Printf("Error getting system settings: %v", err)
+		log.Error().Err(err).Msg("Failed to get system settings during login")
 		settings = &models.SystemSettings{SecureCookies: false}
 	}
 

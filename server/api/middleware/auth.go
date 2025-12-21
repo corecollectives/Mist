@@ -3,13 +3,13 @@ package middleware
 import (
 	"context"
 	"errors"
-	"log"
 	"net/http"
 	"time"
 
 	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/models"
 	"github.com/golang-jwt/jwt"
+	"github.com/rs/zerolog/log"
 )
 
 var jwtSecret []byte
@@ -20,7 +20,7 @@ func InitJWTSecret() error {
 		return err
 	}
 	jwtSecret = []byte(settings.JwtSecret)
-	log.Println("INFO: JWT secret loaded from database")
+	log.Info().Msg("JWT secret loaded from database")
 	return nil
 }
 

@@ -2,7 +2,6 @@ package auth
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"strings"
 
@@ -10,6 +9,7 @@ import (
 	"github.com/corecollectives/mist/api/middleware"
 	"github.com/corecollectives/mist/models"
 	"github.com/corecollectives/mist/store"
+	"github.com/rs/zerolog/log"
 )
 
 func SignUpHandler(w http.ResponseWriter, r *http.Request) {
@@ -47,20 +47,20 @@ func SignUpHandler(w http.ResponseWriter, r *http.Request) {
 
 	err := user.SetPassword(req.Password)
 	if err != nil {
-		log.Printf("Error hashing password: %v", err)
+		log.Error().Err(err).Msg("Failed to hash password during signup")
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to process password", "Internal Server Error")
 		return
 	}
 	err = user.Create()
 	if err != nil {
-		log.Printf("Failed to create user: %v", err)
+		log.Error().Err(err).Msg("Failed to create user during signup")
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to create user", "Internal Server Error")
 		return
 	}
 
 	token, err := middleware.GenerateJWT(user.ID, user.Email, user.Role)
 	if err != nil {
-		log.Printf("Error generating token: %v", err)
+		log.Error().Err(err).Msg("Failed to generate JWT token during signup")
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to generate token", "Internal Server Error")
 		return
 	}
@@ -70,7 +70,7 @@ func SignUpHandler(w http.ResponseWriter, r *http.Request) {
 
 	settings, err := models.GetSystemSettings()
 	if err != nil {
-		log.Printf("Error getting system settings: %v", err)
+		log.Error().Err(err).Msg("Failed to get system settings during signup")
 		settings = &models.SystemSettings{SecureCookies: false}
 	}
 

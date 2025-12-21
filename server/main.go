@@ -12,9 +12,7 @@ import (
 
 func main() {
 	utils.InitLogger()
-
 	log.Info().Msg("Starting Mist server")
-
 	dbInstance, err := db.InitDB()
 	_ = queue.InitQueue(dbInstance)
 	if err != nil {
@@ -22,18 +20,14 @@ func main() {
 		return
 	}
 	defer dbInstance.Close()
-
 	log.Info().Msg("Database initialized successfully")
-
 	models.SetDB(dbInstance)
 	err = store.InitStore()
 	if err != nil {
 		log.Fatal().Err(err).Msg("Error initializing store")
 		return
 	}
-
 	log.Info().Msg("Store initialized successfully")
-
 	settings, err := models.GetSystemSettings()
 	if err != nil {
 		log.Warn().Err(err).Msg("Failed to load system settings for Traefik initialization")
@@ -44,6 +38,5 @@ func main() {
 			log.Info().Msg("Traefik configuration initialized successfully")
 		}
 	}
-
 	api.InitApiServer()
 }

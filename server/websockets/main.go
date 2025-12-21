@@ -2,12 +2,12 @@ package websockets
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/rs/zerolog/log"
 )
 
 var upgrader = websocket.Upgrader{
@@ -20,7 +20,7 @@ var mu sync.Mutex
 func StatWsHandler(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Printf("WebSocket upgrade error: %v", err)
+		log.Error().Err(err).Msg("WebSocket upgrade error for system stats")
 		return
 	}
 	mu.Lock()
@@ -52,19 +52,19 @@ func BroadcastMetrics() {
 		}
 		metrics, err := GetStats()
 		if err != nil {
-			log.Printf("Error getting metrics: %v", err)
+			log.Error().Err(err).Msg("Error getting system metrics")
 			continue
 		}
 		msg, err := json.Marshal(metrics)
 		if err != nil {
-			log.Printf("Error marshalling metrics: %v", err)
+			log.Error().Err(err).Msg("Error marshalling system metrics")
 			continue
 		}
 		mu.Lock()
 		for client := range StatClients {
 			client.SetWriteDeadline(time.Now().Add(3 * time.Second))
 			if err := client.WriteMessage(websocket.TextMessage, msg); err != nil {
-				log.Printf("Error sending message to client: %v", err)
+				log.Warn().Err(err).Msg("Error sending metrics to websocket client")
 				client.Close()
 				delete(StatClients, client)
 			}

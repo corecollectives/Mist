@@ -12,6 +12,7 @@ import (
 	"github.com/corecollectives/mist/docker"
 	"github.com/corecollectives/mist/models"
 	"github.com/gorilla/websocket"
+	"github.com/rs/zerolog/log"
 )
 
 type ContainerLogsEvent struct {
@@ -47,12 +48,12 @@ func ContainerLogsHandler(w http.ResponseWriter, r *http.Request) {
 
 	conn, err := containerLogsUpgrader.Upgrade(w, r, nil)
 	if err != nil {
-		fmt.Printf("Failed to upgrade connection: %v\n", err)
+		log.Error().Err(err).Msg("Failed to upgrade websocket connection for container logs")
 		return
 	}
 	defer conn.Close()
 
-	fmt.Printf("[ContainerLogs] Client connected for app %d (%s)\n", appID, app.Name)
+	log.Info().Int64("app_id", appID).Str("app_name", app.Name).Msg("Container logs client connected")
 
 	containerName := docker.GetContainerName(app.Name, appID)
 
@@ -164,7 +165,7 @@ func ContainerLogsHandler(w http.ResponseWriter, r *http.Request) {
 			_, _, err := conn.ReadMessage()
 			if err != nil {
 				if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway) {
-					fmt.Printf("[ContainerLogs] Client disconnected for app %d\n", appID)
+					log.Info().Int64("app_id", appID).Msg("Container logs client disconnected")
 				}
 				cancel()
 				return
@@ -175,11 +176,11 @@ func ContainerLogsHandler(w http.ResponseWriter, r *http.Request) {
 	for {
 		select {
 		case <-ctx.Done():
-			fmt.Printf("[ContainerLogs] Context cancelled for app %d\n", appID)
+			log.Debug().Int64("app_id", appID).Msg("Container logs context cancelled")
 			return
 
 		case err := <-errChan:
-			fmt.Printf("[ContainerLogs] Error for app %d: %v\n", appID, err)
+			log.Error().Err(err).Int64("app_id", appID).Msg("Container logs stream error")
 			conn.WriteJSON(ContainerLogsEvent{
 				Type:      "error",
 				Timestamp: time.Now().Format(time.RFC3339),
@@ -210,7 +211,7 @@ func ContainerLogsHandler(w http.ResponseWriter, r *http.Request) {
 			}
 
 			if err := conn.WriteJSON(event); err != nil {
-				fmt.Printf("[ContainerLogs] Failed to send message: %v\n", err)
+				log.Warn().Err(err).Int64("app_id", appID).Msg("Failed to send container log message to client")
 				return
 			}
 		}

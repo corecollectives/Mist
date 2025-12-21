@@ -9,10 +9,11 @@ import (
 	"time"
 
 	"github.com/corecollectives/mist/models"
+	"github.com/rs/zerolog/log"
 )
 
 func CloneRepo(appId int64, logFile *os.File) error {
-	println("Cloning repository for app ID:", appId)
+	log.Info().Int64("app_id", appId).Msg("Starting repository clone")
 
 	repo, branch, projectId, name, err := models.GetAppRepoInfo(appId)
 	if err != nil {
@@ -39,7 +40,7 @@ func CloneRepo(appId int64, logFile *os.File) error {
 	path := fmt.Sprintf("/var/lib/mist/projects/%d/apps/%s", projectId, name)
 
 	if _, err := os.Stat(path + "/.git"); err == nil {
-		fmt.Println("Repository exists -> removing directory...")
+		log.Info().Str("path", path).Msg("Repository already exists, removing directory")
 
 		if err := os.RemoveAll(path); err != nil {
 			return fmt.Errorf("failed to remove existing repository: %w", err)
@@ -51,7 +52,7 @@ func CloneRepo(appId int64, logFile *os.File) error {
 		return fmt.Errorf("failed to create directory: %w", err)
 	}
 
-	fmt.Println("Cloning repository...")
+	log.Info().Str("repo", repo).Str("branch", branch).Str("path", path).Msg("Cloning repository")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
@@ -64,7 +65,6 @@ func CloneRepo(appId int64, logFile *os.File) error {
 			fmt.Fprintf(logFile, "[GITHUB] %s\n", line)
 		}
 	}
-	fmt.Println(string(output))
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
 			return fmt.Errorf("git clone timed out after 10 minutes")
@@ -72,6 +72,6 @@ func CloneRepo(appId int64, logFile *os.File) error {
 		return fmt.Errorf("error cloning repository: %v\n%s", err, string(output))
 	}
 
-	println("Repository cloned successfully to", appId)
+	log.Info().Int64("app_id", appId).Str("path", path).Msg("Repository cloned successfully")
 	return nil
 }

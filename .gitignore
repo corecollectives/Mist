@@ -1,5 +1,4 @@
 tmp/
-static
 dist/
 node_modules/
 .env

@@ -5,6 +5,9 @@ import path from 'path'
 
 // https://vite.dev/config/
 export default defineConfig({
+  build: {
+    outDir: "../server/statis/"
+  },
   plugins: [
     react({
       babel: {

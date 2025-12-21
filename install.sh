@@ -12,7 +12,6 @@ BRANCH="release"
 APP_NAME="mist"
 INSTALL_DIR="/opt/mist"
 GO_BACKEND_DIR="server"
-VITE_FRONTEND_DIR="dash"
 GO_BINARY_NAME="mist"
 PORT=8080
 MIST_FILE="/var/lib/mist/mist.db"
@@ -103,13 +102,6 @@ if ! command -v go >/dev/null; then
     export PATH="$PATH:/usr/local/go/bin"
 fi
 
-if ! command -v bun >/dev/null; then
-    run_step "Installing Bun" "curl -fsSL https://bun.sh/install | bash"
-    grep -q '.bun/bin' "$REAL_HOME/.bashrc" || \
-        echo 'export PATH=$HOME/.bun/bin:$PATH' >>"$REAL_HOME/.bashrc"
-    export PATH="$HOME/.bun/bin:$PATH"
-fi
-
 if [ -d "$INSTALL_DIR/.git" ]; then
     run_step "Updating Mist ($BRANCH)" "
         cd '$INSTALL_DIR' &&
@@ -140,17 +132,7 @@ run_step "Starting Traefik" "
     docker compose -f '$INSTALL_DIR/traefik-compose.yml' up -d
 "
 
-run_step "Building frontend" "
-    cd '$INSTALL_DIR/$VITE_FRONTEND_DIR' &&
-    bun install &&
-    bun run build
-"
-
-run_step "Preparing static assets" "
-    mkdir -p '$INSTALL_DIR/$GO_BACKEND_DIR/static' &&
-    rm -rf '$INSTALL_DIR/$GO_BACKEND_DIR/static/'* 2>/dev/null || true &&
-    cp -r '$INSTALL_DIR/$VITE_FRONTEND_DIR/dist/'* '$INSTALL_DIR/$GO_BACKEND_DIR/static/'
-"
+[ -d "$INSTALL_DIR/$GO_BACKEND_DIR/static" ] || exit 1
 
 run_step "Building backend" "
     cd '$INSTALL_DIR/$GO_BACKEND_DIR' &&

@@ -23,9 +23,7 @@ type ContainerLogsEvent struct {
 var containerLogsUpgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
-	CheckOrigin: func(r *http.Request) bool {
-		return upgrader.CheckOrigin(r)
-	},
+	CheckOrigin:     CheckOriginWithSettings,
 }
 
 func ContainerLogsHandler(w http.ResponseWriter, r *http.Request) {

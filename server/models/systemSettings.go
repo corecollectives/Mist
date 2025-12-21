@@ -96,9 +96,8 @@ func GetSystemSettings() (*SystemSettings, error) {
 	if err != nil {
 		return nil, err
 	}
-	if allowedOrigins == "" {
-		allowedOrigins = "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173,http://127.0.0.1:3000"
-	}
+	// Default to empty string - same-origin requests are always allowed
+	// Users only need to configure this for cross-origin requests
 	settings.AllowedOrigins = allowedOrigins
 
 	prodMode, err := GetSystemSetting("production_mode")

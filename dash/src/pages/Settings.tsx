@@ -353,7 +353,7 @@ export const SettingsPage = () => {
                         disabled={isUpdatingSecuritySettings}
                       />
                       <p className="text-sm text-muted-foreground">
-                        Comma-separated list of allowed origins for WebSocket connections. Leave empty to allow all origins in development mode.
+                        Comma-separated list of allowed origins for cross-origin WebSocket connections. Same-origin requests are always allowed.
                       </p>
                       <div className="mt-3 p-3 bg-muted rounded-md">
                         <p className="text-sm font-medium mb-2">Examples:</p>
@@ -361,6 +361,9 @@ export const SettingsPage = () => {
                           <li><code className="bg-background px-1 py-0.5 rounded">https://mist.exam.ple</code></li>
                           <li><code className="bg-background px-1 py-0.5 rounded">https://mist.exam.ple,https://app.exam.ple</code></li>
                         </ul>
+                        <p className="text-sm text-muted-foreground mt-2">
+                          <strong>Note:</strong> Same-origin requests are always allowed automatically. Only add origins here if you need to allow cross-origin WebSocket connections.
+                        </p>
                       </div>
                     </div>
 

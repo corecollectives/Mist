@@ -13,6 +13,10 @@ import (
 )
 
 // to prevent concurrent deployments of same app
+// two deployments of same app shouldn't be happening at the same time to prevent race conditions
+// currently its impossible, bcz we only support one deployment at a time,
+// but future plans include configuratble concurrent deployments
+// then this will be helpful
 var deploymentLocks sync.Map
 
 func (q *Queue) HandleWork(id int64, db *sql.DB) {
@@ -35,6 +39,7 @@ func (q *Queue) HandleWork(id int64, db *sql.DB) {
 		models.UpdateDeploymentStatus(id, "failed", "failed", 0, &errMsg)
 		return
 	}
+	// make sure to release the lock, once deployment is complete, else we'll not be able to deploy that app again
 	defer deploymentLocks.Delete(appId)
 
 	app, err := models.GetApplicationByID(appId)

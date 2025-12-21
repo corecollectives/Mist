@@ -2,7 +2,6 @@ package settings
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/corecollectives/mist/api/handlers"
@@ -68,8 +67,6 @@ func UpdateSystemSettings(w http.ResponseWriter, r *http.Request) {
 		handlers.SendResponse(w, http.StatusBadRequest, false, nil, "Invalid request body", "Could not parse JSON")
 		return
 	}
-
-	fmt.Println(req)
 
 	settings, err := models.GetSystemSettings()
 	if err != nil {

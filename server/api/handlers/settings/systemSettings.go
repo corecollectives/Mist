@@ -2,6 +2,7 @@ package settings
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/corecollectives/mist/api/handlers"
@@ -55,7 +56,7 @@ func UpdateSystemSettings(w http.ResponseWriter, r *http.Request) {
 
 	var req struct {
 		WildcardDomain        *string `json:"wildcardDomain"`
-		MistAppName           string  `json:"mistAppName"`
+		MistAppName           *string `json:"mistAppName"`
 		AllowedOrigins        *string `json:"allowedOrigins"`
 		ProductionMode        *bool   `json:"productionMode"`
 		SecureCookies         *bool   `json:"secureCookies"`
@@ -68,19 +69,38 @@ func UpdateSystemSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.MistAppName == "" {
-		handlers.SendResponse(w, http.StatusBadRequest, false, nil, "Mist app name is required", "Missing fields")
-		return
-	}
+	fmt.Println(req)
 
-	if req.WildcardDomain != nil && *req.WildcardDomain == "" {
-		req.WildcardDomain = nil
-	}
-
-	settings, err := models.UpdateSystemSettings(req.WildcardDomain, req.MistAppName)
+	settings, err := models.GetSystemSettings()
 	if err != nil {
-		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to update system settings", err.Error())
+		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to retrieve current settings", err.Error())
 		return
+	}
+
+	if req.WildcardDomain != nil || req.MistAppName != nil {
+		wildcardDomain := settings.WildcardDomain
+		if req.WildcardDomain != nil {
+			if *req.WildcardDomain == "" {
+				wildcardDomain = nil
+			} else {
+				wildcardDomain = req.WildcardDomain
+			}
+		}
+
+		mistAppName := settings.MistAppName
+		if req.MistAppName != nil {
+			if *req.MistAppName == "" {
+				handlers.SendResponse(w, http.StatusBadRequest, false, nil, "Mist app name cannot be empty", "Invalid value")
+				return
+			}
+			mistAppName = *req.MistAppName
+		}
+
+		settings, err = models.UpdateSystemSettings(wildcardDomain, mistAppName)
+		if err != nil {
+			handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to update system settings", err.Error())
+			return
+		}
 	}
 
 	if req.AllowedOrigins != nil || req.ProductionMode != nil || req.SecureCookies != nil {
@@ -152,9 +172,12 @@ func UpdateSystemSettings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	dummyID := int64(1)
-	auditData := map[string]any{
-		"wildcardDomain": req.WildcardDomain,
-		"mistAppName":    req.MistAppName,
+	auditData := map[string]any{}
+	if req.WildcardDomain != nil {
+		auditData["wildcardDomain"] = *req.WildcardDomain
+	}
+	if req.MistAppName != nil {
+		auditData["mistAppName"] = *req.MistAppName
 	}
 	if req.AllowedOrigins != nil {
 		auditData["allowedOrigins"] = *req.AllowedOrigins

@@ -17,27 +17,23 @@ export const SettingsPage = () => {
   const navigate = useNavigate();
   const [isUpdatingSystemSettings, setIsUpdatingSystemSettings] = useState(false);
 
-  // System settings state
   const [wildcardDomain, setWildcardDomain] = useState('');
   const [mistAppName, setMistAppName] = useState('mist');
   const [systemSettingsError, setSystemSettingsError] = useState('');
   const [isLoadingSystemSettings, setIsLoadingSystemSettings] = useState(true);
 
-  // Security settings state
   const [allowedOrigins, setAllowedOrigins] = useState('');
   const [productionMode, setProductionMode] = useState(false);
   const [secureCookies, setSecureCookies] = useState(false);
   const [isUpdatingSecuritySettings, setIsUpdatingSecuritySettings] = useState(false);
   const [securitySettingsError, setSecuritySettingsError] = useState('');
 
-  // Docker settings state
   const [autoCleanupContainers, setAutoCleanupContainers] = useState(false);
   const [autoCleanupImages, setAutoCleanupImages] = useState(false);
   const [isUpdatingDockerSettings, setIsUpdatingDockerSettings] = useState(false);
   const [dockerSettingsError, setDockerSettingsError] = useState('');
   const [isCleaningDocker, setIsCleaningDocker] = useState<string | null>(null);
 
-  // Check if user is owner
   useEffect(() => {
     if (!user) {
       navigate('/');
@@ -283,7 +279,7 @@ export const SettingsPage = () => {
                         disabled={isUpdatingSystemSettings}
                       />
                       <p className="text-sm text-muted-foreground">
-                        Subdomain name for the Mist dashboard. With wildcard domain <code className="bg-muted px-1 py-0.5 rounded">exam.ple</code> and name <code className="bg-muted px-1 py-0.5 rounded">mist</code>, 
+                        Subdomain name for the Mist dashboard. With wildcard domain <code className="bg-muted px-1 py-0.5 rounded">exam.ple</code> and name <code className="bg-muted px-1 py-0.5 rounded">mist</code>,
                         Mist will be available at <code className="bg-muted px-1 py-0.5 rounded">mist.exam.ple</code>
                       </p>
                     </div>
@@ -403,7 +399,7 @@ export const SettingsPage = () => {
                     <Alert>
                       <AlertCircle className="h-4 w-4" />
                       <AlertDescription>
-                        <strong>Important:</strong> Only enable "Secure Cookies" if your Mist instance is running behind HTTPS. 
+                        <strong>Important:</strong> Only enable "Secure Cookies" if your Mist instance is running behind HTTPS.
                         Enabling this without HTTPS will prevent users from logging in.
                       </AlertDescription>
                     </Alert>

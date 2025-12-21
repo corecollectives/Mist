@@ -42,7 +42,7 @@ jobs:
           git config user.email "github-actions@github.com"
 
           if git status --porcelain | grep .; then
-            git add server/static
+            git add server/static -f
             git commit -m "chore: build dash for release"
             git push origin release
           else

@@ -325,7 +325,7 @@ export const SettingsPage = () => {
                   Security Settings
                 </CardTitle>
                 <CardDescription>
-                  Configure security and CORS settings for WebSocket connections and cookies
+                  Configure security settings
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -342,30 +342,30 @@ export const SettingsPage = () => {
                       </Alert>
                     )}
 
-                    <div className="space-y-2">
-                      <Label htmlFor="allowedOrigins">Allowed Origins (CORS)</Label>
-                      <Input
-                        id="allowedOrigins"
-                        type="text"
-                        value={allowedOrigins}
-                        onChange={(e) => setAllowedOrigins(e.target.value)}
-                        placeholder="https://mist.exam.ple,https://app.exam.ple"
-                        disabled={isUpdatingSecuritySettings}
-                      />
-                      <p className="text-sm text-muted-foreground">
-                        Comma-separated list of allowed origins for cross-origin WebSocket connections. Same-origin requests are always allowed.
-                      </p>
-                      <div className="mt-3 p-3 bg-muted rounded-md">
-                        <p className="text-sm font-medium mb-2">Examples:</p>
-                        <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                          <li><code className="bg-background px-1 py-0.5 rounded">https://mist.exam.ple</code></li>
-                          <li><code className="bg-background px-1 py-0.5 rounded">https://mist.exam.ple,https://app.exam.ple</code></li>
-                        </ul>
-                        <p className="text-sm text-muted-foreground mt-2">
-                          <strong>Note:</strong> Same-origin requests are always allowed automatically. Only add origins here if you need to allow cross-origin WebSocket connections.
-                        </p>
-                      </div>
-                    </div>
+                    {/* <div className="space-y-2"> */}
+                    {/*   <Label htmlFor="allowedOrigins">Allowed Origins (CORS)</Label> */}
+                    {/*   <Input */}
+                    {/*     id="allowedOrigins" */}
+                    {/*     type="text" */}
+                    {/*     value={allowedOrigins} */}
+                    {/*     onChange={(e) => setAllowedOrigins(e.target.value)} */}
+                    {/*     placeholder="https://mist.exam.ple,https://app.exam.ple" */}
+                    {/*     disabled={isUpdatingSecuritySettings} */}
+                    {/*   /> */}
+                    {/*   <p className="text-sm text-muted-foreground"> */}
+                    {/*     Comma-separated list of allowed origins for cross-origin WebSocket connections. Same-origin requests are always allowed. */}
+                    {/*   </p> */}
+                    {/*   <div className="mt-3 p-3 bg-muted rounded-md"> */}
+                    {/*     <p className="text-sm font-medium mb-2">Examples:</p> */}
+                    {/*     <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside"> */}
+                    {/*       <li><code className="bg-background px-1 py-0.5 rounded">https://mist.exam.ple</code></li> */}
+                    {/*       <li><code className="bg-background px-1 py-0.5 rounded">https://mist.exam.ple,https://app.exam.ple</code></li> */}
+                    {/*     </ul> */}
+                    {/*     <p className="text-sm text-muted-foreground mt-2"> */}
+                    {/*       <strong>Note:</strong> Same-origin requests are always allowed automatically. Only add origins here if you need to allow cross-origin WebSocket connections. */}
+                    {/*     </p> */}
+                    {/*   </div> */}
+                    {/* </div> */}
 
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">

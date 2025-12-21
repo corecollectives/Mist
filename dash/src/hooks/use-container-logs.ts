@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { toast } from 'sonner';
 
 interface ContainerLogEvent {
   type: 'log' | 'status' | 'error' | 'end';
@@ -34,8 +35,9 @@ export const useContainerLogs = ({
   const reconnectAttemptsRef = useRef(0);
   const onErrorRef = useRef(onError);
   const intentionalCloseRef = useRef(false);
+  const connectionOpenedRef = useRef(false);
+  const hasShownCorsErrorRef = useRef(false);
 
-  // Keep onError ref up to date without triggering reconnects
   useEffect(() => {
     onErrorRef.current = onError;
   }, [onError]);
@@ -43,7 +45,6 @@ export const useContainerLogs = ({
   const connectWebSocket = useCallback(() => {
     if (!enabled) return;
 
-    // Prevent duplicate connections
     if (wsRef.current && (wsRef.current.readyState === WebSocket.OPEN || wsRef.current.readyState === WebSocket.CONNECTING)) {
       return;
     }
@@ -53,12 +54,15 @@ export const useContainerLogs = ({
       const host = window.location.host;
       const ws = new WebSocket(`${protocol}//${host}/api/ws/container/logs?appId=${appId}`);
       wsRef.current = ws;
+      connectionOpenedRef.current = false;
 
       ws.onopen = () => {
+        connectionOpenedRef.current = true;
         setIsConnected(true);
         setError(null);
         setIsLoading(false);
         reconnectAttemptsRef.current = 0;
+        hasShownCorsErrorRef.current = false;
       };
 
       ws.onmessage = (event) => {
@@ -104,15 +108,25 @@ export const useContainerLogs = ({
 
       ws.onerror = (event) => {
         console.error('[ContainerLogs] WebSocket error:', event);
-        setError('Connection error occurred');
         setIsConnected(false);
       };
 
-      ws.onclose = () => {
+      ws.onclose = (event) => {
+        console.log('[ContainerLogs] WebSocket closed - Code:', event.code, 'Opened:', connectionOpenedRef.current);
         setIsConnected(false);
         wsRef.current = null;
 
-        // Only reconnect if this wasn't an intentional close
+        if (event.code === 1006 && !connectionOpenedRef.current && !hasShownCorsErrorRef.current && reconnectAttemptsRef.current === 0) {
+          hasShownCorsErrorRef.current = true;
+          toast.error('WebSocket Connection Failed', {
+            description: 'CORS error: The server may not allow connections from this origin. Check your allowed origins in system settings.',
+            duration: 10000,
+          });
+          setError('WebSocket connection blocked by CORS policy\n Check allowed origins in system settings');
+          setIsLoading(false);
+          return;
+        }
+
         if (!intentionalCloseRef.current && enabled && reconnectAttemptsRef.current < 5) {
           const delay = Math.min(1000 * Math.pow(2, reconnectAttemptsRef.current), 10000);
           reconnectAttemptsRef.current++;
@@ -124,7 +138,7 @@ export const useContainerLogs = ({
           setError('Failed to connect after multiple attempts');
           setIsLoading(false);
         }
-        
+
         // Reset the flag
         intentionalCloseRef.current = false;
       };
@@ -152,10 +166,10 @@ export const useContainerLogs = ({
     }
 
     // Only connect if not already connected or connecting
-    const shouldConnect = !wsRef.current || 
-      wsRef.current.readyState === WebSocket.CLOSED || 
+    const shouldConnect = !wsRef.current ||
+      wsRef.current.readyState === WebSocket.CLOSED ||
       wsRef.current.readyState === WebSocket.CLOSING;
-    
+
     if (shouldConnect) {
       connectWebSocket();
     }

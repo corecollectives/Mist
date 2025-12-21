@@ -6,7 +6,7 @@ import path from 'path'
 // https://vite.dev/config/
 export default defineConfig({
   build: {
-    outDir: "../server/statis/"
+    outDir: "../server/static/"
   },
   plugins: [
     react({

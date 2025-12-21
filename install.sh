@@ -1,23 +1,80 @@
 #!/bin/bash
-set -e
+set -Eeuo pipefail
+
+LOG_FILE="/tmp/mist-install.log"
+: > "$LOG_FILE"
+
+REAL_USER="${SUDO_USER:-$USER}"
+REAL_HOME="$(getent passwd "$REAL_USER" | cut -d: -f6)"
 
 REPO="https://github.com/corecollectives/mist"
-BRANCH="main"
+BRANCH="release"
 APP_NAME="mist"
 INSTALL_DIR="/opt/mist"
 GO_BACKEND_DIR="server"
-VITE_FRONTEND_DIR="dash"
 GO_BINARY_NAME="mist"
 PORT=8080
 MIST_FILE="/var/lib/mist/mist.db"
 SERVICE_FILE="/etc/systemd/system/$APP_NAME.service"
 
-# Prompt for Let's Encrypt email
-echo "📧 Let's Encrypt Configuration"
-read -p "Enter your email for Let's Encrypt certificates (default: admin@example.com): " LETSENCRYPT_EMAIL
-LETSENCRYPT_EMAIL=${LETSENCRYPT_EMAIL:-admin@example.com}
+SPINNER_PID=""
+SUDO_KEEPALIVE_PID=""
 
-echo "🔍 Detecting package manager..."
+spinner() {
+    local i=0
+    local chars='|/-\'
+    while :; do
+        i=$(( (i + 1) % 4 ))
+        printf "\r⏳ %c" "${chars:$i:1}"
+        sleep 0.1
+    done
+}
+
+run_step() {
+    local msg="$1"
+    local cmd="$2"
+
+    printf "\n▶ %s\n" "$msg"
+    spinner &
+    SPINNER_PID=$!
+
+    bash -c "$cmd" >>"$LOG_FILE" 2>&1 || true
+
+    kill "$SPINNER_PID" >/dev/null 2>&1 || true
+    wait "$SPINNER_PID" 2>/dev/null || true
+    printf "\r\033[K✔ Done\n"
+}
+
+cleanup() {
+    kill "$SPINNER_PID" >/dev/null 2>&1 || true
+    kill "$SUDO_KEEPALIVE_PID" >/dev/null 2>&1 || true
+}
+trap cleanup EXIT
+
+fail() {
+    cleanup
+    echo
+    tail -20 "$LOG_FILE"
+    echo "❌ Installation failed"
+    exit 1
+}
+trap fail ERR
+
+echo "📧 Let's Encrypt configuration"
+read -rp "Email (default: admin@example.com): " LETSENCRYPT_EMAIL
+LETSENCRYPT_EMAIL="${LETSENCRYPT_EMAIL:-admin@example.com}"
+
+echo "🔐 Verifying sudo access..."
+sudo -v
+
+(
+    while true; do
+        sleep 60
+        sudo -n true || exit
+    done
+) 2>/dev/null &
+SUDO_KEEPALIVE_PID=$!
+
 if command -v apt >/dev/null; then
     PKG_INSTALL="sudo apt update && sudo apt install -y git curl build-essential wget unzip"
 elif command -v dnf >/dev/null; then
@@ -27,157 +84,117 @@ elif command -v yum >/dev/null; then
 elif command -v pacman >/dev/null; then
     PKG_INSTALL="sudo pacman -Sy --noconfirm git curl base-devel wget unzip"
 else
-    echo "❌ Unsupported Linux distro. Please install git, curl, and build tools manually."
     exit 1
 fi
 
-echo "📦 Installing dependencies..."
-eval $PKG_INSTALL
+run_step "Installing system dependencies" "$PKG_INSTALL"
 
-# -------------------------------
-# Install Go
-# -------------------------------
-if ! command -v go &>/dev/null; then
-    echo "🐹 Installing Go..."
-    GO_URL="https://go.dev/dl/go1.22.11.linux-amd64.tar.gz"
-    wget -q $GO_URL -O /tmp/go.tar.gz
-    sudo rm -rf /usr/local/go
-    sudo tar -C /usr/local -xzf /tmp/go.tar.gz
-    export PATH=$PATH:/usr/local/go/bin
-    echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
+command -v docker >/dev/null || exit 1
+
+if ! command -v go >/dev/null; then
+    run_step "Installing Go" "
+        wget -q https://go.dev/dl/go1.22.11.linux-amd64.tar.gz -O /tmp/go.tar.gz &&
+        sudo rm -rf /usr/local/go &&
+        sudo tar -C /usr/local -xzf /tmp/go.tar.gz
+    "
+    grep -q '/usr/local/go/bin' "$REAL_HOME/.bashrc" || \
+        echo 'export PATH=$PATH:/usr/local/go/bin' >>"$REAL_HOME/.bashrc"
+    export PATH="$PATH:/usr/local/go/bin"
 fi
 
-# -------------------------------
-# Install Bun
-# -------------------------------
-if ! command -v bun &>/dev/null; then
-    echo "🥖 Installing Bun..."
-    curl -fsSL https://bun.sh/install | bash
-    export PATH=$HOME/.bun/bin:$PATH
-    echo 'export PATH=$HOME/.bun/bin:$PATH' >> ~/.bashrc
-fi
-
-# -------------------------------
-# Clone or update Mist repo
-# -------------------------------
 if [ -d "$INSTALL_DIR/.git" ]; then
-    echo "🔄 Updating existing Mist installation..."
-    cd $INSTALL_DIR
-    git fetch origin $BRANCH
-    git reset --hard origin/$BRANCH
+    run_step "Updating Mist ($BRANCH)" "
+        cd '$INSTALL_DIR' &&
+        git fetch origin '$BRANCH' &&
+        git reset --hard origin/'$BRANCH'
+    "
 else
-    echo "📥 Cloning Mist repository..."
-    sudo mkdir -p $INSTALL_DIR
-    sudo chown $USER:$USER $INSTALL_DIR
-    git clone -b $BRANCH --single-branch $REPO $INSTALL_DIR
+    run_step "Cloning Mist repository" "
+        sudo mkdir -p '$INSTALL_DIR' &&
+        sudo chown '$REAL_USER:$REAL_USER' '$INSTALL_DIR' &&
+        git clone -b '$BRANCH' --single-branch '$REPO' '$INSTALL_DIR'
+    "
 fi
 
-# ===============================
-# ✅ ADDED: Create Traefik network
-# ===============================
-echo "🌐 Ensuring traefik-net Docker network exists..."
-if ! docker network inspect traefik-net >/dev/null 2>&1; then
+run_step "Ensuring Traefik Docker network" "
+    docker network inspect traefik-net >/dev/null 2>&1 ||
     docker network create traefik-net
-fi
+"
 
-# ===============================
-# Configure Traefik static config
-# ===============================
-echo "⚙️ Configuring Traefik..."
-cd $INSTALL_DIR
-sed -i "s/email: admin@example.com/email: $LETSENCRYPT_EMAIL/" traefik-static.yml
+[ -f "$INSTALL_DIR/traefik-static.yml" ] || exit 1
 
-# ===============================
-# ✅ ADDED: Start Traefik
-# ===============================
-echo "🚦 Starting Traefik..."
-docker compose -f traefik-compose.yml up -d
+run_step "Configuring Traefik" "
+    grep -q '$LETSENCRYPT_EMAIL' '$INSTALL_DIR/traefik-static.yml' ||
+    sed -i \"s|^\\s*email:.*|  email: $LETSENCRYPT_EMAIL|\" '$INSTALL_DIR/traefik-static.yml'
+"
 
-# -------------------------------
-# Build frontend
-# -------------------------------
-echo "🧱 Building frontend..."
-cd $INSTALL_DIR/$VITE_FRONTEND_DIR
-bun install
-bun run build
-cd ..
+run_step "Starting Traefik" "
+    docker compose -f '$INSTALL_DIR/traefik-compose.yml' up -d
+"
 
-if [ ! -d "$GO_BACKEND_DIR/static" ]; then
-    mkdir -p "$GO_BACKEND_DIR/static"
-fi
-rm -rf "$INSTALL_DIR/$GO_BACKEND_DIR/static/*"
-cp -r "$VITE_FRONTEND_DIR/dist/"* "$INSTALL_DIR/$GO_BACKEND_DIR/static/"
+[ -d "$INSTALL_DIR/$GO_BACKEND_DIR/static" ] || exit 1
 
-# -------------------------------
-# Build backend
-# -------------------------------
-echo "⚙️ Building backend..."
-cd "$INSTALL_DIR/$GO_BACKEND_DIR"
-go mod tidy
-go build -o "$GO_BINARY_NAME"
+run_step "Building backend" "
+    cd '$INSTALL_DIR/$GO_BACKEND_DIR' &&
+    go mod tidy &&
+    go build -o '$GO_BINARY_NAME'
+"
 
-# -------------------------------
-# Setup database file
-# -------------------------------
-echo "🗃️ Ensuring Mist database file exists..."
-sudo mkdir -p $(dirname $MIST_FILE)
-sudo touch $MIST_FILE
-sudo chown $USER:$USER $MIST_FILE
+run_step "Preparing data directories" "
+    sudo mkdir -p /var/lib/mist/traefik &&
+    sudo mkdir -p $(dirname "$MIST_FILE") &&
+    sudo touch '$MIST_FILE' &&
+    sudo chown -R '$REAL_USER:$REAL_USER' /var/lib/mist
+"
 
-# -------------------------------
-# Setup Traefik configuration directory
-# -------------------------------
-echo "🚦 Setting up Traefik configuration directory..."
-sudo mkdir -p /var/lib/mist/traefik
-sudo chown $USER:$USER /var/lib/mist/traefik
-
-# -------------------------------
-# Open firewall port
-# -------------------------------
-echo "🌐 Checking firewall rules..."
-if command -v ufw &>/dev/null; then
-    sudo ufw allow $PORT/tcp
-    sudo ufw reload
-elif command -v firewall-cmd &>/dev/null; then
-    sudo firewall-cmd --permanent --add-port=${PORT}/tcp
-    sudo firewall-cmd --reload
-elif command -v iptables &>/dev/null; then
-    sudo iptables -C INPUT -p tcp --dport $PORT -j ACCEPT 2>/dev/null || \
-        sudo iptables -A INPUT -p tcp --dport $PORT -j ACCEPT
-    if command -v netfilter-persistent &>/dev/null; then
-        sudo netfilter-persistent save
+run_step "Configuring firewall" "
+    if command -v ufw >/dev/null; then
+        sudo ufw allow $PORT/tcp || true
+        sudo ufw reload || true
+    elif command -v firewall-cmd >/dev/null; then
+        sudo firewall-cmd --permanent --add-port=${PORT}/tcp || true
+        sudo firewall-cmd --reload || true
     fi
-else
-    echo "⚠️ No recognized firewall found. Ensure port $PORT is open manually if needed."
-fi
+"
 
-# -------------------------------
-# Create or update systemd service
-# -------------------------------
-echo "🛠️ Creating/Updating systemd service..."
-sudo bash -c "cat > $SERVICE_FILE" <<EOL
+run_step "Installing systemd service" "
+    sudo tee '$SERVICE_FILE' >/dev/null <<EOF
 [Unit]
 Description=$APP_NAME Service
-After=network.target
+After=network.target docker.service
+Requires=docker.service
 
 [Service]
-Type=simple
 WorkingDirectory=$INSTALL_DIR/$GO_BACKEND_DIR
 ExecStart=$INSTALL_DIR/$GO_BACKEND_DIR/$GO_BINARY_NAME
 Restart=always
 RestartSec=5
-User=$USER
+User=$REAL_USER
 Environment=PORT=$PORT
 
 [Install]
 WantedBy=multi-user.target
-EOL
+EOF
+"
 
-sudo systemctl daemon-reload
-sudo systemctl enable $APP_NAME
-sudo systemctl restart $APP_NAME
+run_step "Starting $APP_NAME service" "
+    sudo systemctl daemon-reload &&
+    sudo systemctl enable '$APP_NAME' || true &&
+    sudo systemctl restart '$APP_NAME'
+"
 
-echo "✅ $APP_NAME updated and running on port $PORT!"
-echo "📍 Installation path: $INSTALL_DIR"
-echo "🧩 Service: systemctl status $APP_NAME"
-echo "🌐 Access the application at http://<your-server-ip>:$PORT"
+SERVER_IP="$(curl -fsSL https://api.ipify.org || hostname -I | awk '{print $1}')"
+URL="http://$SERVER_IP:$PORT"
+
+echo
+echo "╔════════════════════════════════════════════╗"
+echo "║ 🎉 Mist is now running                      ║"
+echo "║                                            ║"
+echo "║ 👉 Open this in your browser:               ║"
+echo "║                                            ║"
+printf "║   %-40s ║\n" "$URL"
+echo "║                                            ║"
+echo "║ (Ctrl + Click the link above if supported) ║"
+echo "╚════════════════════════════════════════════╝"
+echo
+echo "📄 Logs: $LOG_FILE"

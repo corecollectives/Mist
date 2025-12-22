@@ -117,7 +117,7 @@ const useNavData = () => {
         items: [
           {
             title: "Documentation",
-            url: "https://trymist.io/docs",
+            url: "https://trymist.cloud/docs",
             icon: Book,
             isActive: location.pathname === "/docs",
             newTab: true

@@ -47,12 +47,14 @@ const useNavData = () => {
             url: "/",
             icon: Home,
             isActive: location.pathname === "/",
+            newTab: false
           },
           {
             title: "Projects",
             url: "/projects",
             icon: FolderGit2,
             isActive: location.pathname.startsWith("/projects"),
+            newTab: false
           },
           // {
           //   title: "Deployments",
@@ -65,12 +67,14 @@ const useNavData = () => {
             url: "/audit-logs",
             icon: FileText,
             isActive: location.pathname === "/audit-logs",
+            newTab: false
           },
           {
             title: "System Logs",
             url: "/logs",
             icon: ScrollText,
             isActive: location.pathname === "/logs",
+            newTab: false
           },
 
         ],
@@ -83,24 +87,28 @@ const useNavData = () => {
             url: "/users",
             icon: Users,
             isActive: location.pathname === "/users",
+            newTab: false
           },
           {
             title: "System",
             url: "/settings",
             icon: Settings,
             isActive: location.pathname === "/settings",
+            newTab: false
           },
           {
             title: "Profile",
             url: "/profile",
             icon: User,
             isActive: location.pathname === "/profile",
+            newTab: false
           },
           {
             title: "Git",
             url: "/git",
             icon: GitBranch,
             isActive: location.pathname === "/git",
+            newTab: false
           },
         ],
       },
@@ -109,15 +117,17 @@ const useNavData = () => {
         items: [
           {
             title: "Documentation",
-            url: "/docs",
+            url: "https://trymist.io/docs",
             icon: Book,
             isActive: location.pathname === "/docs",
+            newTab: true
           },
           {
             title: "Contribute",
-            url: "/support",
+            url: "https://github.com/corecollectives/mist",
             icon: LifeBuoy,
             isActive: location.pathname === "/support",
+            newTab: true
           },
         ],
       },
@@ -150,7 +160,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                   return (
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton asChild isActive={item.isActive}>
-                        <Link to={item.url} className="flex items-center gap-2">
+                        <Link to={item.url} referrerPolicy="no-referrer" target={item.newTab ? "_blank" : "_self"} className="flex items-center gap-2">
                           <Icon className="h-4 w-4" />
                           {!isCollapsed && <span>{item.title}</span>}
                         </Link>

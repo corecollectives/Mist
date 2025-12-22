@@ -44,6 +44,14 @@ if [ -f "$MIST_FILE" ]; then
 fi
 
 # -------------------------------
+# Remove CLI tool
+# -------------------------------
+if [ -f "/usr/local/bin/mist-cli" ]; then
+    echo "🛠️ Removing CLI tool: /usr/local/bin/mist-cli"
+    sudo rm -f /usr/local/bin/mist-cli
+fi
+
+# -------------------------------
 # Firewall cleanup (optional)
 # -------------------------------
 PORT=8080
@@ -78,6 +86,7 @@ echo "Removed:"
 echo "  - Service: $SERVICE_FILE"
 echo "  - Install Dir: $INSTALL_DIR"
 echo "  - Database: $MIST_FILE"
+echo "  - CLI tool: /usr/local/bin/mist-cli"
 echo "  - Firewall rules for port $PORT"
 echo ""
 echo "You may need to run 'source ~/.bashrc' to refresh your PATH."

@@ -114,6 +114,32 @@ func GetUserByEmail(email string) (*User, error) {
 	return user, nil
 }
 
+func GetUserByUsername(username string) (*User, error) {
+	query := `
+	  SELECT id, username, email, role, avatar_url, created_at, updated_at
+	  FROM users
+	  WHERE username = $1
+	`
+	user := &User{}
+	err := db.QueryRow(query, username).Scan(
+		&user.ID, &user.Username, &user.Email, &user.Role, &user.AvatarURL, &user.CreatedAt, &user.UpdatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+func UpdateUserPassword(userID int64, passwordHash string) error {
+	query := `
+		UPDATE users
+		SET password_hash = $1, updated_at = CURRENT_TIMESTAMP
+		WHERE id = $2
+	`
+	_, err := db.Exec(query, passwordHash, userID)
+	return err
+}
+
 func GetAllUsers() ([]User, error) {
 	query := `
 		SELECT id, username, email, role, avatar_url, created_at, updated_at

@@ -171,6 +171,9 @@ Restart=always
 RestartSec=5
 User=$REAL_USER
 Environment=PORT=$PORT
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=mist
 
 [Install]
 WantedBy=multi-user.target

@@ -10,7 +10,7 @@ Mist simplifies the deployment workflow by providing:
 - **Container Management** - Docker-based isolation for applications
 - **Real-time Monitoring** - WebSocket-powered live logs and metrics
 - **Team Collaboration** - Projects with multi-user access
-- **Domain Management** - Custom domains with reverse proxy routing
+- **Domain Management** - Custom domains with automatic SSL and wildcard domain support
 
 ## Architecture
 
@@ -71,7 +71,6 @@ Mist is built with a **monolithic Go backend** and a **React + Vite frontend**, 
 **Frontend:**
 - React 18 - UI framework
 - Vite - Build tool and dev server
-- TanStack Query - Data fetching
 - Tailwind CSS - Styling
 - Shadcn/ui - Component library
 
@@ -87,9 +86,10 @@ Mist is built with a **monolithic Go backend** and a **React + Vite frontend**, 
 ### ⚡ Real-time Experience
 
 - **WebSocket-First** - Instant feedback for all operations
-- **Live Logs** - Stream container logs in real-time
+- **Live Logs** - Stream container and system logs in real-time
 - **Live Metrics** - CPU, RAM, and disk usage updated every second
 - **Deployment Status** - Watch builds progress in real-time
+- **System Monitoring** - View Mist backend logs via journalctl integration
 
 ### 🔧 Developer Friendly
 
@@ -135,8 +135,9 @@ Deploy and manage multiple microservices with custom domains and networking.
 | **Go Backend** | ✅ | ❌ (Node) | ❌ (Node) | ❌ (Node) | N/A |
 | **Single Binary** | ✅ | ❌ | ❌ | ❌ | N/A |
 | **Git Integration** | ✅ GitHub | ✅ Multiple | ✅ Multiple | ✅ Multiple | ✅ Multiple |
-| **Managed Databases** | 🚧 Coming | ✅ | ✅ | ✅ | ✅ |
-| **SSL Automation** | 🚧 Coming | ✅ | ✅ | ✅ | ✅ |
+| **Managed Databases** | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **SSL Automation** | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Auto Domain Generation** | ✅ | ❌ | ❌ | ✅ | ✅ |
 
 ## Getting Started
 

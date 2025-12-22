@@ -2,6 +2,10 @@
 
 Monitor your Mist server's resource usage in real-time.
 
+::: tip Application-Level Metrics
+Currently, Mist displays system-level metrics only. Per-application metrics (CPU, memory, network usage per container) are coming soon.
+:::
+
 ## Available Metrics
 
 ### CPU Usage

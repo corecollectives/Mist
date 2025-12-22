@@ -55,10 +55,21 @@ Managed database services using pre-configured Docker templates:
 
 ### Web/Service Configuration
 
-- **Name**: Unique identifier within project
+**Initial Creation (Required):**
+- **Name**: Unique identifier within project (lowercase, numbers, hyphens only)
 - **Description**: Optional application description
-- **Port**: Port your app listens on (default: 3000 for web)
-- **Environment Variables**: Optional key-value pairs
+- **Port**: Port your app listens on (default: 3000)
+
+**After Creation (Configure in App Settings):**
+- **Git Repository**: Connect GitHub repository
+- **Git Branch**: Select branch to deploy from
+- **Dockerfile Path**: Path to your Dockerfile (default: `./Dockerfile`)
+- **Root Directory**: Root directory for builds (default: `/`)
+- **Environment Variables**: Add key-value pairs in Environment tab
+
+::: tip Build & Start Commands Not Yet Available
+Build and start commands are coming soon. Currently, you must provide a Dockerfile for your application.
+:::
 
 ### Database Configuration
 
@@ -72,7 +83,11 @@ Managed database services using pre-configured Docker templates:
 - **Environment Variables**: Database credentials and settings
 
 ::: tip Auto-Generated Domains
-For web applications, Mist automatically generates a subdomain if wildcard DNS is configured (format: `{project-name}-{app-name}.{domain}`).
+For web applications, Mist can automatically generate a subdomain if wildcard DNS is configured in system settings. The format is `{project-name}-{app-name}.{wildcard-domain}`.
+
+Example: If wildcard domain is `example.com`, project is `production`, and app is `api`, the auto-generated domain will be `production-api.example.com`.
+
+This only applies to web applications. Service and database apps do not get auto-generated domains.
 :::
 
 ## Resource Configuration
@@ -128,16 +143,113 @@ Control container restart behavior:
 
 ## Container Configuration
 
+### Dockerfile Requirements
+
+**All web and service applications require a Dockerfile.** Mist builds your application using Docker.
+
+#### Basic Dockerfile Structure
+
+Your repository must include a Dockerfile with:
+1. **Base image** (FROM statement)
+2. **Working directory** (WORKDIR)
+3. **Dependency installation** (COPY package files, RUN install commands)
+4. **Application code** (COPY source files)
+5. **Port exposure** (EXPOSE - optional but recommended)
+6. **Start command** (CMD or ENTRYPOINT)
+
+Example for Node.js:
+```dockerfile
+FROM node:18-alpine
+WORKDIR /app
+
+# Copy dependency files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm ci --production
+
+# Copy application code
+COPY . .
+
+# Expose port (should match port in Mist config)
+EXPOSE 3000
+
+# Start command
+CMD ["node", "server.js"]
+```
+
+Example for Python:
+```dockerfile
+FROM python:3.11-slim
+WORKDIR /app
+
+# Copy requirements
+COPY requirements.txt .
+
+# Install dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application
+COPY . .
+
+# Expose port
+EXPOSE 8000
+
+# Start command
+CMD ["python", "app.py"]
+```
+
+Example for Go:
+```dockerfile
+FROM golang:1.21-alpine AS builder
+WORKDIR /app
+COPY go.* ./
+RUN go mod download
+COPY . .
+RUN go build -o main .
+
+FROM alpine:latest
+WORKDIR /app
+COPY --from=builder /app/main .
+EXPOSE 8080
+CMD ["./main"]
+```
+
+::: tip Dockerfile Path
+If your Dockerfile is not in the root directory, specify the path in the app settings (e.g., `./docker/Dockerfile` or `./backend/Dockerfile`).
+:::
+
+### Dockerfile Support
+
 ### Dockerfile Support
 
 Mist supports custom Dockerfiles in your repository:
 
 1. **Default location**: `./Dockerfile` in repository root
-2. **Custom path**: Specify via `dockerfilePath` setting
-3. **Root directory**: Set `rootDirectory` for builds in subdirectories
+2. **Custom path**: Specify via `dockerfilePath` setting (e.g., `./docker/Dockerfile.prod`)
+3. **Root directory**: Set `rootDirectory` for builds in subdirectories (e.g., `/services/api`)
+
+The build process:
+- Uses your specified Dockerfile
+- Passes all environment variables as `--build-arg`
+- Tags image with commit hash for version tracking
+- Stores build logs for debugging
 
 ```dockerfile
-# Example Dockerfile
+# Example multi-service monorepo structure
+# Repository structure:
+# /services
+#   /api
+#     Dockerfile
+#     ...
+#   /worker
+#     Dockerfile
+#     ...
+
+# For API service, set:
+# Root Directory: /services/api
+# Dockerfile Path: ./Dockerfile
+
 FROM node:18-alpine
 WORKDIR /app
 COPY package*.json ./
@@ -148,34 +260,20 @@ CMD ["node", "server.js"]
 ```
 
 ::: tip Multi-Stage Builds
-Use multi-stage Dockerfiles to keep production images small and secure.
+Use multi-stage Dockerfiles to keep production images small and secure. Copy only necessary artifacts from build stage to runtime stage.
 :::
 
 ### Health Checks
 
-Configure health checks for automatic container monitoring:
-
-- `healthcheck_enabled` - Enable/disable health checks
-- `healthcheck_path` - HTTP endpoint to check (e.g., `/health`)
-- `healthcheck_interval` - Seconds between checks
-- `healthcheck_timeout` - Seconds before timeout
-- `healthcheck_retries` - Failed attempts before marking unhealthy
-
-```javascript
-// API example
-{
-  "appId": 1,
-  "healthcheck_enabled": true,
-  "healthcheck_path": "/health",
-  "healthcheck_interval": 30,
-  "healthcheck_timeout": 5,
-  "healthcheck_retries": 3
-}
-```
-
-::: warning Health Check Endpoint Required
-Your application must implement the health check endpoint. It should return a 200 status code when healthy.
+::: warning Coming Soon
+Health checks are an upcoming feature. Container health monitoring is not yet implemented.
 :::
+
+Health checks will allow automatic container monitoring:
+- HTTP endpoint checks (e.g., `/health`)
+- Configurable check intervals and timeouts
+- Automatic restart on health check failures
+- Status tracking in dashboard
 
 ## Git Integration
 
@@ -190,19 +288,25 @@ For web and service applications:
 
 ### Configuration Settings
 
-- **Git Repository**: Full HTTPS URL (e.g., `https://github.com/user/repo`)
+After creating your application, configure Git integration in the app settings:
+
+- **Git Repository**: Repository name format `owner/repo` (e.g., `myorg/myapp`)
 - **Git Branch**: Branch name to deploy (e.g., `main`, `develop`)
-- **Root Directory**: Subdirectory for monorepos (optional)
-- **Dockerfile Path**: Custom Dockerfile location (optional)
+- **Root Directory**: Subdirectory for monorepos (optional, default: `/`)
+- **Dockerfile Path**: Path to Dockerfile (optional, default: `./Dockerfile`)
+
+::: warning Dockerfile Required
+Your repository must contain a valid Dockerfile. Build and start commands are not yet supported - all applications are deployed using Docker.
+:::
 
 ```javascript
 // API example
 {
   "appId": 1,
-  "gitRepository": "https://github.com/myorg/myapp",
+  "gitRepository": "myorg/myapp",
   "gitBranch": "main",
-  "rootDirectory": "services/api",
-  "dockerfilePath": "docker/Dockerfile.prod"
+  "rootDirectory": "/",
+  "dockerfilePath": "./Dockerfile"
 }
 ```
 
@@ -215,19 +319,58 @@ Applications can have unlimited environment variables for configuration. See the
 1. Go to **Environment Variables** tab
 2. Click **"Add Variable"** or use **"Bulk Paste"**
 3. Enter key-value pairs
-4. Variables are available immediately (restart may be needed)
+4. Variables are applied on next deployment
 
-### Build-time vs Runtime
+### Build-time & Runtime
 
-- **Build-time**: Available during Docker image build
-- **Runtime**: Available when container runs
-- **Both**: All variables are available in both phases
+All environment variables are available in both phases:
+
+- **Build-time**: Passed as `--build-arg` during Docker image build
+- **Runtime**: Passed as `-e` flags when container starts
+- **Both**: All variables are automatically available in both phases
+
+Example Dockerfile using build args:
+```dockerfile
+FROM node:18-alpine
+
+# Build arg accessible during build
+ARG NODE_ENV
+ARG API_URL
+
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --production=$NODE_ENV
+
+COPY . .
+
+# Runtime environment variables
+ENV NODE_ENV=$NODE_ENV
+ENV API_URL=$API_URL
+
+CMD ["node", "server.js"]
+```
 
 ::: warning Secrets Management
 Never commit secrets to Git. Always use environment variables for sensitive data like API keys, passwords, and tokens.
 :::
 
 ## Deployment
+
+### Deployment Process
+
+When you deploy an application, Mist follows this pipeline:
+
+**For Web/Service Apps:**
+1. **Repository Clone**: Clones your Git repository to `/var/lib/mist/projects/{projectId}/apps/{appName}`
+2. **Image Build**: Builds Docker image using your Dockerfile with environment variables as build args
+3. **Container Stop**: Gracefully stops existing container (if running)
+4. **Container Start**: Starts new container with updated configuration
+5. **Domain Routing**: Updates Traefik routes (for web apps with domains)
+
+**For Database Apps:**
+1. **Image Pull**: Pulls the specified Docker image from Docker Hub
+2. **Container Stop**: Stops existing container (if running)
+3. **Container Start**: Starts new container with template configuration
 
 ### Manual Deployment
 
@@ -237,6 +380,7 @@ Trigger deployment from dashboard:
 2. Latest commit is fetched automatically
 3. Deployment added to queue
 4. Build starts when worker is available
+5. Watch real-time progress and logs
 
 For databases, deployment uses the configured Docker image version from the template.
 
@@ -252,10 +396,10 @@ With GitHub App configured:
 
 ## Deployment Strategies
 
-Choose how new versions are deployed:
+Mist uses a rolling deployment strategy:
 
-- **`rolling`**: Stop old container, start new container (default)
-- Future: Blue-green, canary deployments
+- **Rolling** (default): Stops old container, then starts new container
+- Zero-downtime deployments coming soon
 
 ```javascript
 {
@@ -277,6 +421,37 @@ Add custom domains to web applications:
 [Learn more about domains →](./domains)
 
 ## Container Controls
+
+### Networking
+
+All containers are connected to the `traefik-net` Docker bridge network for communication:
+
+**Web Apps with Domains:**
+- Connected to `traefik-net`
+- Routed through Traefik reverse proxy
+- Automatic SSL/TLS via Let's Encrypt
+- HTTP to HTTPS redirect enabled
+- Accessible via custom domains
+
+**Web Apps without Domains:**
+- Exposed directly on host port (e.g., `-p 3000:3000`)
+- Accessible via `http://server-ip:port`
+- No SSL by default
+
+**Service Apps:**
+- Connected to `traefik-net`
+- No external port exposure
+- Accessible by other containers via container name: `app-{appId}`
+
+**Database Apps:**
+- Connected to `traefik-net`
+- Internal DNS resolution
+- Accessible by other apps via container name: `app-{appId}`
+- Example connection: `postgres://user:pass@app-123:5432/dbname`
+
+::: tip Inter-Container Communication
+Applications can communicate with each other using the container name format `app-{appId}` where `{appId}` is the application ID shown in the dashboard.
+:::
 
 ### Start/Stop/Restart
 
@@ -322,12 +497,15 @@ Track all deployments:
 
 ### Container Statistics
 
-Monitor resource usage in real-time:
+Monitor basic container information:
 
-- CPU usage percentage
-- Memory consumption
-- Network I/O
+- Container name and ID
+- Container state (running, stopped, exited)
 - Container uptime
+
+::: tip Coming Soon
+Advanced metrics including CPU usage, memory consumption, and network I/O are coming soon.
+:::
 
 ## Application Settings
 
@@ -336,7 +514,7 @@ Update application configuration:
 - **General**: Name, description
 - **Git**: Repository URL, branch, paths
 - **Resources**: CPU, memory limits
-- **Container**: Restart policy, health checks
+- **Container**: Restart policy
 - **Status**: Control running state
 
 ::: tip Audit Logging
@@ -345,35 +523,50 @@ All configuration changes are logged in the audit log with user information and 
 
 ## Rollback
 
-Rollback to a previous successful deployment:
-
-1. Go to **Deployments** tab
-2. Find successful deployment
-3. Click **"Rollback"** button
-4. Previous version is redeployed
-
-::: warning Database State
-Rolling back code doesn't rollback database migrations. Plan rollback strategies for schema changes.
+::: warning Coming Soon
+Rollback functionality is an upcoming feature. You cannot currently rollback to previous deployments.
 :::
+
+When available, you'll be able to:
+1. View deployment history
+2. Select a previous successful deployment
+3. Click "Rollback" to redeploy that version
+4. Previous Docker images will be reused (no rebuild needed)
 
 ## Service Templates
 
-Database applications use pre-configured service templates stored in the database:
+Database applications use pre-configured service templates:
 
-### Available Templates
+### How Templates Work
 
-- **PostgreSQL**: Latest PostgreSQL with recommended 1 CPU / 512MB RAM
-- **MySQL**: Latest MySQL with custom configuration
-- **Redis**: Latest Redis for caching
-- **MongoDB**: Latest MongoDB for document storage
+1. **Template Selection**: Choose from available database/service templates
+2. **Auto-Configuration**: CPU, memory, port, and environment variables set from template
+3. **Docker Image**: Pre-defined image and version from template
+4. **One-Click Deploy**: No Dockerfile or Git repository required
 
 ### Template Properties
 
-- `docker_image`: Docker image name
-- `docker_image_version`: Image tag (e.g., `latest`, `14-alpine`)
-- `default_port`: Container port
-- `recommended_cpu`: Suggested CPU limit
-- `recommended_memory`: Suggested memory limit (MB)
+Each template defines:
+- `dockerImage`: Docker Hub image name
+- `dockerImageVersion`: Image tag (e.g., `latest`, `14-alpine`)
+- `defaultPort`: Container port
+- `recommendedCpu`: Suggested CPU cores
+- `recommendedMemory`: Suggested memory in MB
+- `defaultEnvVars`: Pre-configured environment variables
+- `volumeRequired`: Whether persistent volume is needed
+
+### Available Templates
+
+Common templates include:
+- **PostgreSQL**: Full-featured relational database
+- **MySQL**: Popular open-source database
+- **Redis**: In-memory data store and cache
+- **MongoDB**: Document-oriented database
+- **MariaDB**: MySQL-compatible database
+
+::: tip Coming Soon
+Custom template creation and management by administrators is an upcoming feature. Currently, only pre-defined templates are available.
+:::
 
 ## Best Practices
 
@@ -394,9 +587,12 @@ my-app/
 ### Resource Planning
 
 - **Start small**: Begin with default limits
-- **Monitor usage**: Check metrics before scaling
 - **Database memory**: Databases need sufficient RAM
 - **CPU limits**: Set realistic limits for consistent performance
+
+::: tip Coming Soon
+Once metrics are available, you'll be able to monitor usage and scale accordingly.
+:::
 
 ### Environment Variables
 
@@ -467,19 +663,22 @@ def health():
 
 Check deployment logs for errors:
 
-- **Missing dependencies**: Check package.json/requirements.txt
-- **Build command failed**: Verify build scripts
-- **Out of disk space**: Clean up old images
-- **Permission denied**: Check file permissions in Dockerfile
+- **Missing dependencies**: Check your package manager files (package.json, requirements.txt, etc.)
+- **Dockerfile errors**: Verify Dockerfile syntax and commands
+- **Build args missing**: Ensure required environment variables are set
+- **Out of disk space**: Clean up old Docker images with `docker system prune`
+- **Permission denied**: Check file permissions and COPY commands in Dockerfile
+- **Git clone failed**: Verify GitHub App installation and repository access
 
 ### Container Won't Start
 
 Common issues:
 
-- **Wrong start command**: Container exits immediately
-- **Port mismatch**: Application port doesn't match config
-- **Missing env vars**: Required variables not set
-- **Syntax errors**: Check application logs for errors
+- **Dockerfile CMD missing**: Container needs a command to run
+- **Port mismatch**: Dockerfile EXPOSE port should match app configuration
+- **Missing env vars**: Required environment variables not set
+- **Application crashes**: Check container logs for runtime errors
+- **Resource limits**: Container may be OOM killed if memory limit too low
 
 ### Application Not Accessible
 

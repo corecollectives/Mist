@@ -1,6 +1,36 @@
 # Logs & Monitoring
 
-Monitor your applications with real-time logs and system metrics.
+Monitor your applications and system with real-time logs and system metrics.
+
+## System Logs
+
+View live logs from the Mist backend server:
+
+1. Navigate to **Logs** page in the main navigation
+2. System logs stream in real-time
+3. Powered by `journalctl` under the hood
+
+### What's Included
+
+System logs show all output from the Mist Go backend, including:
+- Application lifecycle events (startup, shutdown)
+- Deployment processing
+- API requests and responses
+- Container operations
+- Error messages and stack traces
+- System events and notifications
+
+### Features
+
+- **Real-time streaming** - Logs appear instantly via WebSocket
+- **Live updates** - See backend activity as it happens
+- **journalctl integration** - Leverages systemd journal for reliable log collection
+- **Filterable** - Search and filter system logs
+- **Persistent** - Logs stored in systemd journal
+
+::: tip
+System logs are useful for debugging deployment issues, monitoring backend activity, and troubleshooting system-level problems.
+:::
 
 ## Container Logs
 

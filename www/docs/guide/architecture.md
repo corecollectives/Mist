@@ -57,7 +57,6 @@ Modern single-page application providing:
 **Tech Stack:**
 - React 18
 - Vite for build tooling
-- TanStack Query for data fetching
 - Tailwind CSS for styling
 - Shadcn/ui components
 
@@ -147,6 +146,7 @@ WebSocket connections stream:
 - Build logs during image creation
 - Container logs after deployment
 - System metrics every second
+- Mist backend logs via journalctl integration
 
 ## Data Flow
 
@@ -200,6 +200,43 @@ Frontend → WebSocket Upgrade → Auth Check → Stream Data → Client
 - Input validation
 - SQL injection prevention (parameterized queries)
 - XSS protection
+
+## Monitoring & Observability
+
+### Logging Architecture
+
+**Container Logs:**
+- Streamed from Docker via socket connection
+- Real-time delivery via WebSocket to frontend
+- Last 100 lines buffered on connection
+
+**System Logs:**
+- Mist backend logs collected via systemd journal
+- Accessed through `journalctl` integration
+- Live streaming to `/logs` page
+- Includes all Go backend output (API, deployments, errors)
+
+**Build Logs:**
+- Written to filesystem during Docker builds
+- Path: `/var/lib/mist/logs/<deployment-id>.log`
+- Accessible through deployment details
+
+### Metrics Collection
+
+**System Metrics:**
+- CPU usage (percentage)
+- Memory usage (used/total)
+- Disk usage (used/total)
+- Updated every second via WebSocket
+
+**Container Metrics:**
+- Container state (running/stopped/error)
+- Container uptime
+- Basic container information
+
+::: tip
+Advanced per-container metrics (CPU, memory, network I/O) are planned for future releases.
+:::
 
 ## Scalability Considerations
 

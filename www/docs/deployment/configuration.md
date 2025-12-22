@@ -2,67 +2,53 @@
 
 Configure Mist for your environment.
 
-## Environment Variables
+## Configuration System
 
-Mist can be configured via environment variables or config file.
+Mist uses a **database-driven configuration system**. Most settings are stored in the SQLite database at `/var/lib/mist/mist.db` and managed through the web UI or API.
 
-### Database
+::: tip
+There is no `/etc/mist/config.yml` file. System settings are configured through the **Settings → System** page in the web interface.
+:::
 
-```bash
-# SQLite database path (default: ./mist.db)
-MIST_DB_PATH=/var/lib/mist/mist.db
-```
+## Fixed Configuration Values
 
-### Server
+Some values are hardcoded in the application:
 
-```bash
-# Server port (default: 3000)
-MIST_PORT=3000
+### Server Port
 
-# Server host (default: 0.0.0.0)
-MIST_HOST=0.0.0.0
-```
+- **Port:** `8080` (hardcoded)
+- **Location:** `server/api/main.go:33`
+- **Cannot be changed** via environment variables
 
-### GitHub Integration
+### Session Configuration
 
-```bash
-# GitHub App credentials
-GITHUB_APP_ID=your-app-id
-GITHUB_APP_PRIVATE_KEY=/path/to/private-key.pem
-GITHUB_WEBHOOK_SECRET=your-webhook-secret
-```
+- **JWT Expiry:** 31 days (hardcoded)
+- **Location:** `server/api/middleware/auth.go:21`
 
-### Security
+### File Paths
 
-```bash
-# JWT secret for token signing
-JWT_SECRET=your-random-secret-key
+- **Root Path:** `/var/lib/mist`
+- **Logs:** `/var/lib/mist/logs`
+- **Avatars:** `/var/lib/mist/uploads/avatar`
+- **Traefik Config:** `/var/lib/mist/traefik`
+- **Certificates:** `/opt/mist/letsencrypt/acme.json`
 
-# Session timeout in hours (default: 168 = 7 days)
-SESSION_TIMEOUT=168
-```
+## Database Configuration
 
-## Configuration File
+All system settings and credentials are stored in the SQLite database.
 
-Create `/etc/mist/config.yml`:
+### GitHub App Configuration
 
-```yaml
-server:
-  port: 3000
-  host: "0.0.0.0"
+GitHub App credentials are stored in the `github_app` table:
+- App ID
+- Client ID
+- Client Secret
+- Webhook Secret
+- Private Key (RSA)
 
-database:
-  path: "/var/lib/mist/mist.db"
+Configure through: **Settings → Integrations → GitHub App**
 
-github:
-  app_id: "123456"
-  private_key_path: "/etc/mist/github-app.pem"
-  webhook_secret: "your-secret"
-
-security:
-  jwt_secret: "your-random-secret"
-  session_timeout: 168
-```
+See [GitHub App Setup](./github-app) for configuration instructions.
 
 ## Docker Configuration
 
@@ -74,17 +60,61 @@ Ensure the user running Mist has Docker permissions:
 sudo usermod -aG docker mist-user
 ```
 
-## Traefik Configuration
+## Traefik Integration
 
-See [Traefik Setup](./traefik) for detailed Traefik configuration.
+Mist automatically generates Traefik configuration in `/var/lib/mist/traefik/`:
+- `traefik.yml` - Static configuration
+- `dynamic.yml` - Dynamic routing rules (auto-generated)
+
+See [Traefik Setup](./traefik) for detailed configuration.
+
+## System Settings
+
+System-wide settings are configured through the Mist UI (requires owner role).
+
+### Wildcard Domain
+
+Configure automatic domain generation for web applications:
+
+1. Navigate to **Settings** → **System**
+2. Enter your wildcard domain (e.g., `example.com` or `*.example.com`)
+3. Optionally configure the Mist dashboard subdomain name (default: `mist`)
+
+When configured, new web applications automatically receive domains in the format:
+```
+{project-name}-{app-name}.{wildcard-domain}
+```
+
+**Example:**
+- Wildcard domain: `apps.example.com`
+- Project: `production`, App: `api`
+- Auto-generated domain: `production-api.apps.example.com`
+
+**DNS Requirements:**
+Configure a wildcard DNS record:
+```
+Type: A
+Name: *
+Value: YOUR_SERVER_IP
+```
+
+Or for nested subdomains:
+```
+Type: A
+Name: *.apps
+Value: YOUR_SERVER_IP
+```
+
+[Learn more about wildcard domains →](../guide/domains#wildcard-domain-configuration)
 
 ## Coming Soon
 
-<div class="coming-soon-banner">
-  <h4>🚧 Configuration Features</h4>
-</div>
+The following configuration features are planned:
 
-- **SMTP Configuration** - Email settings
+- **Configurable Server Port** - Change port via UI or configuration
+- **Configurable JWT Secret** - Set JWT secret during installation
+- **SMTP Configuration** - Email settings for notifications
 - **Backup Settings** - Automatic backup configuration
-- **Resource Limits** - Global resource limits
+- **Resource Limits** - Global resource limits per project/application
 - **Logging Configuration** - Log levels and destinations
+- **Custom SSL Certificates** - Upload custom TLS certificates

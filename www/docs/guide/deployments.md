@@ -6,12 +6,14 @@ Learn how to deploy and manage your applications.
 
 When you trigger a deployment, Mist:
 
-1. **Clones** your Git repository
-2. **Builds** Docker image using your Dockerfile or build commands
+1. **Clones** your Git repository (for web/service apps)
+2. **Builds** Docker image using your Dockerfile with environment variables as build args
 3. **Stops** the previous container (if exists)
 4. **Starts** new container with updated code
-5. **Updates** Traefik routing configuration
+5. **Updates** Traefik routing configuration (for web apps with domains)
 6. **Streams** real-time logs to your dashboard
+
+For database applications, Mist pulls the Docker image instead of building from source.
 
 ## Triggering Deployments
 

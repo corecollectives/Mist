@@ -4,16 +4,19 @@ export default defineConfig({
   title: 'Mist',
   description: 'Self-hostable Platform-as-a-Service',
   base: '/',
-  
+  head: [
+    ['link', { rel: 'icon', type: 'image/png', href: '/mist.png' }]
+  ],
+
   themeConfig: {
     logo: '/mist.png',
-    
+
     nav: [
       { text: 'Home', link: '/' },
       { text: 'Guide', link: '/guide/getting-started' },
-      { text: 'API', link: '/api/overview' },
+      // { text: 'API', link: '/api/overview' },
       { text: 'Deployment', link: '/deployment/installation' },
-      { text: 'GitHub', link: 'https://github.com/corecollectives/mist' }
+      // { text: 'GitHub', link: 'https://github.com/corecollectives/mist' }
     ],
 
     sidebar: {
@@ -34,7 +37,9 @@ export default defineConfig({
             { text: 'Deployments', link: '/guide/deployments' },
             { text: 'Environment Variables', link: '/guide/environment-variables' },
             { text: 'Domains & SSL', link: '/guide/domains' },
-            { text: 'Git Integration', link: '/guide/git-integration' }
+            { text: 'Git Integration', link: '/guide/git-integration' },
+            { text: 'Database Services', link: '/guide/databases' },
+            { text: 'SSL Automation', link: '/guide/ssl-automation' },
           ]
         },
         {
@@ -55,8 +60,6 @@ export default defineConfig({
         {
           text: 'Coming Soon',
           items: [
-            { text: 'Database Services', link: '/guide/databases' },
-            { text: 'SSL Automation', link: '/guide/ssl-automation' },
             { text: 'Rollback Deployments', link: '/guide/rollback' },
             { text: 'Notifications', link: '/guide/notifications' },
             { text: 'CLI Tool', link: '/guide/cli' }
@@ -103,7 +106,8 @@ export default defineConfig({
     },
 
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/corecollectives/mist' }
+      { icon: 'github', link: 'https://github.com/corecollectives/mist' },
+      { icon: 'discord', link: 'https://discord.gg/kxK8XHR6' }
     ],
 
     footer: {

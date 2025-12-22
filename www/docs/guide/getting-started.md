@@ -8,7 +8,7 @@ Before installing Mist, ensure you have:
 
 - A Linux server (Ubuntu 20.04+ or Debian 11+ recommended)
 - Docker installed and running
-- At least 1GB RAM and 10GB disk space
+- At least 256MB RAM and 2GB disk space
 - Root or sudo access
 - A domain name (optional, but recommended for production)
 
@@ -19,41 +19,20 @@ Before installing Mist, ensure you have:
 The easiest way to install Mist is using the installation script:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/corecollectives/mist/main/install.sh | bash
+curl -sSL https://trymist.cloud/install.sh | bash
 ```
 
 This script will:
 1. Download the latest Mist binary
 2. Set up Traefik reverse proxy
 3. Create systemd service for auto-start
-4. Configure firewall rules (ports 80, 443, 3000)
-
-### Manual Installation
-
-If you prefer to install manually:
-
-```bash
-# Download the latest release
-wget https://github.com/corecollectives/mist/releases/latest/download/mist-linux-amd64
-
-# Make it executable
-chmod +x mist-linux-amd64
-
-# Move to /usr/local/bin
-sudo mv mist-linux-amd64 /usr/local/bin/mist
-
-# Create data directory
-sudo mkdir -p /var/lib/mist
-
-# Run Mist
-mist
-```
+4. Configure firewall rules (ports 80, 443, 8080)
 
 [Learn more about installation →](/deployment/installation)
 
 ## First-Time Setup
 
-After installation, Mist will be available at `http://your-server-ip:3000`.
+After installation, Mist will be available at `http://your-server-ip:8080`.
 
 ### 1. Create Admin Account
 
@@ -63,11 +42,22 @@ On first visit, you'll see the setup page:
 2. Click "Create Admin Account"
 3. You'll be automatically logged in
 
-### 2. Configure GitHub Integration (Optional)
+### 2. Configure Wildcard Domain (Optional)
+
+For automatic domain generation:
+
+1. Go to **Settings** → **System**
+2. Enter your wildcard domain (e.g., `example.com`)
+3. Configure DNS with a wildcard A record pointing `*.example.com` to your server
+4. New web applications will automatically get domains like `{project}-{app}.example.com`
+
+[Learn more about wildcard domains →](./domains#wildcard-domain-configuration)
+
+### 3. Configure GitHub Integration (Optional)
 
 To enable Git deployments:
 
-1. Go to **Settings** → **GitHub Integration**
+1. Go to **Settings** → **Git**
 2. Follow the instructions to create a GitHub App
 3. Install the app on your repositories
 
@@ -88,13 +78,15 @@ Projects organize your applications:
 
 1. Open your project
 2. Click **"New Application"**
-3. Fill in the details:
+3. Fill in the basic details:
    - **Name**: Your app name
+   - **Description**: Brief description of your app
+   - **Port**: Application port (e.g., 3000)
+4. Click **"Create Application"**
+5. Configure additional settings inside the app:
    - **Git Repository**: Select from connected repos
    - **Branch**: Choose branch to deploy
-   - **Build Command**: `npm run build` (or your build command)
-   - **Start Command**: `npm start` (or your start command)
-   - **Port**: Application port (e.g., 3000)
+   - **Dockerfile Path**: Path to your Dockerfile (e.g., `./Dockerfile`)
 
 ### Step 3: Add Environment Variables
 
@@ -142,9 +134,7 @@ dig app.example.com
 ```
 
 ::: tip SSL/TLS Certificate
-Currently, SSL certificates need to be configured manually in Traefik. Automatic Let's Encrypt integration is coming soon!
-
-[Learn more about SSL →](/guide/ssl-automation)
+SSL certificates are automatically provisioned using Traefik and Let's Encrypt. Once your DNS is configured and propagated, your application will automatically get an SSL certificate.
 :::
 
 ## Next Steps
@@ -154,7 +144,8 @@ Now that you have Mist running, explore these topics:
 - [**Projects**](./projects) - Organize applications
 - [**Deployments**](./deployments) - Deployment strategies
 - [**Environment Variables**](./environment-variables) - Managing configuration
-- [**Monitoring**](./logs) - Logs and metrics
+- [**Monitoring**](./logs) - Container and system logs
+- [**Metrics**](./metrics) - System resource monitoring
 - [**Git Integration**](./git-integration) - Auto-deploy on push
 
 ## Getting Help
@@ -165,15 +156,7 @@ Now that you have Mist running, explore these topics:
 
 ## What's Next?
 
-### Essential Setup
-
-- ✅ Configure GitHub integration for auto-deployments
-- ✅ Set up custom domains for your applications  
-- ✅ Configure backup strategy for SQLite database
-
 ### Coming Soon Features
 
-- 🚧 Let's Encrypt SSL automation
-- 🚧 Database provisioning (PostgreSQL, MySQL, Redis)
 - 🚧 Email notifications for deployments
 - 🚧 CLI tool for terminal deployments

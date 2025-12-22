@@ -158,7 +158,7 @@
 }
 
 .VPHero .image {
-  max-width: 180px !important;
+  max-width: 250px !important;
   filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.12));
   margin: 0 auto !important;
 }
@@ -170,7 +170,7 @@
 
 @media (max-width: 768px) {
   .VPHero {
-    padding-top: 5rem !important;
+    padding-top: 3rem !important;
   }
   
   .VPHero .text {
@@ -179,6 +179,28 @@
   
   .VPHero .tagline {
     font-size: 1rem;
+  }
+  
+  .VPHero .image {
+    max-width: 200px !important;
+    width: 100% !important;
+    height: auto !important;
+    display: block !important;
+  }
+  
+  .VPHero .image img {
+    width: 100% !important;
+    height: auto !important;
+    display: block !important;
+    margin: 0 auto !important;
+  }
+  
+  .VPHero .image-container {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    width: 100% !important;
+    margin-bottom: 1.5rem !important;
   }
 }
 

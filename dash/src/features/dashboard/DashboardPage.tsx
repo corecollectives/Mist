@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FullScreenLoading } from '@/components/common';
@@ -35,22 +35,17 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [wsConnection, setWsConnection] = useState<WebSocket | null>(null);
-  const connectionOpenedRef = useRef(false);
-  const hasShownCorsErrorRef = useRef(false);
 
   const connectWebSocket = useCallback(() => {
     try {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const wsUrl = `${protocol}//${window.location.host}/api/ws/stats`;
       const ws = new WebSocket(wsUrl);
-      connectionOpenedRef.current = false;
 
       ws.onopen = () => {
-        connectionOpenedRef.current = true;
         setIsConnected(true);
         setIsLoading(false);
         setError(null);
-        hasShownCorsErrorRef.current = false;
       };
 
       ws.onmessage = (event) => {
@@ -71,18 +66,8 @@ export default function DashboardPage() {
       };
 
       ws.onclose = (event) => {
-        console.log('[Dashboard] WebSocket closed - Code:', event.code, 'Opened:', connectionOpenedRef.current);
+        console.log('[Dashboard] WebSocket closed - Code:', event.code);
         setIsConnected(false);
-
-        if (event.code === 1006 && !connectionOpenedRef.current && !hasShownCorsErrorRef.current) {
-          hasShownCorsErrorRef.current = true;
-          toast.error('WebSocket Connection Failed', {
-            description: 'CORS error: The server may not allow connections from this origin. Check your allowed origins in system settings.',
-            duration: 10000,
-          });
-          setError('WebSocket connection blocked by CORS policy');
-          return;
-        }
 
         setTimeout(() => {
           if (!wsConnection) connectWebSocket();

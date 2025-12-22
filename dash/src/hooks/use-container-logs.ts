@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { toast } from 'sonner';
 
 interface ContainerLogEvent {
   type: 'log' | 'status' | 'error' | 'end';
@@ -35,8 +34,6 @@ export const useContainerLogs = ({
   const reconnectAttemptsRef = useRef(0);
   const onErrorRef = useRef(onError);
   const intentionalCloseRef = useRef(false);
-  const connectionOpenedRef = useRef(false);
-  const hasShownCorsErrorRef = useRef(false);
 
   useEffect(() => {
     onErrorRef.current = onError;
@@ -54,15 +51,12 @@ export const useContainerLogs = ({
       const host = window.location.host;
       const ws = new WebSocket(`${protocol}//${host}/api/ws/container/logs?appId=${appId}`);
       wsRef.current = ws;
-      connectionOpenedRef.current = false;
 
       ws.onopen = () => {
-        connectionOpenedRef.current = true;
         setIsConnected(true);
         setError(null);
         setIsLoading(false);
         reconnectAttemptsRef.current = 0;
-        hasShownCorsErrorRef.current = false;
       };
 
       ws.onmessage = (event) => {
@@ -112,20 +106,9 @@ export const useContainerLogs = ({
       };
 
       ws.onclose = (event) => {
-        console.log('[ContainerLogs] WebSocket closed - Code:', event.code, 'Opened:', connectionOpenedRef.current);
+        console.log('[ContainerLogs] WebSocket closed - Code:', event.code);
         setIsConnected(false);
         wsRef.current = null;
-
-        if (event.code === 1006 && !connectionOpenedRef.current && !hasShownCorsErrorRef.current && reconnectAttemptsRef.current === 0) {
-          hasShownCorsErrorRef.current = true;
-          toast.error('WebSocket Connection Failed', {
-            description: 'CORS error: The server may not allow connections from this origin. Check your allowed origins in system settings.',
-            duration: 10000,
-          });
-          setError('WebSocket connection blocked by CORS policy\n Check allowed origins in system settings');
-          setIsLoading(false);
-          return;
-        }
 
         if (!intentionalCloseRef.current && enabled && reconnectAttemptsRef.current < 5) {
           const delay = Math.min(1000 * Math.pow(2, reconnectAttemptsRef.current), 10000);

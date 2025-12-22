@@ -36,22 +36,9 @@ export default function GitPage() {
     }
   };
 
-  const fetchRepositories = async () => {
-    try {
-      const response = await fetch("/api/github/repositories", {
-        credentials: 'include'
-      });
-      await response.json();
-      // Repositories fetched successfully
-    } catch (error) {
-      // Silent fail - repositories are optional
-      console.debug('Failed to fetch repositories:', error);
-    }
-  };
 
   useEffect(() => {
     fetchApp();
-    fetchRepositories();
   }, []);
 
   useEffect(() => {

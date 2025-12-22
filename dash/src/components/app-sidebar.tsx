@@ -27,6 +27,7 @@ import {
   Server,
   LogOut,
   FileText,
+  ScrollText,
 } from "lucide-react"
 import { Link, useLocation } from "react-router-dom"
 import { useAuth } from "@/providers"
@@ -64,6 +65,12 @@ const useNavData = () => {
             url: "/audit-logs",
             icon: FileText,
             isActive: location.pathname === "/audit-logs",
+          },
+          {
+            title: "System Logs",
+            url: "/logs",
+            icon: ScrollText,
+            isActive: location.pathname === "/logs",
           },
 
         ],

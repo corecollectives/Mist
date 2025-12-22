@@ -140,6 +140,12 @@ run_step "Building backend" "
     go build -o '$GO_BINARY_NAME'
 "
 
+run_step "Building CLI tool" "
+    cd '$INSTALL_DIR/cli' &&
+    go mod tidy &&
+    go build -o mist-cli
+"
+
 run_step "Preparing data directories" "
     sudo mkdir -p /var/lib/mist/traefik &&
     sudo mkdir -p $(dirname "$MIST_FILE") &&
@@ -183,18 +189,28 @@ run_step "Starting $APP_NAME service" "
     sudo systemctl restart '$APP_NAME'
 "
 
+run_step "Installing CLI tool" "
+    sudo cp '$INSTALL_DIR/cli/mist-cli' /usr/local/bin/mist-cli &&
+    sudo chmod +x /usr/local/bin/mist-cli
+"
+
 SERVER_IP="$(curl -fsSL https://api.ipify.org || hostname -I | awk '{print $1}')"
 URL="http://$SERVER_IP:$PORT"
 
 echo
 echo "╔════════════════════════════════════════════╗"
-echo "║ 🎉 Mist is now running                      ║"
+echo "║ 🎉 Mist is now running                     ║"
 echo "║                                            ║"
-echo "║ 👉 Open this in your browser:               ║"
+echo "║ 👉 Open this in your browser:              ║"
 echo "║                                            ║"
 printf "║   %-40s ║\n" "$URL"
 echo "║                                            ║"
 echo "║ (Ctrl + Click the link above if supported) ║"
+echo "║                                            ║"
+echo "║ 🛠️  CLI tool installed: mist-cli           ║"
+echo "║   • mist-cli user list                     ║"
+echo "║   • mist-cli settings list                 ║"
+echo "║   • mist-cli help                          ║"
 echo "╚════════════════════════════════════════════╝"
 echo
 echo "📄 Logs: $LOG_FILE"

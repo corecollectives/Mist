@@ -111,6 +111,9 @@ func (a *App) InsertInDB() error {
 	if a.RestartPolicy == "" {
 		a.RestartPolicy = RestartPolicyUnlessStopped
 	}
+	if a.DeploymentStrategy == "" {
+		a.DeploymentStrategy = DeploymentAuto
+	}
 
 	query := `
 	INSERT INTO apps (

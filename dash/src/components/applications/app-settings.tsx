@@ -23,6 +23,7 @@ export const AppSettings = ({ app, onUpdate }: AppSettingsProps) => {
   const [cpuLimit, setCpuLimit] = useState(app.cpuLimit?.toString() || "");
   const [memoryLimit, setMemoryLimit] = useState(app.memoryLimit?.toString() || "");
   const [restartPolicy, setRestartPolicy] = useState(app.restartPolicy || "unless-stopped");
+  const [deploymentStrategy, setDeploymentStrategy] = useState(app.deploymentStrategy || "auto");
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
@@ -36,6 +37,7 @@ export const AppSettings = ({ app, onUpdate }: AppSettingsProps) => {
         startCommand: string | null;
         healthcheckPath: string | null;
         restartPolicy: RestartPolicy;
+        deploymentStrategy: string;
         port: number;
         cpuLimit: number | null;
         memoryLimit: number | null;
@@ -46,6 +48,7 @@ export const AppSettings = ({ app, onUpdate }: AppSettingsProps) => {
         startCommand: startCommand || null,
         healthcheckPath: healthcheckPath || null,
         restartPolicy: restartPolicy as RestartPolicy,
+        deploymentStrategy,
       };
 
       if (port) {
@@ -91,11 +94,18 @@ export const AppSettings = ({ app, onUpdate }: AppSettingsProps) => {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Application Settings</CardTitle>
-        <CardDescription>
-          Configure your application settings. Changes will be applied on next deployment.
-        </CardDescription>
+      <CardHeader className="flex justify-between items-center">
+        <div className="flex flex-col gap-2">
+          <CardTitle>Application Settings</CardTitle>
+          <CardDescription>
+            Configure your application settings. Changes will be applied on next deployment.
+          </CardDescription>
+        </div>
+        <div className="flex justify-end">
+          <Button onClick={handleSave} disabled={saving}>
+            {saving ? "Saving..." : "Save Settings"}
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* App Type Badge */}
@@ -126,8 +136,8 @@ export const AppSettings = ({ app, onUpdate }: AppSettingsProps) => {
               disabled={app.appType === 'database'}
             />
             <p className="text-sm text-muted-foreground">
-              {app.appType === 'database' 
-                ? 'Port is managed by the template' 
+              {app.appType === 'database'
+                ? 'Port is managed by the template'
                 : 'The port your application runs on'}
             </p>
           </div>
@@ -198,6 +208,25 @@ export const AppSettings = ({ app, onUpdate }: AppSettingsProps) => {
           </div>
 
           <div className="space-y-2">
+            <Label htmlFor="deploymentStrategy">Deployment Strategy</Label>
+            <select
+              id="deploymentStrategy"
+              value={deploymentStrategy}
+              onChange={(e) => setDeploymentStrategy(e.target.value)}
+              className="w-full bg-background border rounded-md px-3 py-2"
+              disabled={app.appType === 'database'}
+            >
+              <option value="auto">Automatic</option>
+              <option value="manual">Manual</option>
+            </select>
+            <p className="text-sm text-muted-foreground">
+              {app.appType === 'database'
+                ? 'Deployment strategy managed by template'
+                : 'Auto: Deploy on every push. Manual: Deploy only when triggered manually'}
+            </p>
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="dockerfilePath">Dockerfile Path</Label>
             <Input
               id="dockerfilePath"
@@ -262,11 +291,6 @@ export const AppSettings = ({ app, onUpdate }: AppSettingsProps) => {
           </div>
         </div>
 
-        <div className="flex justify-end">
-          <Button onClick={handleSave} disabled={saving}>
-            {saving ? "Saving..." : "Save Settings"}
-          </Button>
-        </div>
       </CardContent>
     </Card>
   );

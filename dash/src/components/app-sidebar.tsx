@@ -24,7 +24,7 @@ import {
   LifeBuoy,
   FolderGit2,
   User,
-  Server,
+  // Server,
   LogOut,
   FileText,
   ScrollText,
@@ -54,12 +54,12 @@ const useNavData = () => {
             icon: FolderGit2,
             isActive: location.pathname.startsWith("/projects"),
           },
-          {
-            title: "Deployments",
-            url: "/deployments",
-            icon: Server,
-            isActive: location.pathname === "/deployments",
-          },
+          // {
+          //   title: "Deployments",
+          //   url: "/deployments",
+          //   icon: Server,
+          //   isActive: location.pathname === "/deployments",
+          // },
           {
             title: "Audit Logs",
             url: "/audit-logs",

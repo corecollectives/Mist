@@ -4,10 +4,11 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Trash2, Plus, Pencil, X, Check, FileText } from "lucide-react";
+import { Trash2, Plus, Pencil, X, Check, FileText, Info } from "lucide-react";
 import { toast } from "sonner";
 import { useEnvironmentVariables } from "@/hooks";
 import type { EnvVariable } from "@/types";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface EnvironmentVariablesProps {
   appId: number;
@@ -180,6 +181,13 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertDescription>
+            Environment variable changes require a full redeploy. Please redeploy your application after making changes for them to take effect.
+          </AlertDescription>
+        </Alert>
+
         {showAddForm && (
           <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
             <div className="flex items-center gap-2 pb-2 border-b">

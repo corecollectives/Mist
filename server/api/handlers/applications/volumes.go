@@ -6,6 +6,7 @@ import (
 
 	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/api/middleware"
+	"github.com/corecollectives/mist/docker"
 	"github.com/corecollectives/mist/models"
 )
 
@@ -127,6 +128,13 @@ func CreateVolume(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	go func() {
+		app, err := models.GetApplicationByID(req.AppID)
+		if err == nil {
+			docker.RecreateContainer(app)
+		}
+	}()
+
 	models.LogUserAudit(userInfo.ID, "create", "volume", &volume.ID, map[string]interface{}{
 		"app_id":         req.AppID,
 		"name":           req.Name,
@@ -186,6 +194,13 @@ func UpdateVolume(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	go func() {
+		app, err := models.GetApplicationByID(volume.AppID)
+		if err == nil {
+			docker.RecreateContainer(app)
+		}
+	}()
+
 	models.LogUserAudit(userInfo.ID, "update", "volume", &req.ID, map[string]interface{}{
 		"name":           req.Name,
 		"container_path": req.ContainerPath,
@@ -243,6 +258,13 @@ func DeleteVolume(w http.ResponseWriter, r *http.Request) {
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to delete volume", err.Error())
 		return
 	}
+
+	go func() {
+		app, err := models.GetApplicationByID(volume.AppID)
+		if err == nil {
+			docker.RecreateContainer(app)
+		}
+	}()
 
 	models.LogUserAudit(userInfo.ID, "delete", "volume", &req.ID, map[string]interface{}{
 		"app_id": volume.AppID,

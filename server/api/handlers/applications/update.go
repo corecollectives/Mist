@@ -2,12 +2,15 @@ package applications
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"os/exec"
 	"strings"
 	"time"
 
 	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/api/middleware"
+	"github.com/corecollectives/mist/docker"
 	"github.com/corecollectives/mist/models"
 )
 
@@ -112,6 +115,18 @@ func UpdateApplication(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	runtimeSettingsChanged := req.CPULimit != nil || req.MemoryLimit != nil || req.RestartPolicy != nil
+
+	if runtimeSettingsChanged {
+		go func() {
+			if err := recreateContainerAsync(app.ID); err != nil {
+				models.LogUserAudit(userInfo.ID, "error", "container_recreate", &app.ID, map[string]interface{}{
+					"error": err.Error(),
+				})
+			}
+		}()
+	}
+
 	changes := make(map[string]interface{})
 	if req.Name != nil {
 		changes["name"] = *req.Name
@@ -133,4 +148,20 @@ func UpdateApplication(w http.ResponseWriter, r *http.Request) {
 	})
 
 	handlers.SendResponse(w, http.StatusOK, true, app.ToJson(), "Application updated successfully", "")
+}
+
+func recreateContainerAsync(appID int64) error {
+	app, err := models.GetApplicationByID(appID)
+	if err != nil {
+		return fmt.Errorf("failed to get application: %w", err)
+	}
+
+	containerName := fmt.Sprintf("app-%d", appID)
+
+	cmd := exec.Command("docker", "inspect", containerName)
+	if err := cmd.Run(); err != nil {
+		return nil
+	}
+
+	return docker.RecreateContainer(app)
 }

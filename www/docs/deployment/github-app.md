@@ -360,4 +360,4 @@ Mist uses GitHub.com APIs. For GitHub Enterprise Server support:
 - [GitHub Apps Documentation](https://docs.github.com/en/apps)
 - [GitHub Webhooks](https://docs.github.com/en/webhooks)
 - [GitHub API Meta Endpoint](https://docs.github.com/en/rest/meta) - Get webhook IP ranges
-- [Mist Git Integration Guide](../guide/git)
+<!-- - [Mist Git Integration Guide](../guide/git) -->

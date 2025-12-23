@@ -45,75 +45,76 @@ export function LoginForm({
 
   return (
     <form onSubmit={handleSubmit} className={cn("flex flex-col gap-6", className)} {...props}>
-      <FieldGroup className="bg-background/80 p-6 rounded-lg shadow-md">
-        <div className="flex flex-col items-center gap-1 text-center mb-2">
-          <h1 className="text-2xl font-bold">Login to your account</h1>
-          <p className="text-muted-foreground text-sm text-balance">
-            Enter your email below to login to your account
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-2 text-center">
+          <h1 className="text-3xl font-bold tracking-tight">Welcome back</h1>
+          <p className="text-sm text-muted-foreground">
+            Enter your credentials to access your account
           </p>
         </div>
 
         {error && (
-          <Alert variant="destructive" className="mb-2">
+          <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
 
-        <Field>
-          <FieldLabel htmlFor="email">Email</FieldLabel>
-          <Input
-            id="email"
-            type="email"
-            placeholder="m@example.com"
-            value={formData.email}
-            onChange={handleChange}
-            required
-          />
-        </Field>
-
-        <Field>
-          <FieldLabel htmlFor="password">Password</FieldLabel>
-          <div className="relative">
+        <div className="flex flex-col gap-4">
+          <Field>
+            <FieldLabel htmlFor="email">Email</FieldLabel>
             <Input
-              id="password"
-              type={showPassword ? "text" : "password"}
-              value={formData.password}
+              id="email"
+              type="email"
+              placeholder="name@example.com"
+              value={formData.email}
               onChange={handleChange}
               required
-              className="pr-10"
+              className="h-11"
             />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-              tabIndex={-1}
-            >
-              {showPassword ? (
-                <EyeOff className="h-4 w-4" />
-              ) : (
-                <Eye className="h-4 w-4" />
-              )}
-            </button>
-          </div>
-        </Field>
+          </Field>
 
-        <Field>
+          <Field>
+            <FieldLabel htmlFor="password">Password</FieldLabel>
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                value={formData.password}
+                onChange={handleChange}
+                required
+                className="pr-10 h-11"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                tabIndex={-1}
+              >
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </button>
+            </div>
+          </Field>
+
           <Button
             type="submit"
             disabled={isLoading}
-            className="w-full"
+            className="w-full h-11 text-base font-medium"
           >
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Logging in...
+                Signing in...
               </>
             ) : (
-              "Login"
+              "Sign in"
             )}
           </Button>
-        </Field>
-      </FieldGroup>
+        </div>
+      </div>
     </form>
   )
 }

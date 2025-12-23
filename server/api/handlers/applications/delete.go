@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/corecollectives/mist/api/handlers"
@@ -25,20 +26,33 @@ func DeleteApplication(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req struct {
-		AppID int64 `json:"appId"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		handlers.SendResponse(w, http.StatusBadRequest, false, nil, "Invalid request body", "Could not parse JSON")
-		return
+	appIDStr := r.URL.Query().Get("id")
+	var appID int64
+
+	if appIDStr != "" {
+		var err error
+		appID, err = strconv.ParseInt(appIDStr, 10, 64)
+		if err != nil {
+			handlers.SendResponse(w, http.StatusBadRequest, false, nil, "Invalid app ID", "App ID must be a valid number")
+			return
+		}
+	} else {
+		var req struct {
+			AppID int64 `json:"appId"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			handlers.SendResponse(w, http.StatusBadRequest, false, nil, "Invalid request", "App ID must be provided as query parameter or in request body")
+			return
+		}
+		appID = req.AppID
 	}
 
-	if req.AppID == 0 {
+	if appID == 0 {
 		handlers.SendResponse(w, http.StatusBadRequest, false, nil, "App ID is required", "Missing fields")
 		return
 	}
 
-	app, err := models.GetApplicationByID(req.AppID)
+	app, err := models.GetApplicationByID(appID)
 	if err != nil {
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to get application", fmt.Sprintf("Error fetching application: %v", err))
 		return
@@ -106,13 +120,13 @@ func DeleteApplication(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	err = models.DeleteApplication(req.AppID)
+	err = models.DeleteApplication(appID)
 	if err != nil {
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to delete application from database", err.Error())
 		return
 	}
 
-	models.LogUserAudit(userInfo.ID, "delete", "application", &req.AppID, map[string]interface{}{
+	models.LogUserAudit(userInfo.ID, "delete", "application", &appID, map[string]interface{}{
 		"app_name":   app.Name,
 		"project_id": app.ProjectID,
 	})

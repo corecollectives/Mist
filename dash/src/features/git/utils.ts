@@ -19,7 +19,7 @@ export const getGitHubInstallUrl = (appSlug: string, appId: number, userId: numb
 };
 
 export const getGitHubManageUrl = (appSlug: string): string => {
-  return `https://github.com/settings/apps/${appSlug}`;
+  return `https://github.com/apps/${appSlug}/installations/select_target`;
 };
 
 export const canManageGitApps = (user: User | null): boolean => {

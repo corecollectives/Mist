@@ -22,6 +22,7 @@ export function SignupForm({
     username: "",
     email: "",
     password: "",
+    confirmPassword: "",
   })
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -37,6 +38,14 @@ export function SignupForm({
     e.preventDefault();
     setIsLoading(true);
     setError(null);
+
+    // Validate password match
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match");
+      setIsLoading(false);
+      return;
+    }
+
     const res = await authApi.signup(
       formData.email,
       formData.password,
@@ -102,6 +111,17 @@ export function SignupForm({
             id="password"
             type="password"
             value={formData.password}
+            onChange={handleChange}
+            required
+          />
+        </Field>
+
+        <Field>
+          <FieldLabel htmlFor="confirmPassword">Confirm Password</FieldLabel>
+          <Input
+            id="confirmPassword"
+            type="password"
+            value={formData.confirmPassword}
             onChange={handleChange}
             required
           />

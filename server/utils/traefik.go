@@ -11,9 +11,12 @@ import (
 
 const (
 	TraefikConfigDir   = "/var/lib/mist/traefik"
-	TraefikStaticFile  = "traefik.yml"
 	TraefikDynamicFile = "dynamic.yml"
 )
+
+func InitializeTraefikConfig(wildcardDomain *string, mistAppName string) error {
+	return GenerateDynamicConfig(wildcardDomain, mistAppName)
+}
 
 func GenerateDynamicConfig(wildcardDomain *string, mistAppName string) error {
 	if err := os.MkdirAll(TraefikConfigDir, 0755); err != nil {
@@ -21,7 +24,6 @@ func GenerateDynamicConfig(wildcardDomain *string, mistAppName string) error {
 	}
 
 	dynamicConfigPath := filepath.Join(TraefikConfigDir, TraefikDynamicFile)
-
 	content := generateDynamicYAML(wildcardDomain, mistAppName)
 
 	if err := os.WriteFile(dynamicConfigPath, []byte(content), 0644); err != nil {
@@ -51,7 +53,7 @@ func generateDynamicYAML(wildcardDomain *string, mistAppName string) string {
 
 		b.WriteString(fmt.Sprintf(`
     mist-dashboard:
-      rule: "Host(`+"`%s`"+`)"
+      rule: Host(`+"`%s`"+`)
       entryPoints:
         - websecure
       service: mist-dashboard
@@ -59,7 +61,7 @@ func generateDynamicYAML(wildcardDomain *string, mistAppName string) string {
         certResolver: le
 
     mist-dashboard-http:
-      rule: "Host(`+"`%s`"+`)"
+      rule: Host(`+"`%s`"+`)
       entryPoints:
         - web
       middlewares:
@@ -90,8 +92,4 @@ func generateDynamicYAML(wildcardDomain *string, mistAppName string) string {
 `)
 
 	return b.String()
-}
-
-func InitializeTraefikConfig(wildcardDomain *string, mistAppName string) error {
-	return GenerateDynamicConfig(wildcardDomain, mistAppName)
 }

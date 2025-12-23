@@ -79,7 +79,7 @@ func generateDynamicYAML(wildcardDomain *string, mistAppName string) string {
     mist-dashboard:
       loadBalancer:
         servers:
-          - url: "http://host.docker.internal:8080"
+          - url: "http://172.17.0.1:8080"
 `)
 	}
 

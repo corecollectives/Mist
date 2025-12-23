@@ -38,7 +38,7 @@ run_step() {
     spinner &
     SPINNER_PID=$!
 
-    bash -c "$cmd" >>"$LOG_FILE" 2>&1 || true
+    bash -c "$cmd" >>"$LOG_FILE" 2>&1
 
     kill "$SPINNER_PID" >/dev/null 2>&1 || true
     wait "$SPINNER_PID" 2>/dev/null || true
@@ -60,10 +60,6 @@ fail() {
 }
 trap fail ERR
 
-echo "📧 Let's Encrypt configuration"
-read -rp "Email (default: admin@example.com): " LETSENCRYPT_EMAIL
-LETSENCRYPT_EMAIL="${LETSENCRYPT_EMAIL:-admin@example.com}"
-
 echo "🔐 Verifying sudo access..."
 sudo -v
 
@@ -74,6 +70,8 @@ sudo -v
     done
 ) 2>/dev/null &
 SUDO_KEEPALIVE_PID=$!
+
+# ---------------- Packages ----------------
 
 if command -v apt >/dev/null; then
     PKG_INSTALL="sudo apt update && sudo apt install -y git curl build-essential wget unzip"
@@ -89,7 +87,9 @@ fi
 
 run_step "Installing system dependencies" "$PKG_INSTALL"
 
-command -v docker >/dev/null || exit 1
+command -v docker >/dev/null
+
+# ---------------- Go ----------------
 
 if ! command -v go >/dev/null; then
     run_step "Installing Go" "
@@ -98,9 +98,11 @@ if ! command -v go >/dev/null; then
         sudo tar -C /usr/local -xzf /tmp/go.tar.gz
     "
     grep -q '/usr/local/go/bin' "$REAL_HOME/.bashrc" || \
-        echo 'export PATH=$PATH:/usr/local/go/bin' >>"$REAL_HOME/.bashrc"
+        echo 'export PATH=\$PATH:/usr/local/go/bin' >>"$REAL_HOME/.bashrc"
     export PATH="$PATH:/usr/local/go/bin"
 fi
+
+# ---------------- Repo ----------------
 
 if [ -d "$INSTALL_DIR/.git" ]; then
     run_step "Updating Mist ($BRANCH)" "
@@ -116,35 +118,7 @@ else
     "
 fi
 
-run_step "Ensuring Traefik Docker network" "
-    docker network inspect traefik-net >/dev/null 2>&1 ||
-    docker network create traefik-net
-"
-
-[ -f "$INSTALL_DIR/traefik-static.yml" ] || exit 1
-
-run_step "Configuring Traefik" "
-    grep -q '$LETSENCRYPT_EMAIL' '$INSTALL_DIR/traefik-static.yml' ||
-    sed -i \"s|^\\s*email:.*|  email: $LETSENCRYPT_EMAIL|\" '$INSTALL_DIR/traefik-static.yml'
-"
-
-run_step "Starting Traefik" "
-    docker compose -f '$INSTALL_DIR/traefik-compose.yml' up -d
-"
-
-[ -d "$INSTALL_DIR/$GO_BACKEND_DIR/static" ] || exit 1
-
-run_step "Building backend" "
-    cd '$INSTALL_DIR/$GO_BACKEND_DIR' &&
-    go mod tidy &&
-    go build -o '$GO_BINARY_NAME'
-"
-
-run_step "Building CLI tool" "
-    cd '$INSTALL_DIR/cli' &&
-    go mod tidy &&
-    go build -o mist-cli
-"
+# ---------------- Directories FIRST ----------------
 
 run_step "Preparing data directories" "
     sudo mkdir -p /var/lib/mist/traefik &&
@@ -153,14 +127,20 @@ run_step "Preparing data directories" "
     sudo chown -R '$REAL_USER:$REAL_USER' /var/lib/mist
 "
 
-run_step "Configuring firewall" "
-    if command -v ufw >/dev/null; then
-        sudo ufw allow $PORT/tcp || true
-        sudo ufw reload || true
-    elif command -v firewall-cmd >/dev/null; then
-        sudo firewall-cmd --permanent --add-port=${PORT}/tcp || true
-        sudo firewall-cmd --reload || true
-    fi
+run_step "Initializing Traefik dynamic config" "
+    cat > /var/lib/mist/traefik/dynamic.yml <<'EOF'
+http:
+  routers: {}
+  services: {}
+EOF
+"
+
+# ---------------- Backend ----------------
+
+run_step "Building backend" "
+    cd '$INSTALL_DIR/$GO_BACKEND_DIR' &&
+    go mod tidy &&
+    go build -o '$GO_BINARY_NAME'
 "
 
 run_step "Installing systemd service" "
@@ -185,8 +165,27 @@ EOF
 
 run_step "Starting $APP_NAME service" "
     sudo systemctl daemon-reload &&
-    sudo systemctl enable '$APP_NAME' || true &&
+    sudo systemctl enable '$APP_NAME' &&
     sudo systemctl restart '$APP_NAME'
+"
+
+# ---------------- Traefik LAST ----------------
+
+run_step "Ensuring Traefik Docker network" "
+    docker network inspect traefik-net >/dev/null 2>&1 ||
+    docker network create traefik-net
+"
+
+run_step "Starting Traefik" "
+    docker compose -f '$INSTALL_DIR/traefik-compose.yml' up -d
+"
+
+# ---------------- CLI ----------------
+
+run_step "Building CLI tool" "
+    cd '$INSTALL_DIR/cli' &&
+    go mod tidy &&
+    go build -o mist-cli
 "
 
 run_step "Installing CLI tool" "
@@ -194,23 +193,28 @@ run_step "Installing CLI tool" "
     sudo chmod +x /usr/local/bin/mist-cli
 "
 
+# ---------------- Firewall ----------------
+
+run_step "Configuring firewall" "
+    if command -v ufw >/dev/null; then
+        sudo ufw allow $PORT/tcp || true
+        sudo ufw reload || true
+    elif command -v firewall-cmd >/dev/null; then
+        sudo firewall-cmd --permanent --add-port=${PORT}/tcp || true
+        sudo firewall-cmd --reload || true
+    fi
+"
+
+# ---------------- Done ----------------
+
 SERVER_IP="$(curl -fsSL https://api.ipify.org || hostname -I | awk '{print $1}')"
 URL="http://$SERVER_IP:$PORT"
 
 echo
 echo "╔════════════════════════════════════════════╗"
 echo "║ 🎉 Mist is now running                     ║"
-echo "║                                            ║"
-echo "║ 👉 Open this in your browser:              ║"
-echo "║                                            ║"
-printf "║   %-40s ║\n" "$URL"
-echo "║                                            ║"
-echo "║ (Ctrl + Click the link above if supported) ║"
-echo "║                                            ║"
-echo "║ 🛠️  CLI tool installed: mist-cli           ║"
-echo "║   • mist-cli user list                     ║"
-echo "║   • mist-cli settings list                 ║"
-echo "║   • mist-cli help                          ║"
+echo "║ 👉 $URL"
+echo "║ 🛠️  CLI: mist-cli                          ║"
 echo "╚════════════════════════════════════════════╝"
 echo
 echo "📄 Logs: $LOG_FILE"

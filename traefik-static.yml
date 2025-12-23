@@ -1,5 +1,6 @@
 # Traefik Static Configuration
-# This file is provided from the repository at the time of cloning and should not be modified at runtime
+# This file is provided from the repository at the time of cloning
+# and should NOT be modified at runtime
 
 api:
   dashboard: true
@@ -23,7 +24,7 @@ entryPoints:
 certificatesResolvers:
   le:
     acme:
-      email: admin@example.com  # Change this to your email during installation
+      email: admin@vinm.me  
       storage: /letsencrypt/acme.json
       httpChallenge:
         entryPoint: web

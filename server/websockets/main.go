@@ -21,6 +21,7 @@ func StatWsHandler(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Error().Err(err).Msg("WebSocket upgrade error for system stats")
+
 		return
 	}
 	mu.Lock()

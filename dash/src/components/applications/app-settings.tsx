@@ -94,14 +94,14 @@ export const AppSettings = ({ app, onUpdate }: AppSettingsProps) => {
 
   return (
     <Card>
-      <CardHeader className="flex justify-between items-center">
+      <CardHeader className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div className="flex flex-col gap-2">
           <CardTitle>Application Settings</CardTitle>
           <CardDescription>
             Configure your application settings. Changes will be applied on next deployment.
           </CardDescription>
         </div>
-        <div className="flex justify-end">
+        <div className="flex justify-start sm:justify-end w-full sm:w-auto">
           <Button onClick={handleSave} disabled={saving}>
             {saving ? "Saving..." : "Save Settings"}
           </Button>

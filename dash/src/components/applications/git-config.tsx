@@ -130,7 +130,8 @@ export const GitProviderTab = ({ app }: GitProviderTabProps) => {
     <Tabs defaultValue="github" value={provider} onValueChange={setProvider} className="w-full space-y-8">
 
       {/* ✅ PROVIDER LIST */}
-      <TabsList className="grid w-full grid-cols-4">
+      <div className="w-full overflow-x-auto pb-1">
+        <TabsList className="inline-flex w-full min-w-fit">
         <TabsTrigger value="github" className="flex items-center gap-2">
           <Github className="h-4 w-4" />
           GitHub
@@ -150,7 +151,8 @@ export const GitProviderTab = ({ app }: GitProviderTabProps) => {
           <SiBitbucket className="h-4 w-4" />
           Bitbucket
         </TabsTrigger>
-      </TabsList>
+        </TabsList>
+      </div>
 
       {/* ✅ GITHUB TAB CONTENT */}
       <TabsContent value="github">

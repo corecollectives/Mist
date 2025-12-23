@@ -125,7 +125,7 @@ export const ContainerControls = ({ appId, onStatusChange }: ContainerControlsPr
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <CardTitle className="flex items-center gap-2">
           Container Controls
           {loading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}

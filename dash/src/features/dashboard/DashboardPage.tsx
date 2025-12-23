@@ -128,7 +128,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="flex items-center justify-between py-6 border-b border-border shrink-0">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-6 border-b border-border shrink-0 gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Dashboard</h1>
           <p className="text-muted-foreground mt-1">System monitoring and performance overview</p>
@@ -151,14 +151,14 @@ export default function DashboardPage() {
         <SystemOverview stats={latestStats} />
 
         {stats.length > 0 && (
-          <div className="grid gap-6 md:grid-cols-2">
+          <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
             <ChartCard title="CPU Usage" data={stats} dataKey="cpuUsage" color="#8B5CF6" formatter={formatPercentage} />
             <ChartCard title="Memory Usage" data={stats} dataKey="memory.used" color="#A371F7" formatter={formatMemory} />
           </div>
         )}
 
         {stats.length > 0 && (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
             <MetricCard title="Current CPU" value={latestStats?.cpuUsage || 0} showUsageColor />
             <MetricCard title="Average CPU" value={averageCpuUsage} showUsageColor />
             <MetricCard title="Memory Usage" value={memoryUsagePercentage} showUsageColor />
@@ -175,7 +175,7 @@ export default function DashboardPage() {
           <div className="space-y-4">
             <h2 className="text-xl font-semibold tracking-tight text-foreground">Disk Usage</h2>
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
               {latestStats.disk.map((d) => (
                 <MetricCard
                   key={d.name}

@@ -17,7 +17,7 @@ export const PaginationControls = ({
   if (totalPages <= 1) return null;
 
   return (
-    <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-800">
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-6 pt-6 border-t border-gray-800">
       <div className="text-sm text-gray-400">
         Page {page + 1} of {totalPages}
       </div>

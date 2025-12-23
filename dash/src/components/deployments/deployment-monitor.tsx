@@ -95,7 +95,7 @@ export const DeploymentMonitor = ({ deploymentId, open, onClose, onComplete }: P
         className="w-full max-w-[90vw] lg:max-w-[85vw] h-[90vh] p-0 rounded-xl overflow-hidden border border-border bg-background/95 backdrop-blur-xl shadow-2xl flex flex-col gap-0"
       >
         {/* Header */}
-        <DialogHeader className="px-6 py-4 border-b bg-background/80 backdrop-blur flex flex-row justify-between items-center shrink-0">
+        <DialogHeader className="px-6 py-4 border-b bg-background/80 backdrop-blur flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 shrink-0">
           <DialogTitle className="flex items-center gap-3 text-lg">
             <Terminal className="h-5 w-5 text-primary" />
             <span>Deployment Monitor</span>

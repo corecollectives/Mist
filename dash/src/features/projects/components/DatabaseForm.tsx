@@ -200,7 +200,7 @@ export function DatabaseForm({ projectId, onSubmit, onBack }: DatabaseFormProps)
             </p>
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-2 text-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
           <div>
             <span className="text-muted-foreground">Port:</span>
             <span className="ml-2 font-medium">{selectedTemplate.defaultPort}</span>

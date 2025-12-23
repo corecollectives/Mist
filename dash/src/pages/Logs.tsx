@@ -146,7 +146,7 @@ export const LogsPage = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Page Header */}
-      <div className="flex items-center justify-between py-6 border-b border-border">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-6 border-b border-border gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
             System Logs
@@ -169,13 +169,13 @@ export const LogsPage = () => {
         {error && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription className="flex items-center justify-between">
+            <AlertDescription className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <span>{error}</span>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleReconnect}
-                className="ml-4"
+                className="w-full sm:w-auto"
               >
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Reconnect
@@ -187,7 +187,7 @@ export const LogsPage = () => {
         {/* Logs Card */}
         <Card>
           <CardHeader className="border-b border-border">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
               <div>
                 <CardTitle className="flex items-center gap-2">
                   <Terminal className="h-5 w-5" />
@@ -197,12 +197,12 @@ export const LogsPage = () => {
                   Streaming logs from journalctl (last 100 lines + live updates)
                 </CardDescription>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleTogglePause}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 flex-1 sm:flex-initial"
                 >
                   {paused ? (
                     <>
@@ -221,20 +221,20 @@ export const LogsPage = () => {
                   size="sm"
                   onClick={handleDownloadLogs}
                   disabled={logs.length === 0}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 flex-1 sm:flex-initial"
                 >
                   <Download className="h-4 w-4" />
-                  Download
+                  <span className="hidden sm:inline">Download</span>
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleClearLogs}
                   disabled={logs.length === 0}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 flex-1 sm:flex-initial"
                 >
                   <Trash2 className="h-4 w-4" />
-                  Clear
+                  <span className="hidden sm:inline">Clear</span>
                 </Button>
               </div>
             </div>
@@ -242,7 +242,7 @@ export const LogsPage = () => {
           <CardContent className="p-0">
             <div
               ref={logsContainerRef}
-              className="h-[calc(100vh-320px)] overflow-y-auto bg-black/95 text-green-400 font-mono text-xs p-4"
+              className="h-[calc(100vh-320px)] sm:h-[calc(100vh-300px)] overflow-y-auto overflow-x-auto bg-black/95 text-green-400 font-mono text-xs p-4"
             >
               {logs.length === 0 && !connected && (
                 <div className="flex items-center justify-center h-full text-muted-foreground">
@@ -255,7 +255,7 @@ export const LogsPage = () => {
                 </div>
               )}
               {logs.map((log, index) => (
-                <div key={index} className="whitespace-pre-wrap break-words leading-relaxed">
+                <div key={index} className="whitespace-pre-wrap break-all leading-relaxed">
                   {log}
                 </div>
               ))}
@@ -270,13 +270,13 @@ export const LogsPage = () => {
         </Card>
 
         {/* Stats */}
-        <div className="flex items-center justify-between text-sm text-muted-foreground">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             <Terminal className="h-4 w-4" />
             <span>Total log entries: {logs.length + pausedLogsRef.current.length}</span>
           </div>
           {paused && (
-            <Badge variant="secondary" className="flex items-center gap-1.5">
+            <Badge variant="secondary" className="flex items-center gap-1.5 w-fit">
               <Pause className="h-3 w-3" />
               Paused
             </Badge>

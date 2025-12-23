@@ -165,7 +165,7 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <CardTitle>Environment Variables</CardTitle>
             <CardDescription>
@@ -173,7 +173,7 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
             </CardDescription>
           </div>
           {!showAddForm && (
-            <Button onClick={() => setShowAddForm(true)} size="sm">
+            <Button onClick={() => setShowAddForm(true)} size="sm" className="w-full sm:w-auto">
               <Plus className="h-4 w-4 mr-2" />
               Add Variable
             </Button>
@@ -221,7 +221,7 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
 
             {!bulkMode ? (
               <form onSubmit={handleAdd} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="new-key">Key</Label>
                     <Input
@@ -243,8 +243,8 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
                     />
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <Button type="submit" size="sm">
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Button type="submit" size="sm" className="w-full sm:w-auto">
                     <Check className="h-4 w-4 mr-2" />
                     Add
                   </Button>
@@ -252,6 +252,7 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
                     type="button"
                     variant="outline"
                     size="sm"
+                    className="w-full sm:w-auto"
                     onClick={() => {
                       setShowAddForm(false);
                       setNewKey("");
@@ -300,8 +301,8 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
                   </div>
                 )}
 
-                <div className="flex gap-2">
-                  <Button type="submit" size="sm" disabled={parsedVars.length === 0 || isAdding}>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Button type="submit" size="sm" disabled={parsedVars.length === 0 || isAdding} className="w-full sm:w-auto">
                     <Check className="h-4 w-4 mr-2" />
                     {isAdding ? "Adding..." : `Add ${parsedVars.length} Variable${parsedVars.length > 1 ? 's' : ''}`}
                   </Button>
@@ -309,6 +310,7 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
                     type="button"
                     variant="outline"
                     size="sm"
+                    className="w-full sm:w-auto"
                     onClick={() => {
                       setShowAddForm(false);
                       setBulkMode(false);
@@ -336,7 +338,7 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
               <div key={env.id} className="p-4 border rounded-lg bg-card">
                 {editingId === env.id ? (
                   <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor={`edit-key-${env.id}`}>Key</Label>
                         <Input
@@ -355,25 +357,25 @@ export const EnvironmentVariables = ({ appId }: EnvironmentVariablesProps) => {
                         />
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" onClick={() => handleUpdate(env.id)}>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <Button size="sm" onClick={() => handleUpdate(env.id)} className="w-full sm:w-auto">
                         <Check className="h-4 w-4 mr-2" />
                         Save
                       </Button>
-                      <Button size="sm" variant="outline" onClick={cancelEdit}>
+                      <Button size="sm" variant="outline" onClick={cancelEdit} className="w-full sm:w-auto">
                         <X className="h-4 w-4 mr-2" />
                         Cancel
                       </Button>
                     </div>
                   </div>
                 ) : (
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1 font-mono">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div className="flex-1 font-mono break-all">
                       <span className="font-semibold">{env.key}</span>
                       <span className="text-muted-foreground ml-2">=</span>
                       <span className="ml-2 text-muted-foreground">••••••••</span>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 self-end sm:self-auto">
                       <Button
                         size="sm"
                         variant="ghost"

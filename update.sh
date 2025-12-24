@@ -5,6 +5,7 @@ set -Eeuo pipefail
 # This script MUST be bulletproof as it updates itself
 
 LOG_FILE="/tmp/mist-update.log"
+sudo rm -f "$LOG_FILE" 2>/dev/null || true
 : > "$LOG_FILE"
 
 REAL_USER="${SUDO_USER:-$USER}"
@@ -18,6 +19,7 @@ GO_BACKEND_DIR="server"
 GO_BINARY_NAME="mist"
 DB_FILE="/var/lib/mist/mist.db"
 BACKUP_DIR="/var/lib/mist/backups"
+LOG_DIR="/var/lib/mist/logs"
 LOCK_FILE="/var/lib/mist/update.lock"
 
 SPINNER_PID=""
@@ -187,13 +189,16 @@ log "Docker installation verified"
 # ---------------- Create backup directory ----------------
 
 sudo mkdir -p "$BACKUP_DIR"
+sudo mkdir -p "$LOG_DIR"
 sudo chown "$REAL_USER:$REAL_USER" "$BACKUP_DIR"
+sudo chown "$REAL_USER:$REAL_USER" "$LOG_DIR"
 log "Backup directory ready"
 
 # ---------------- Backup database ----------------
 
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 BACKUP_DB="$BACKUP_DIR/mist-$TIMESTAMP.db"
+PERMANENT_LOG="$LOG_DIR/update-$TIMESTAMP.log"
 
 if [ -f "$DB_FILE" ]; then
     log "Creating database backup..."
@@ -380,9 +385,18 @@ log "Cleaning up old backups (keeping last 5)..."
 cd "$BACKUP_DIR"
 ls -t mist-*.db 2>/dev/null | tail -n +6 | xargs -r rm -f
 
+# Keep last 10 update logs
+cd "$LOG_DIR"
+ls -t update-*.log 2>/dev/null | tail -n +11 | xargs -r rm -f
+
 # Keep last 10 backup tags
 cd "$INSTALL_DIR"
 git tag | grep "^backup-" | sort -r | tail -n +11 | xargs -r git tag -d
+
+# ---------------- Save permanent log ----------------
+
+log "Saving update log to: $PERMANENT_LOG"
+cp "$LOG_FILE" "$PERMANENT_LOG" 2>/dev/null || true
 
 # ---------------- Success ----------------
 
@@ -394,7 +408,7 @@ log "║ From: ${LOCAL_COMMIT:0:7}                             ║"
 log "║ To:   ${REMOTE_COMMIT:0:7}                             ║"
 log "╚════════════════════════════════════════════╝"
 log ""
-log "📄 Update logs: $LOG_FILE"
+log "📄 Update log saved: $PERMANENT_LOG"
 log "💾 Database backup: $BACKUP_DB"
 log "🔄 Service status: sudo systemctl status $APP_NAME"
 log "📋 Service logs: sudo journalctl -u $APP_NAME -n 50"

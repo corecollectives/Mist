@@ -41,7 +41,6 @@ export const UpdatesPage = () => {
   const [updateLogs, setUpdateLogs] = useState<string[]>([]);
   const [updateHistory, setUpdateHistory] = useState<UpdateLog[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
-  const [selectedLog, setSelectedLog] = useState<UpdateLog | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -170,10 +169,10 @@ Do you want to proceed with the update?
       }
 
       toast.success('Update completed successfully');
-      
+
       // Reload history
       loadUpdateHistory();
-      
+
       // Wait a bit for the service to restart, then reload
       setTimeout(() => {
         window.location.reload();
@@ -182,7 +181,7 @@ Do you want to proceed with the update?
       const message = err instanceof Error ? err.message : 'Update failed';
       setError(message);
       toast.error(message);
-      
+
       // Reload history even on failure to show the failed attempt
       loadUpdateHistory();
     } finally {
@@ -257,247 +256,247 @@ Do you want to proceed with the update?
                 </CardDescription>
               </CardHeader>
               <CardContent>
-            {isLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <p className="text-muted-foreground">Checking for updates...</p>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {error && (
-                  <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                )}
-
-                {updateInfo && (
-                  <>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="p-4 border rounded-lg">
-                        <p className="text-sm text-muted-foreground mb-1">Current Version</p>
-                        <p className="text-2xl font-bold">{updateInfo.currentVersion}</p>
-                      </div>
-                      <div className="p-4 border rounded-lg">
-                        <p className="text-sm text-muted-foreground mb-1">Latest Version</p>
-                        <div className="flex items-center gap-2">
-                          <p className="text-2xl font-bold">{updateInfo.latestVersion}</p>
-                          {updateInfo.updateAvailable && (
-                            <Badge variant="default">New</Badge>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {updateInfo.updateAvailable ? (
-                      <Alert>
-                        <CheckCircle2 className="h-4 w-4" />
-                        <AlertDescription>
-                          <strong>Update Available!</strong> A new version of Mist is ready to install.
-                        </AlertDescription>
-                      </Alert>
-                    ) : (
-                      <Alert>
-                        <CheckCircle2 className="h-4 w-4" />
-                        <AlertDescription>
-                          You are running the latest version of Mist.
-                        </AlertDescription>
-                      </Alert>
-                    )}
-
-                    {updateInfo.releaseNotes && (
-                      <div className="space-y-2">
-                        <h3 className="text-lg font-semibold">Release Notes</h3>
-                        {updateInfo.releaseName && (
-                          <p className="text-sm font-medium text-muted-foreground">
-                            {updateInfo.releaseName}
-                          </p>
-                        )}
-                        <div className="p-4 bg-muted rounded-lg">
-                          <pre className="text-sm whitespace-pre-wrap font-mono overflow-auto max-h-64">
-                            {updateInfo.releaseNotes}
-                          </pre>
-                        </div>
-                      </div>
-                    )}
-
-                    {updateInfo.updateAvailable && (
-                      <Alert>
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <p className="text-muted-foreground">Checking for updates...</p>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {error && (
+                      <Alert variant="destructive">
                         <AlertCircle className="h-4 w-4" />
-                        <AlertDescription>
-                          <strong>Before updating:</strong>
-                          <ul className="mt-2 space-y-1 text-sm list-disc list-inside">
-                            <li>Database backup will be created automatically</li>
-                            <li>The dashboard will be unavailable for 1-2 minutes</li>
-                            <li>Your applications will continue running</li>
-                            <li>Automatic rollback will occur if update fails</li>
-                            <li>Review the release notes above before proceeding</li>
-                          </ul>
-                        </AlertDescription>
+                        <AlertDescription>{error}</AlertDescription>
                       </Alert>
                     )}
 
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 pt-4">
-                      <Button
-                        onClick={triggerUpdate}
-                        disabled={!updateInfo.updateAvailable || isUpdating || isCheckingUpdate}
-                        className="w-full sm:w-auto"
-                      >
-                        {isUpdating ? (
-                          <>
-                            <span className="animate-spin mr-2">⏳</span>
-                            Updating...
-                          </>
+                    {updateInfo && (
+                      <>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="p-4 border rounded-lg">
+                            <p className="text-sm text-muted-foreground mb-1">Current Version</p>
+                            <p className="text-2xl font-bold">{updateInfo.currentVersion}</p>
+                          </div>
+                          <div className="p-4 border rounded-lg">
+                            <p className="text-sm text-muted-foreground mb-1">Latest Version</p>
+                            <div className="flex items-center gap-2">
+                              <p className="text-2xl font-bold">{updateInfo.latestVersion}</p>
+                              {updateInfo.updateAvailable && (
+                                <Badge variant="default">New</Badge>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {updateInfo.updateAvailable ? (
+                          <Alert>
+                            <CheckCircle2 className="h-4 w-4" />
+                            <AlertDescription>
+                              <strong>Update Available!</strong> A new version of Mist is ready to install.
+                            </AlertDescription>
+                          </Alert>
                         ) : (
-                          <>
-                            <Download className="h-4 w-4 mr-2" />
-                            Install Update
-                          </>
+                          <Alert>
+                            <CheckCircle2 className="h-4 w-4" />
+                            <AlertDescription>
+                              You are running the latest version of Mist.
+                            </AlertDescription>
+                          </Alert>
                         )}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={checkForUpdates}
-                        disabled={isUpdating || isCheckingUpdate}
-                        className="w-full sm:w-auto"
-                      >
-                        {isCheckingUpdate ? (
-                          <>
-                            <span className="animate-spin mr-2">⏳</span>
-                            Checking...
-                          </>
-                        ) : (
-                          <>
-                            <RefreshCw className="h-4 w-4 mr-2" />
-                            Check Again
-                          </>
+
+                        {updateInfo.releaseNotes && (
+                          <div className="space-y-2">
+                            <h3 className="text-lg font-semibold">Release Notes</h3>
+                            {updateInfo.releaseName && (
+                              <p className="text-sm font-medium text-muted-foreground">
+                                {updateInfo.releaseName}
+                              </p>
+                            )}
+                            <div className="p-4 bg-muted rounded-lg">
+                              <pre className="text-sm whitespace-pre-wrap font-mono overflow-auto max-h-64">
+                                {updateInfo.releaseNotes}
+                              </pre>
+                            </div>
+                          </div>
                         )}
-                      </Button>
-                    </div>
 
-                    {isUpdating && updateLogs.length > 0 && (
-                      <div className="space-y-2">
-                        <h3 className="text-lg font-semibold flex items-center gap-2">
-                          <span className="animate-spin">⏳</span>
-                          Update in Progress
-                        </h3>
-                        <Alert>
-                          <AlertCircle className="h-4 w-4" />
-                          <AlertDescription>
-                            Please do not close this window or refresh the page until the update completes.
-                          </AlertDescription>
-                        </Alert>
-                        <div className="p-4 bg-black text-green-400 rounded-lg font-mono text-sm overflow-auto max-h-96">
-                          {updateLogs.map((log, index) => (
-                            <div key={index}>{log}</div>
-                          ))}
+                        {updateInfo.updateAvailable && (
+                          <Alert>
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertDescription>
+                              <strong>Before updating:</strong>
+                              <ul className="mt-2 space-y-1 text-sm list-disc list-inside">
+                                <li>Database backup will be created automatically</li>
+                                <li>The dashboard will be unavailable for 1-2 minutes</li>
+                                <li>Your applications will continue running</li>
+                                <li>Automatic rollback will occur if update fails</li>
+                                <li>Review the release notes above before proceeding</li>
+                              </ul>
+                            </AlertDescription>
+                          </Alert>
+                        )}
+
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 pt-4">
+                          <Button
+                            onClick={triggerUpdate}
+                            disabled={!updateInfo.updateAvailable || isUpdating || isCheckingUpdate}
+                            className="w-full sm:w-auto"
+                          >
+                            {isUpdating ? (
+                              <>
+                                <span className="animate-spin mr-2">⏳</span>
+                                Updating...
+                              </>
+                            ) : (
+                              <>
+                                <Download className="h-4 w-4 mr-2" />
+                                Install Update
+                              </>
+                            )}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={checkForUpdates}
+                            disabled={isUpdating || isCheckingUpdate}
+                            className="w-full sm:w-auto"
+                          >
+                            {isCheckingUpdate ? (
+                              <>
+                                <span className="animate-spin mr-2">⏳</span>
+                                Checking...
+                              </>
+                            ) : (
+                              <>
+                                <RefreshCw className="h-4 w-4 mr-2" />
+                                Check Again
+                              </>
+                            )}
+                          </Button>
                         </div>
-                      </div>
-                    )}
 
-                    {!isUpdating && (
-                      <Alert>
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertDescription>
-                          <strong>Safety Features:</strong> Automatic database backup, git rollback tags, 
-                          health checks, and automatic rollback on failure are all enabled. 
-                          If something goes wrong, the system will automatically revert to the previous version.
-                        </AlertDescription>
-                      </Alert>
-                    )}
-                  </>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </TabsContent>
+                        {isUpdating && updateLogs.length > 0 && (
+                          <div className="space-y-2">
+                            <h3 className="text-lg font-semibold flex items-center gap-2">
+                              <span className="animate-spin">⏳</span>
+                              Update in Progress
+                            </h3>
+                            <Alert>
+                              <AlertCircle className="h-4 w-4" />
+                              <AlertDescription>
+                                Please do not close this window or refresh the page until the update completes.
+                              </AlertDescription>
+                            </Alert>
+                            <div className="p-4 bg-black text-green-400 rounded-lg font-mono text-sm overflow-auto max-h-96">
+                              {updateLogs.map((log, index) => (
+                                <div key={index}>{log}</div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
 
-      <TabsContent value="history">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <History className="h-5 w-5 text-primary" />
-              Update History
-            </CardTitle>
-            <CardDescription>
-              View past system updates and their status
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isLoadingHistory ? (
-              <div className="flex items-center justify-center py-8">
-                <p className="text-muted-foreground">Loading history...</p>
-              </div>
-            ) : updateHistory.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12">
-                <History className="h-12 w-12 text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">No update history available</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {updateHistory.map((log) => (
-                  <div
-                    key={log.id}
-                    className="border rounded-lg p-4 hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-semibold">
-                          {log.versionFrom} → {log.versionTo}
-                        </h4>
-                        <Badge
-                          variant={
-                            log.status === 'success'
-                              ? 'default'
-                              : log.status === 'failed'
-                              ? 'destructive'
-                              : 'secondary'
-                          }
-                        >
-                          {log.status}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Clock className="h-4 w-4" />
-                        {new Date(log.startedAt).toLocaleString()}
-                      </div>
-                    </div>
-                    
-                    <p className="text-sm text-muted-foreground mb-2">
-                      Started by {log.username}
-                    </p>
-
-                    {log.completedAt && (
-                      <p className="text-sm text-muted-foreground mb-2">
-                        Completed: {new Date(log.completedAt).toLocaleString()}
-                      </p>
-                    )}
-
-                    {log.errorMessage && (
-                      <Alert variant="destructive" className="mb-2">
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertDescription>{log.errorMessage}</AlertDescription>
-                      </Alert>
-                    )}
-
-                    {log.logs && (
-                      <details className="mt-2">
-                        <summary className="cursor-pointer text-sm text-primary hover:underline">
-                          View Logs
-                        </summary>
-                        <div className="mt-2 p-3 bg-black text-green-400 rounded-lg font-mono text-xs overflow-auto max-h-64">
-                          <pre className="whitespace-pre-wrap">{log.logs}</pre>
-                        </div>
-                      </details>
+                        {!isUpdating && (
+                          <Alert>
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertDescription>
+                              <strong>Safety Features:</strong> Automatic database backup, git rollback tags,
+                              health checks, and automatic rollback on failure are all enabled.
+                              If something goes wrong, the system will automatically revert to the previous version.
+                            </AlertDescription>
+                          </Alert>
+                        )}
+                      </>
                     )}
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </TabsContent>
-    </Tabs>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="history">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <History className="h-5 w-5 text-primary" />
+                  Update History
+                </CardTitle>
+                <CardDescription>
+                  View past system updates and their status
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isLoadingHistory ? (
+                  <div className="flex items-center justify-center py-8">
+                    <p className="text-muted-foreground">Loading history...</p>
+                  </div>
+                ) : updateHistory.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <History className="h-12 w-12 text-muted-foreground mb-4" />
+                    <p className="text-muted-foreground">No update history available</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {updateHistory.map((log) => (
+                      <div
+                        key={log.id}
+                        className="border rounded-lg p-4 hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-semibold">
+                              {log.versionFrom} → {log.versionTo}
+                            </h4>
+                            <Badge
+                              variant={
+                                log.status === 'success'
+                                  ? 'default'
+                                  : log.status === 'failed'
+                                    ? 'destructive'
+                                    : 'secondary'
+                              }
+                            >
+                              {log.status}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Clock className="h-4 w-4" />
+                            {new Date(log.startedAt).toLocaleString()}
+                          </div>
+                        </div>
+
+                        <p className="text-sm text-muted-foreground mb-2">
+                          Started by {log.username}
+                        </p>
+
+                        {log.completedAt && (
+                          <p className="text-sm text-muted-foreground mb-2">
+                            Completed: {new Date(log.completedAt).toLocaleString()}
+                          </p>
+                        )}
+
+                        {log.errorMessage && (
+                          <Alert variant="destructive" className="mb-2">
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertDescription>{log.errorMessage}</AlertDescription>
+                          </Alert>
+                        )}
+
+                        {log.logs && (
+                          <details className="mt-2">
+                            <summary className="cursor-pointer text-sm text-primary hover:underline">
+                              View Logs
+                            </summary>
+                            <div className="mt-2 p-3 bg-black text-green-400 rounded-lg font-mono text-xs overflow-auto max-h-64">
+                              <pre className="whitespace-pre-wrap">{log.logs}</pre>
+                            </div>
+                          </details>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

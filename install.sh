@@ -8,7 +8,7 @@ REAL_USER="${SUDO_USER:-$USER}"
 REAL_HOME="$(getent passwd "$REAL_USER" | cut -d: -f6)"
 
 REPO="https://github.com/corecollectives/mist"
-BRANCH="release"
+BRANCH="release-v1.0.0"
 APP_NAME="mist"
 INSTALL_DIR="/opt/mist"
 GO_BACKEND_DIR="server"
@@ -155,7 +155,7 @@ WorkingDirectory=$INSTALL_DIR/$GO_BACKEND_DIR
 ExecStart=$INSTALL_DIR/$GO_BACKEND_DIR/$GO_BINARY_NAME
 Restart=always
 RestartSec=5
-User=$REAL_USER
+User=root
 Environment=PORT=$PORT
 
 [Install]
@@ -182,16 +182,16 @@ run_step "Starting Traefik" "
 
 # ---------------- CLI ----------------
 
-run_step "Building CLI tool" "
-    cd '$INSTALL_DIR/cli' &&
-    go mod tidy &&
-    go build -o mist-cli
-"
+# run_step "Building CLI tool" "
+#     cd '$INSTALL_DIR/cli' &&
+#     go mod tidy &&
+#     go build -o mist-cli
+# "
 
-run_step "Installing CLI tool" "
-    sudo cp '$INSTALL_DIR/cli/mist-cli' /usr/local/bin/mist-cli &&
-    sudo chmod +x /usr/local/bin/mist-cli
-"
+# run_step "Installing CLI tool" "
+#     sudo cp '$INSTALL_DIR/cli/mist-cli' /usr/local/bin/mist-cli &&
+#     sudo chmod +x /usr/local/bin/mist-cli
+# "
 
 # ---------------- Firewall ----------------
 

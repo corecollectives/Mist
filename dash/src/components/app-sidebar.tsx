@@ -125,7 +125,7 @@ const useNavData = () => {
           },
           {
             title: "Documentation",
-            url: "https://trymist.cloud/what-is-mist.html",
+            url: "https://trymist.cloud/guide/what-is-mist.html",
             icon: Book,
             isActive: location.pathname === "/docs",
             newTab: true

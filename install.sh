@@ -184,6 +184,20 @@ run_step "Building backend" "cd '$INSTALL_DIR/$GO_BACKEND_DIR' && go build -v -o
 chmod +x "$GO_BINARY_NAME"
 log "Build complete"
 
+# ---------------- CLI Tool ----------------
+
+if [ -d "$INSTALL_DIR/cli" ]; then
+    if run_step "Building CLI tool" "cd '$INSTALL_DIR/cli' && go mod tidy && go build -o mist-cli"; then
+        if run_step "Installing CLI tool" "sudo cp '$INSTALL_DIR/cli/mist-cli' /usr/local/bin/mist-cli && sudo chmod +x /usr/local/bin/mist-cli"; then
+            log "CLI tool installed: mist-cli"
+        else
+            warn "Failed to install CLI tool, but continuing..."
+        fi
+    else
+        warn "Failed to build CLI tool, but continuing..."
+    fi
+fi
+
 run_step "Creating systemd service" "sudo tee '$SERVICE_FILE' >/dev/null <<'EOF'
 [Unit]
 Description=Mist Service
@@ -233,12 +247,23 @@ done
 [ "$HTTP_OK" = true ] && log "HTTP check passed" || warn "HTTP check failed (may still be initializing)"
 
 SERVER_IP=$(curl -fsSL https://api.ipify.org 2>/dev/null || hostname -I | awk '{print $1}')
+CLI_INSTALLED=""
+if [ -f "/usr/local/bin/mist-cli" ]; then
+    CLI_INSTALLED="║ 💻 CLI Tool: mist-cli --help              ║"
+fi
+
 echo
 echo "╔════════════════════════════════════════════╗"
 echo "║ 🎉 Mist installation complete              ║"
 echo "║ 👉 http://$SERVER_IP:$PORT                    "
+if [ -n "$CLI_INSTALLED" ]; then
+    echo "$CLI_INSTALLED"
+fi
 echo "╚════════════════════════════════════════════╝"
 echo
 echo "📄 Logs: $LOG_FILE"
 echo "🔧 Service: sudo systemctl status $APP_NAME"
 echo "📋 Logs: sudo journalctl -u $APP_NAME -f"
+if [ -f "/usr/local/bin/mist-cli" ]; then
+    echo "💻 CLI Tool: mist-cli --help"
+fi

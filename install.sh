@@ -255,9 +255,9 @@ fi
 echo
 echo "╔════════════════════════════════════════════╗"
 echo "║ 🎉 Mist installation complete              ║"
-echo "║ 👉 http://$SERVER_IP:$PORT                    "
+printf "║ 👉 %-40s║\n" "http://$SERVER_IP:$PORT"
 if [ -n "$CLI_INSTALLED" ]; then
-    echo "$CLI_INSTALLED"
+    printf "║ %-42s ║\n" "$CLI_INSTALLED"
 fi
 echo "╚════════════════════════════════════════════╝"
 echo

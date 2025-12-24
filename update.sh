@@ -319,7 +319,7 @@ RETRY_COUNT=0
 while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
     if run_step "Fetching latest updates from $BRANCH branch (attempt $((RETRY_COUNT + 1))/$MAX_RETRIES)" "
         cd '$INSTALL_DIR' &&
-        git fetch origin '$BRANCH' --timeout=60
+        git fetch origin '$BRANCH'
     "; then
         break
     fi

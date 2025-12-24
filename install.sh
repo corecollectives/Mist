@@ -148,6 +148,8 @@ fi
 go version >>"$LOG_FILE" 2>&1 || { error "Go not working"; exit 1; }
 log "Go ready"
 
+# ---------------- Repo ----------------
+
 if [ -d "$INSTALL_DIR/.git" ]; then
     log "Updating repository..."
     cd "$INSTALL_DIR"

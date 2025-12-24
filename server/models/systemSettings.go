@@ -203,6 +203,55 @@ func UpdateDockerSettings(autoCleanupContainers, autoCleanupImages bool) error {
 	return nil
 }
 
+// UpdateSystemSettings updates all settings from the SystemSettings struct
+func (s *SystemSettings) UpdateSystemSettings() error {
+	wildcardValue := ""
+	if s.WildcardDomain != nil {
+		wildcardValue = *s.WildcardDomain
+	}
+	if err := SetSystemSetting("wildcard_domain", wildcardValue); err != nil {
+		return err
+	}
+
+	if err := SetSystemSetting("mist_app_name", s.MistAppName); err != nil {
+		return err
+	}
+
+	prodModeStr := "false"
+	if s.ProductionMode {
+		prodModeStr = "true"
+	}
+	if err := SetSystemSetting("production_mode", prodModeStr); err != nil {
+		return err
+	}
+
+	secureCookiesStr := "false"
+	if s.SecureCookies {
+		secureCookiesStr = "true"
+	}
+	if err := SetSystemSetting("secure_cookies", secureCookiesStr); err != nil {
+		return err
+	}
+
+	cleanupContainersStr := "false"
+	if s.AutoCleanupContainers {
+		cleanupContainersStr = "true"
+	}
+	if err := SetSystemSetting("auto_cleanup_containers", cleanupContainersStr); err != nil {
+		return err
+	}
+
+	cleanupImagesStr := "false"
+	if s.AutoCleanupImages {
+		cleanupImagesStr = "true"
+	}
+	if err := SetSystemSetting("auto_cleanup_images", cleanupImagesStr); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func GenerateAutoDomain(projectName, appName string) (string, error) {
 	settings, err := GetSystemSettings()
 	if err != nil {

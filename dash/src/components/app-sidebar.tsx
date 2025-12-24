@@ -28,6 +28,7 @@ import {
   LogOut,
   FileText,
   ScrollText,
+  RefreshCw,
 } from "lucide-react"
 import { Link, useLocation } from "react-router-dom"
 import { useAuth } from "@/providers"
@@ -116,8 +117,15 @@ const useNavData = () => {
         title: "Extras",
         items: [
           {
+            title: "Updates",
+            url: "/updates",
+            icon: RefreshCw,
+            isActive: location.pathname === "/updates",
+            newTab: false
+          },
+          {
             title: "Documentation",
-            url: "https://trymist.cloud/docs",
+            url: "https://trymist.cloud/what-is-mist.html",
             icon: Book,
             isActive: location.pathname === "/docs",
             newTab: true
@@ -139,7 +147,7 @@ const useNavData = () => {
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const { data } = useNavData()
   const { user, logout } = useAuth()
-  const { state } = useSidebar() // <- gives you collapse info
+  const { state } = useSidebar()
 
   const isCollapsed = state === "collapsed"
 

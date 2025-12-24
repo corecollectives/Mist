@@ -6,8 +6,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import type { App } from "@/types/app"
-import { Github, Gitlab } from "lucide-react"
-import { SiBitbucket, SiGitea } from "react-icons/si"
+import { Github } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 
 interface GitProviderTabProps {

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FullScreenLoading } from '@/components/common';
-import { GitHubCard, ProviderCard, CreateAppModal } from './components';
+import { GitHubCard, CreateAppModal } from './components';
 import { useAuth } from '@/providers';
 import type { GitHubApp } from '@/types';
 

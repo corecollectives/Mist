@@ -10,7 +10,7 @@ REAL_USER="${SUDO_USER:-$USER}"
 REAL_HOME="$(getent passwd "$REAL_USER" | cut -d: -f6)"
 
 REPO="https://github.com/corecollectives/mist"
-BRANCH="release-v1.0.0"
+BRANCH="release"
 APP_NAME="mist"
 INSTALL_DIR="/opt/mist"
 GO_BACKEND_DIR="server"

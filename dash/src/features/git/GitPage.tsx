@@ -94,9 +94,9 @@ export default function GitPage() {
         />
 
         {/* Other Providers */}
-        <ProviderCard name="GitLab" icon="Gitlab" />
-        <ProviderCard name="Bitbucket" icon="GitFork" />
-        <ProviderCard name="Gitea" icon="GitMerge" />
+        {/* <ProviderCard name="GitLab" icon="Gitlab" /> */}
+        {/* <ProviderCard name="Bitbucket" icon="GitFork" /> */}
+        {/* <ProviderCard name="Gitea" icon="GitMerge" /> */}
       </div>
 
       {/* Create App Modal */}

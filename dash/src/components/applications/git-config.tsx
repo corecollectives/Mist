@@ -132,25 +132,25 @@ export const GitProviderTab = ({ app }: GitProviderTabProps) => {
       {/* ✅ PROVIDER LIST */}
       <div className="w-full overflow-x-auto pb-1">
         <TabsList className="inline-flex w-full min-w-fit">
-        <TabsTrigger value="github" className="flex items-center gap-2">
-          <Github className="h-4 w-4" />
-          GitHub
-        </TabsTrigger>
+          <TabsTrigger value="github" className="flex items-center gap-2">
+            <Github className="h-4 w-4" />
+            GitHub
+          </TabsTrigger>
 
-        <TabsTrigger value="gitlab" disabled className="flex items-center gap-2 opacity-70">
-          <Gitlab className="h-4 w-4" />
-          GitLab
-        </TabsTrigger>
-
-        <TabsTrigger value="gitea" disabled className="flex items-center gap-2 opacity-70">
-          <SiGitea className="h-4 w-4" />
-          Gitea
-        </TabsTrigger>
-
-        <TabsTrigger value="bitbucket" disabled className="flex items-center gap-2 opacity-70">
-          <SiBitbucket className="h-4 w-4" />
-          Bitbucket
-        </TabsTrigger>
+          {/* <TabsTrigger value="gitlab" disabled className="flex items-center gap-2 opacity-70"> */}
+          {/*   <Gitlab className="h-4 w-4" /> */}
+          {/*   GitLab */}
+          {/* </TabsTrigger> */}
+          {/**/}
+          {/* <TabsTrigger value="gitea" disabled className="flex items-center gap-2 opacity-70"> */}
+          {/*   <SiGitea className="h-4 w-4" /> */}
+          {/*   Gitea */}
+          {/* </TabsTrigger> */}
+          {/**/}
+          {/* <TabsTrigger value="bitbucket" disabled className="flex items-center gap-2 opacity-70"> */}
+          {/*   <SiBitbucket className="h-4 w-4" /> */}
+          {/*   Bitbucket */}
+          {/* </TabsTrigger> */}
         </TabsList>
       </div>
 

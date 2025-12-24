@@ -1,5 +1,5 @@
 #!/bin/bash
-set -Eeuo pipefail
+set -Eeo pipefail
 
 # Update script for Mist - Self-updating with safety mechanisms
 # This script MUST be bulletproof as it updates itself
@@ -26,6 +26,9 @@ SPINNER_PID=""
 SUDO_KEEPALIVE_PID=""
 BACKUP_COMMIT=""
 BACKUP_DB=""
+
+# Ensure PATH includes common binary locations
+export PATH="/usr/local/go/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 
 # Colors for output
 RED='\033[0;31m'
@@ -88,6 +91,9 @@ trap cleanup EXIT
 rollback() {
     error "Update failed! Attempting rollback..."
     
+    # Ensure PATH is set for Go
+    export PATH="/usr/local/go/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
+    
     # Rollback git
     if [ -n "$BACKUP_COMMIT" ]; then
         warn "Rolling back to commit: $BACKUP_COMMIT"
@@ -119,17 +125,25 @@ trap rollback ERR
 
 log "Starting Mist update process..."
 
+# Temporarily disable ERR trap for pre-flight checks
+trap - ERR
+
 # Check if running as root or with sudo
 if [ "$EUID" -eq 0 ] || [ -n "${SUDO_USER:-}" ]; then
     log "Running with elevated privileges"
 else
     error "This script requires sudo privileges"
+    cleanup
     exit 1
 fi
 
 # Verify sudo access
 echo "🔐 Verifying sudo access..."
-sudo -v
+if ! sudo -v 2>>"$LOG_FILE"; then
+    error "Failed to verify sudo access"
+    cleanup
+    exit 1
+fi
 
 # Keep sudo alive
 (
@@ -144,6 +158,7 @@ SUDO_KEEPALIVE_PID=$!
 if [ -f "$LOCK_FILE" ]; then
     error "Another update is already in progress!"
     error "If this is incorrect, remove: $LOCK_FILE"
+    cleanup
     exit 1
 fi
 
@@ -155,11 +170,12 @@ log "Update lock acquired"
 if [ ! -d "$INSTALL_DIR/.git" ]; then
     error "Mist is not installed at $INSTALL_DIR"
     error "Please run install.sh first"
+    cleanup
     exit 1
 fi
 
 # Check if service is running
-if ! sudo systemctl is-active --quiet "$APP_NAME"; then
+if ! sudo systemctl is-active --quiet "$APP_NAME" 2>>"$LOG_FILE"; then
     warn "Mist service is not running!"
     warn "Continuing anyway, but this is unusual..."
 fi
@@ -168,23 +184,97 @@ fi
 AVAILABLE_SPACE=$(df "$INSTALL_DIR" | tail -1 | awk '{print $4}')
 if [ "$AVAILABLE_SPACE" -lt 500000 ]; then
     error "Insufficient disk space! Need at least 500MB free"
+    cleanup
     exit 1
 fi
 log "Disk space check passed"
 
 # Check if Go is available
 if ! command -v go >/dev/null 2>&1; then
-    error "Go is not installed or not in PATH"
+    warn "Go not found in PATH, checking common locations..."
+    
+    # Try to find Go in common locations
+    GO_LOCATIONS=(
+        "/usr/local/go/bin/go"
+        "/usr/bin/go"
+        "/opt/go/bin/go"
+        "$REAL_HOME/.local/go/bin/go"
+    )
+    
+    GO_FOUND=false
+    for go_path in "${GO_LOCATIONS[@]}"; do
+        if [ -x "$go_path" ]; then
+            export PATH="$(dirname "$go_path"):$PATH"
+            log "Found Go at: $go_path"
+            GO_FOUND=true
+            break
+        fi
+    done
+    
+    if [ "$GO_FOUND" = false ]; then
+        error "Go is not installed or not found in any common location"
+        error "Checked locations: ${GO_LOCATIONS[*]}"
+        cleanup
+        exit 1
+    fi
+fi
+
+# Verify Go works
+if ! go version >>"$LOG_FILE" 2>&1; then
+    error "Go is installed but not working correctly"
+    cleanup
     exit 1
 fi
-log "Go installation verified"
+log "Go installation verified: $(go version | awk '{print $3}')"
 
 # Check if Docker is available
 if ! command -v docker >/dev/null 2>&1; then
-    error "Docker is not installed or not in PATH"
+    warn "Docker not found in PATH, checking common locations..."
+    
+    # Try to find Docker in common locations
+    DOCKER_LOCATIONS=(
+        "/usr/bin/docker"
+        "/usr/local/bin/docker"
+        "/opt/docker/bin/docker"
+    )
+    
+    DOCKER_FOUND=false
+    for docker_path in "${DOCKER_LOCATIONS[@]}"; do
+        if [ -x "$docker_path" ]; then
+            export PATH="$(dirname "$docker_path"):$PATH"
+            log "Found Docker at: $docker_path"
+            DOCKER_FOUND=true
+            break
+        fi
+    done
+    
+    if [ "$DOCKER_FOUND" = false ]; then
+        error "Docker is not installed or not found in any common location"
+        error "Checked locations: ${DOCKER_LOCATIONS[*]}"
+        cleanup
+        exit 1
+    fi
+fi
+
+# Verify Docker works
+if ! docker --version >>"$LOG_FILE" 2>&1; then
+    error "Docker is installed but not working correctly"
+    cleanup
     exit 1
 fi
-log "Docker installation verified"
+log "Docker installation verified: $(docker --version | awk '{print $3}' | tr -d ',')"
+
+# Re-enable ERR trap after pre-flight checks
+trap rollback ERR
+
+# Check network connectivity
+log "Checking network connectivity..."
+if ! curl -s --connect-timeout 10 https://github.com >/dev/null 2>&1; then
+    error "No network connectivity to GitHub"
+    error "Please check your internet connection"
+    exit 1
+fi
+log "Network connectivity verified"
 
 # ---------------- Create backup directory ----------------
 
@@ -212,19 +302,48 @@ fi
 
 # ---------------- Fetch latest from release branch ----------------
 
-run_step "Fetching latest updates from $BRANCH branch" "
-    cd '$INSTALL_DIR' &&
-    git fetch origin '$BRANCH'
-"
+# Configure git to be safe
+cd "$INSTALL_DIR"
+git config --local advice.detachedHead false >>"$LOG_FILE" 2>&1 || true
+
+# Retry logic for git fetch (network can be flaky)
+MAX_RETRIES=3
+RETRY_COUNT=0
+
+while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+    if run_step "Fetching latest updates from $BRANCH branch (attempt $((RETRY_COUNT + 1))/$MAX_RETRIES)" "
+        cd '$INSTALL_DIR' &&
+        git fetch origin '$BRANCH' --timeout=60
+    "; then
+        break
+    fi
+    
+    RETRY_COUNT=$((RETRY_COUNT + 1))
+    if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+        warn "Git fetch failed, retrying in 5 seconds..."
+        sleep 5
+    else
+        error "Failed to fetch updates after $MAX_RETRIES attempts"
+        exit 1
+    fi
+done
 
 # Check if updates are available
 cd "$INSTALL_DIR"
-LOCAL_COMMIT=$(git rev-parse HEAD)
-REMOTE_COMMIT=$(git rev-parse origin/$BRANCH)
+LOCAL_COMMIT=$(git rev-parse HEAD 2>>"$LOG_FILE")
+REMOTE_COMMIT=$(git rev-parse origin/$BRANCH 2>>"$LOG_FILE")
 BACKUP_COMMIT="$LOCAL_COMMIT"
 
 if [ "$LOCAL_COMMIT" = "$REMOTE_COMMIT" ]; then
     log "Already up to date"
+    log "Current version: ${LOCAL_COMMIT:0:7}"
+    
+    # Save log even when no update is needed
+    if [ -n "$PERMANENT_LOG" ]; then
+        cp "$LOG_FILE" "$PERMANENT_LOG" 2>/dev/null || true
+        log "Update check log saved: $PERMANENT_LOG"
+    fi
+    
     exit 0
 fi
 
@@ -274,10 +393,15 @@ fi
 
 # ---------------- Rebuild backend ----------------
 
+# Clean build cache to avoid potential issues
+log "Cleaning Go build cache..."
+go clean -cache -modcache -i -r >>"$LOG_FILE" 2>&1 || true
+
 if ! run_step "Rebuilding backend binary" "
     cd '$INSTALL_DIR/$GO_BACKEND_DIR' &&
+    go mod download &&
     go mod tidy &&
-    go build -o '$GO_BINARY_NAME'
+    go build -v -o '$GO_BINARY_NAME'
 "; then
     error "Failed to rebuild backend"
     rollback
@@ -293,6 +417,13 @@ if [ ! -x "$INSTALL_DIR/$GO_BACKEND_DIR/$GO_BINARY_NAME" ]; then
     error "Backend binary is not executable!"
     rollback
 fi
+
+# Verify binary is not corrupted
+if ! file "$INSTALL_DIR/$GO_BACKEND_DIR/$GO_BINARY_NAME" | grep -q "executable" >>"$LOG_FILE" 2>&1; then
+    error "Backend binary appears to be corrupted!"
+    rollback
+fi
+
 log "Backend binary verified"
 
 # ---------------- Rebuild CLI ----------------
@@ -317,16 +448,37 @@ fi
 # ---------------- Restart service ----------------
 
 log "Stopping Mist service..."
-if ! sudo systemctl stop "$APP_NAME" >>"$LOG_FILE" 2>&1; then
-    warn "Failed to stop service gracefully, forcing..."
-    sudo systemctl kill "$APP_NAME" >>"$LOG_FILE" 2>&1 || true
-    sleep 2
-fi
+STOP_RETRIES=0
+MAX_STOP_RETRIES=3
 
-run_step "Reloading systemd and starting service" "
+while [ $STOP_RETRIES -lt $MAX_STOP_RETRIES ]; do
+    if sudo systemctl stop "$APP_NAME" --no-block >>"$LOG_FILE" 2>&1; then
+        # Wait for service to stop
+        sleep 3
+        if ! sudo systemctl is-active --quiet "$APP_NAME"; then
+            log "Service stopped successfully"
+            break
+        fi
+    fi
+    
+    STOP_RETRIES=$((STOP_RETRIES + 1))
+    if [ $STOP_RETRIES -lt $MAX_STOP_RETRIES ]; then
+        warn "Failed to stop service, retrying..."
+        sleep 2
+    else
+        warn "Failed to stop service gracefully, forcing..."
+        sudo systemctl kill "$APP_NAME" >>"$LOG_FILE" 2>&1 || true
+        sleep 3
+    fi
+done
+
+if ! run_step "Reloading systemd and starting service" "
     sudo systemctl daemon-reload &&
     sudo systemctl start '$APP_NAME'
-"
+"; then
+    error "Failed to start service after update"
+    rollback
+fi
 
 # ---------------- Health check ----------------
 
@@ -335,7 +487,7 @@ RETRY_COUNT=0
 MAX_RETRIES=30
 
 while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-    if sudo systemctl is-active --quiet "$APP_NAME"; then
+    if sudo systemctl is-active --quiet "$APP_NAME" 2>>"$LOG_FILE"; then
         log "Service is active"
         break
     fi
@@ -345,28 +497,50 @@ done
 
 if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
     error "Service failed to start within 30 seconds!"
+    error "Service status:"
+    sudo systemctl status "$APP_NAME" --no-pager >>"$LOG_FILE" 2>&1 || true
+    error "Recent logs:"
+    sudo journalctl -u "$APP_NAME" -n 50 --no-pager >>"$LOG_FILE" 2>&1 || true
     error "Rolling back..."
     rollback
 fi
 
 # Wait a bit more and check if service is still running
+log "Performing extended health check..."
 sleep 5
 
-if ! sudo systemctl is-active --quiet "$APP_NAME"; then
+if ! sudo systemctl is-active --quiet "$APP_NAME" 2>>"$LOG_FILE"; then
     error "Service started but crashed immediately!"
+    error "Service status:"
+    sudo systemctl status "$APP_NAME" --no-pager >>"$LOG_FILE" 2>&1 || true
+    error "Recent logs:"
+    sudo journalctl -u "$APP_NAME" -n 50 --no-pager >>"$LOG_FILE" 2>&1 || true
     error "Check logs: sudo journalctl -u $APP_NAME -n 50"
     rollback
 fi
 
 log "Service health check passed"
 
-# Try to connect to the service
+# Try to connect to the service with retries
 log "Checking HTTP endpoint..."
-if curl -f -s -o /dev/null -w "%{http_code}" "http://localhost:8080/api/health" | grep -q "200"; then
-    log "HTTP health check passed"
-else
-    warn "HTTP health check failed, but service is running"
-    warn "This might be normal if the service is still initializing"
+HTTP_RETRIES=0
+MAX_HTTP_RETRIES=10
+HTTP_SUCCESS=false
+
+while [ $HTTP_RETRIES -lt $MAX_HTTP_RETRIES ]; do
+    if curl -f -s -o /dev/null -w "%{http_code}" --connect-timeout 5 "http://localhost:8080/api/health" 2>>"$LOG_FILE" | grep -q "200"; then
+        log "HTTP health check passed"
+        HTTP_SUCCESS=true
+        break
+    fi
+    sleep 2
+    HTTP_RETRIES=$((HTTP_RETRIES + 1))
+done
+
+if [ "$HTTP_SUCCESS" = false ]; then
+    warn "HTTP health check failed after $MAX_HTTP_RETRIES attempts"
+    warn "Service is running but may still be initializing"
+    warn "Check logs if issues persist: sudo journalctl -u $APP_NAME -n 50"
 fi
 
 # ---------------- Update Traefik ----------------

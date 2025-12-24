@@ -24,7 +24,6 @@ SUDO_KEEPALIVE_PID=""
 
 export PATH="/usr/local/go/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 
-# Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -107,7 +106,6 @@ fi
 
 trap rollback ERR
 
-# Packages
 log "Installing dependencies..."
 if command -v apt >/dev/null 2>&1; then
     run_step "Installing packages (apt)" "sudo DEBIAN_FRONTEND=noninteractive apt update && sudo DEBIAN_FRONTEND=noninteractive apt install -y git curl build-essential wget unzip" || exit 1
@@ -161,9 +159,13 @@ else
 fi
 
 [ -d "$INSTALL_DIR/$GO_BACKEND_DIR" ] || { error "Server directory missing"; exit 1; }
+
+run_step "Setting ownership" "sudo chown -R root:root '$INSTALL_DIR'" || exit 1
+
+sudo git config --global --add safe.directory "$INSTALL_DIR" >>"$LOG_FILE" 2>&1 || true
+
 log "Repository ready"
 
-# Data directories
 run_step "Creating data directories" "sudo mkdir -p /var/lib/mist/{traefik,logs,backups} && sudo touch '$MIST_FILE' && sudo chown -R root:root /var/lib/mist && sudo chmod -R 755 /var/lib/mist" || exit 1
 run_step "Creating Traefik config" "sudo tee /var/lib/mist/traefik/dynamic.yml >/dev/null <<'EOF'
 http:
@@ -180,7 +182,6 @@ run_step "Building backend" "cd '$INSTALL_DIR/$GO_BACKEND_DIR' && go build -v -o
 chmod +x "$GO_BINARY_NAME"
 log "Build complete"
 
-# Systemd
 run_step "Creating systemd service" "sudo tee '$SERVICE_FILE' >/dev/null <<'EOF'
 [Unit]
 Description=Mist Service

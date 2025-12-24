@@ -1,9 +1,6 @@
 #!/bin/bash
 set -Eeo pipefail
 
-# Update script for Mist - Self-updating with safety mechanisms
-# This script MUST be bulletproof as it updates itself
-
 LOG_FILE="/tmp/mist-update.log"
 sudo rm -f "$LOG_FILE" 2>/dev/null || true
 : > "$LOG_FILE"
@@ -12,7 +9,6 @@ REAL_USER="${SUDO_USER:-$USER}"
 REAL_HOME="$(getent passwd "$REAL_USER" | cut -d: -f6)"
 
 REPO="https://github.com/corecollectives/mist"
-BRANCH="release"
 APP_NAME="mist"
 INSTALL_DIR="/opt/mist"
 GO_BACKEND_DIR="server"
@@ -22,15 +18,28 @@ BACKUP_DIR="/var/lib/mist/backups"
 LOG_DIR="/var/lib/mist/logs"
 LOCK_FILE="/var/lib/mist/update.lock"
 
+if [ -d "$INSTALL_DIR/.git" ]; then
+    CURRENT_BRANCH=$(cd "$INSTALL_DIR" && git rev-parse --abbrev-ref HEAD 2>/dev/null)
+    if [ -z "$CURRENT_BRANCH" ] || [ "$CURRENT_BRANCH" = "HEAD" ]; then
+        CURRENT_BRANCH=$(cd "$INSTALL_DIR" && git for-each-ref --format='%(upstream:short)' "$(git symbolic-ref -q HEAD)" 2>/dev/null | sed 's|^origin/||')
+    fi
+    
+    if [ -z "$CURRENT_BRANCH" ] || [ "$CURRENT_BRANCH" = "HEAD" ]; then
+        CURRENT_BRANCH="release"
+    fi
+    
+    BRANCH="$CURRENT_BRANCH"
+else
+    BRANCH="release"
+fi
+
 SPINNER_PID=""
 SUDO_KEEPALIVE_PID=""
 BACKUP_COMMIT=""
 BACKUP_DB=""
 
-# Ensure PATH includes common binary locations
 export PATH="/usr/local/go/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 
-# Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -91,10 +100,10 @@ trap cleanup EXIT
 rollback() {
     error "Update failed! Attempting rollback..."
     
-    # Ensure PATH is set for Go
     export PATH="/usr/local/go/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
     
-    # Rollback git
+    git config --global --add safe.directory "$INSTALL_DIR" 2>>"$LOG_FILE" || true
+    
     if [ -n "$BACKUP_COMMIT" ]; then
         warn "Rolling back to commit: $BACKUP_COMMIT"
         cd "$INSTALL_DIR"
@@ -105,11 +114,9 @@ rollback() {
         go mod tidy >>"$LOG_FILE" 2>&1 || true
         go build -o "$GO_BINARY_NAME" >>"$LOG_FILE" 2>&1 || true
         
-        # Restart service
         sudo systemctl restart "$APP_NAME" >>"$LOG_FILE" 2>&1 || true
     fi
     
-    # Rollback database if backup exists
     if [ -n "$BACKUP_DB" ] && [ -f "$BACKUP_DB" ]; then
         warn "Rolling back database to backup"
         cp "$BACKUP_DB" "$DB_FILE" || true
@@ -121,14 +128,11 @@ rollback() {
 }
 trap rollback ERR
 
-# ---------------- Pre-flight checks ----------------
 
 log "Starting Mist update process..."
 
-# Temporarily disable ERR trap for pre-flight checks
 trap - ERR
 
-# Check if running as root or with sudo
 if [ "$EUID" -eq 0 ] || [ -n "${SUDO_USER:-}" ]; then
     log "Running with elevated privileges"
 else
@@ -137,7 +141,6 @@ else
     exit 1
 fi
 
-# Verify sudo access
 echo "🔐 Verifying sudo access..."
 if ! sudo -v 2>>"$LOG_FILE"; then
     error "Failed to verify sudo access"
@@ -145,7 +148,6 @@ if ! sudo -v 2>>"$LOG_FILE"; then
     exit 1
 fi
 
-# Keep sudo alive
 (
     while true; do
         sleep 60
@@ -154,7 +156,6 @@ fi
 ) 2>/dev/null &
 SUDO_KEEPALIVE_PID=$!
 
-# Check for lock file (prevent concurrent updates)
 if [ -f "$LOCK_FILE" ]; then
     error "Another update is already in progress!"
     error "If this is incorrect, remove: $LOCK_FILE"
@@ -162,7 +163,6 @@ if [ -f "$LOCK_FILE" ]; then
     exit 1
 fi
 
-# Create lock file
 echo "$$" > "$LOCK_FILE"
 log "Update lock acquired"
 
@@ -174,13 +174,13 @@ if [ ! -d "$INSTALL_DIR/.git" ]; then
     exit 1
 fi
 
-# Check if service is running
+log "Detected branch: $BRANCH"
+
 if ! sudo systemctl is-active --quiet "$APP_NAME" 2>>"$LOG_FILE"; then
     warn "Mist service is not running!"
     warn "Continuing anyway, but this is unusual..."
 fi
 
-# Check available disk space (need at least 500MB)
 AVAILABLE_SPACE=$(df "$INSTALL_DIR" | tail -1 | awk '{print $4}')
 if [ "$AVAILABLE_SPACE" -lt 500000 ]; then
     error "Insufficient disk space! Need at least 500MB free"
@@ -189,11 +189,9 @@ if [ "$AVAILABLE_SPACE" -lt 500000 ]; then
 fi
 log "Disk space check passed"
 
-# Check if Go is available
 if ! command -v go >/dev/null 2>&1; then
     warn "Go not found in PATH, checking common locations..."
     
-    # Try to find Go in common locations
     GO_LOCATIONS=(
         "/usr/local/go/bin/go"
         "/usr/bin/go"
@@ -219,7 +217,6 @@ if ! command -v go >/dev/null 2>&1; then
     fi
 fi
 
-# Verify Go works
 if ! go version >>"$LOG_FILE" 2>&1; then
     error "Go is installed but not working correctly"
     cleanup
@@ -227,11 +224,9 @@ if ! go version >>"$LOG_FILE" 2>&1; then
 fi
 log "Go installation verified: $(go version | awk '{print $3}')"
 
-# Check if Docker is available
 if ! command -v docker >/dev/null 2>&1; then
     warn "Docker not found in PATH, checking common locations..."
     
-    # Try to find Docker in common locations
     DOCKER_LOCATIONS=(
         "/usr/bin/docker"
         "/usr/local/bin/docker"
@@ -256,7 +251,6 @@ if ! command -v docker >/dev/null 2>&1; then
     fi
 fi
 
-# Verify Docker works
 if ! docker --version >>"$LOG_FILE" 2>&1; then
     error "Docker is installed but not working correctly"
     cleanup
@@ -264,10 +258,8 @@ if ! docker --version >>"$LOG_FILE" 2>&1; then
 fi
 log "Docker installation verified: $(docker --version | awk '{print $3}' | tr -d ',')"
 
-# Re-enable ERR trap after pre-flight checks
 trap rollback ERR
 
-# Check network connectivity
 log "Checking network connectivity..."
 if ! curl -s --connect-timeout 10 https://github.com >/dev/null 2>&1; then
     error "No network connectivity to GitHub"
@@ -276,7 +268,6 @@ if ! curl -s --connect-timeout 10 https://github.com >/dev/null 2>&1; then
 fi
 log "Network connectivity verified"
 
-# ---------------- Create backup directory ----------------
 
 sudo mkdir -p "$BACKUP_DIR"
 sudo mkdir -p "$LOG_DIR"
@@ -284,7 +275,6 @@ sudo chown "$REAL_USER:$REAL_USER" "$BACKUP_DIR"
 sudo chown "$REAL_USER:$REAL_USER" "$LOG_DIR"
 log "Backup directory ready"
 
-# ---------------- Backup database ----------------
 
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 BACKUP_DB="$BACKUP_DIR/mist-$TIMESTAMP.db"
@@ -300,13 +290,29 @@ if [ -f "$DB_FILE" ]; then
     fi
 fi
 
-# ---------------- Fetch latest from release branch ----------------
-
-# Configure git to be safe
 cd "$INSTALL_DIR"
 git config --local advice.detachedHead false >>"$LOG_FILE" 2>&1 || true
 
-# Retry logic for git fetch (network can be flaky)
+git config --global --add safe.directory "$INSTALL_DIR" >>"$LOG_FILE" 2>&1 || true
+
+log "Verifying branch '$BRANCH' exists on remote..."
+if ! git ls-remote --heads origin "$BRANCH" 2>>"$LOG_FILE" | grep -q "$BRANCH"; then
+    error "Branch '$BRANCH' does not exist on remote"
+    error "Available branches:"
+    git ls-remote --heads origin 2>>"$LOG_FILE" | sed 's|.*refs/heads/||' | tee -a "$LOG_FILE"
+    
+    # Try to fall back to 'release' branch if it exists
+    if git ls-remote --heads origin "release" 2>>"$LOG_FILE" | grep -q "release"; then
+        warn "Falling back to 'release' branch"
+        BRANCH="release"
+    else
+        error "Could not find a suitable branch to update from"
+        exit 1
+    fi
+fi
+
+log "Using branch: $BRANCH"
+
 MAX_RETRIES=3
 RETRY_COUNT=0
 
@@ -324,11 +330,12 @@ while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
         sleep 5
     else
         error "Failed to fetch updates after $MAX_RETRIES attempts"
+        error "Last fetch error:"
+        git fetch origin "$BRANCH" 2>&1 | tail -10 | tee -a "$LOG_FILE"
         exit 1
     fi
 done
 
-# Check if updates are available
 cd "$INSTALL_DIR"
 LOCAL_COMMIT=$(git rev-parse HEAD 2>>"$LOG_FILE")
 REMOTE_COMMIT=$(git rev-parse origin/$BRANCH 2>>"$LOG_FILE")
@@ -351,18 +358,15 @@ log "Updates available"
 log "Current commit: ${LOCAL_COMMIT:0:7}"
 log "Latest commit:  ${REMOTE_COMMIT:0:7}"
 
-# Show what's changing
 log "Changes in this update:"
 git log --oneline "$LOCAL_COMMIT..$REMOTE_COMMIT" | head -10 | tee -a "$LOG_FILE"
 
-# ---------------- Create git backup tag ----------------
 
 run_step "Creating backup tag" "
     cd '$INSTALL_DIR' &&
     git tag -f backup-$TIMESTAMP
 "
 
-# ---------------- Update repository ----------------
 
 if ! run_step "Updating repository to latest version" "
     cd '$INSTALL_DIR' &&
@@ -372,7 +376,6 @@ if ! run_step "Updating repository to latest version" "
     rollback
 fi
 
-# Verify the update
 NEW_COMMIT=$(git rev-parse HEAD)
 if [ "$NEW_COMMIT" != "$REMOTE_COMMIT" ]; then
     error "Repository update verification failed!"
@@ -380,20 +383,14 @@ if [ "$NEW_COMMIT" != "$REMOTE_COMMIT" ]; then
 fi
 log "Repository update verified"
 
-# ---------------- Run database migrations ----------------
 
 log "Running database migrations (if any)..."
 cd "$INSTALL_DIR/$GO_BACKEND_DIR"
 
-# Build migration runner first (if it exists)
 if [ -d "db/migrations" ]; then
     log "Migration files detected"
-    # Migrations will run automatically on service start
 fi
 
-# ---------------- Rebuild backend ----------------
-
-# Clean build cache to avoid potential issues
 log "Cleaning Go build cache..."
 go clean -cache -modcache -i -r >>"$LOG_FILE" 2>&1 || true
 
@@ -407,7 +404,6 @@ if ! run_step "Rebuilding backend binary" "
     rollback
 fi
 
-# Verify binary was created and is executable
 if [ ! -f "$INSTALL_DIR/$GO_BACKEND_DIR/$GO_BINARY_NAME" ]; then
     error "Backend binary was not created!"
     rollback
@@ -418,7 +414,6 @@ if [ ! -x "$INSTALL_DIR/$GO_BACKEND_DIR/$GO_BINARY_NAME" ]; then
     rollback
 fi
 
-# Verify binary is not corrupted
 if ! file "$INSTALL_DIR/$GO_BACKEND_DIR/$GO_BINARY_NAME" | grep -q "executable" >>"$LOG_FILE" 2>&1; then
     error "Backend binary appears to be corrupted!"
     rollback
@@ -426,7 +421,6 @@ fi
 
 log "Backend binary verified"
 
-# ---------------- Rebuild CLI ----------------
 
 if [ -d "$INSTALL_DIR/cli" ]; then
     if ! run_step "Rebuilding CLI tool" "
@@ -445,7 +439,6 @@ if [ -d "$INSTALL_DIR/cli" ]; then
     fi
 fi
 
-# ---------------- Restart service ----------------
 
 log "Stopping Mist service..."
 STOP_RETRIES=0
@@ -480,7 +473,6 @@ if ! run_step "Reloading systemd and starting service" "
     rollback
 fi
 
-# ---------------- Health check ----------------
 
 log "Waiting for service to start..."
 RETRY_COUNT=0
@@ -505,7 +497,6 @@ if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
     rollback
 fi
 
-# Wait a bit more and check if service is still running
 log "Performing extended health check..."
 sleep 5
 
@@ -521,7 +512,6 @@ fi
 
 log "Service health check passed"
 
-# Try to connect to the service with retries
 log "Checking HTTP endpoint..."
 HTTP_RETRIES=0
 MAX_HTTP_RETRIES=10
@@ -543,7 +533,6 @@ if [ "$HTTP_SUCCESS" = false ]; then
     warn "Check logs if issues persist: sudo journalctl -u $APP_NAME -n 50"
 fi
 
-# ---------------- Update Traefik ----------------
 
 if [ -f "$INSTALL_DIR/traefik-compose.yml" ]; then
     if ! run_step "Updating Traefik" "
@@ -553,26 +542,21 @@ if [ -f "$INSTALL_DIR/traefik-compose.yml" ]; then
     fi
 fi
 
-# ---------------- Cleanup old backups ----------------
 
 log "Cleaning up old backups (keeping last 5)..."
 cd "$BACKUP_DIR"
 ls -t mist-*.db 2>/dev/null | tail -n +6 | xargs -r rm -f
 
-# Keep last 10 update logs
 cd "$LOG_DIR"
 ls -t update-*.log 2>/dev/null | tail -n +11 | xargs -r rm -f
 
-# Keep last 10 backup tags
 cd "$INSTALL_DIR"
 git tag | grep "^backup-" | sort -r | tail -n +11 | xargs -r git tag -d
 
-# ---------------- Save permanent log ----------------
 
 log "Saving update log to: $PERMANENT_LOG"
 cp "$LOG_FILE" "$PERMANENT_LOG" 2>/dev/null || true
 
-# ---------------- Success ----------------
 
 log ""
 log "╔════════════════════════════════════════════╗"

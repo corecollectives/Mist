@@ -111,15 +111,31 @@ func (a *App) InsertInDB() error {
 	if a.RestartPolicy == "" {
 		a.RestartPolicy = RestartPolicyUnlessStopped
 	}
+	if a.DeploymentStrategy == "" {
+		a.DeploymentStrategy = DeploymentAuto
+	}
+	if a.Status == "" {
+		a.Status = StatusStopped
+	}
 
 	query := `
 	INSERT INTO apps (
-		id, name, description, project_id, created_by, app_type, template_name
-	) VALUES (?, ?, ?, ?, ?, ?, ?)
+		id, name, description, project_id, created_by, app_type, template_name,
+		port, deployment_strategy, restart_policy, git_provider_id, git_repository,
+		git_branch, git_clone_url, root_directory, build_command, start_command,
+		dockerfile_path, cpu_limit, memory_limit, healthcheck_path,
+		healthcheck_interval, healthcheck_timeout, healthcheck_retries, status
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	RETURNING 
 		created_at, updated_at
 	`
-	err := db.QueryRow(query, a.ID, a.Name, a.Description, a.ProjectID, a.CreatedBy, a.AppType, a.TemplateName).Scan(&a.CreatedAt, &a.UpdatedAt)
+	err := db.QueryRow(query,
+		a.ID, a.Name, a.Description, a.ProjectID, a.CreatedBy, a.AppType, a.TemplateName,
+		a.Port, a.DeploymentStrategy, a.RestartPolicy, a.GitProviderID, a.GitRepository,
+		a.GitBranch, a.GitCloneURL, a.RootDirectory, a.BuildCommand, a.StartCommand,
+		a.DockerfilePath, a.CPULimit, a.MemoryLimit, a.HealthcheckPath,
+		a.HealthcheckInterval, a.HealthcheckTimeout, a.HealthcheckRetries, a.Status,
+	).Scan(&a.CreatedAt, &a.UpdatedAt)
 	if err != nil {
 		return err
 	}

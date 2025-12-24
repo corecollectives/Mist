@@ -24,7 +24,7 @@ entryPoints:
 certificatesResolvers:
   le:
     acme:
-      email: admin@vinm.me  
+      email: admin@trymist.cloud  
       storage: /letsencrypt/acme.json
       httpChallenge:
         entryPoint: web

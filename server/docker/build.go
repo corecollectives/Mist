@@ -214,3 +214,62 @@ func PullDockerImage(imageName string, logfile *os.File) error {
 	}
 	return nil
 }
+
+func RecreateContainer(app *models.App) error {
+	containerName := GetContainerName(app.Name, app.ID)
+
+	if !ContainerExists(containerName) {
+		return fmt.Errorf("container %s does not exist", containerName)
+	}
+
+	cmd := exec.Command("docker", "inspect", containerName, "--format", "{{.Config.Image}}")
+	output, err := cmd.Output()
+	if err != nil {
+		return fmt.Errorf("failed to get container image: %w", err)
+	}
+	imageTag := strings.TrimSpace(string(output))
+
+	port, domains, envVars, err := GetDeploymentConfigForApp(app)
+	if err != nil {
+		return fmt.Errorf("failed to get deployment configuration: %w", err)
+	}
+
+	if err := StopRemoveContainer(containerName, nil); err != nil {
+		return fmt.Errorf("failed to stop/remove container: %w", err)
+	}
+
+	if err := RunContainer(app, imageTag, containerName, domains, port, envVars, nil); err != nil {
+		return fmt.Errorf("failed to run container: %w", err)
+	}
+
+	return nil
+}
+
+func GetDeploymentConfigForApp(app *models.App) (int, []string, map[string]string, error) {
+	port := 3000
+	if app.Port != nil {
+		port = int(*app.Port)
+	}
+
+	domains, err := models.GetDomainsByAppID(app.ID)
+	if err != nil && err.Error() != "sql: no rows in result set" {
+		return 0, nil, nil, fmt.Errorf("get domains failed: %w", err)
+	}
+
+	var domainStrings []string
+	for _, d := range domains {
+		domainStrings = append(domainStrings, d.Domain)
+	}
+
+	envs, err := models.GetEnvVariablesByAppID(app.ID)
+	if err != nil && err.Error() != "sql: no rows in result set" {
+		return 0, nil, nil, fmt.Errorf("get env variables failed: %w", err)
+	}
+
+	envMap := make(map[string]string)
+	for _, env := range envs {
+		envMap[env.Key] = env.Value
+	}
+
+	return port, domainStrings, envMap, nil
+}

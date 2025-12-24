@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { toast } from 'sonner';
 import type { DeploymentEvent, StatusUpdate, LogUpdate, Deployment } from '@/types/deployment';
 
 interface UseDeploymentMonitorOptions {
@@ -27,8 +26,6 @@ export const useDeploymentMonitor = ({
   const reconnectAttemptsRef = useRef(0);
   const hasFetchedRef = useRef(false);
   const hasCompletedRef = useRef(false);
-  const connectionOpenedRef = useRef(false);
-  const hasShownCorsErrorRef = useRef(false);
 
   const fetchCompletedDeployment = useCallback(async () => {
     if (hasFetchedRef.current) return;
@@ -97,16 +94,13 @@ export const useDeploymentMonitor = ({
       const host = window.location.host;
       const ws = new WebSocket(`${protocol}//${host}/api/deployments/logs/stream?id=${deploymentId}`)
       wsRef.current = ws;
-      connectionOpenedRef.current = false;
 
       ws.onopen = () => {
         console.log('[DeploymentMonitor] WebSocket connected');
-        connectionOpenedRef.current = true;
         setIsConnected(true);
         setError(null);
         setIsLoading(false);
         reconnectAttemptsRef.current = 0;
-        hasShownCorsErrorRef.current = false;
       };
 
       ws.onmessage = (event) => {
@@ -166,21 +160,9 @@ export const useDeploymentMonitor = ({
       };
 
       ws.onclose = (event) => {
-        console.log('[DeploymentMonitor] WebSocket closed - Code:', event.code, 'Reason:', event.reason, 'Opened:', connectionOpenedRef.current);
+        console.log('[DeploymentMonitor] WebSocket closed - Code:', event.code, 'Reason:', event.reason);
         setIsConnected(false);
         wsRef.current = null;
-
-        // Detect CORS error: connection closed with code 1006 before ever opening, on first attempt
-        if (event.code === 1006 && !connectionOpenedRef.current && !hasShownCorsErrorRef.current && reconnectAttemptsRef.current === 0) {
-          hasShownCorsErrorRef.current = true;
-          toast.error('WebSocket Connection Failed', {
-            description: 'CORS error: The server may not allow connections from this origin. Check your allowed origins in system settings.',
-            duration: 10000,
-          });
-          setError('WebSocket connection blocked by CORS policy');
-          setIsLoading(false);
-          return;
-        }
 
         // Check the current status from state to decide on reconnection
         setStatus((currentStatus) => {

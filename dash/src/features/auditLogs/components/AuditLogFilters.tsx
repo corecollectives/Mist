@@ -15,7 +15,7 @@ export const AuditLogFilters = ({
   const filters = getResourceFilters();
 
   return (
-    <div className="flex items-center gap-4">
+    <div className="flex flex-col sm:flex-row sm:items-center gap-4">
       <div className="flex items-center gap-2">
         <span className="text-sm text-gray-400">Filter by resource:</span>
         <Select value={resourceFilter} onValueChange={onResourceFilterChange}>

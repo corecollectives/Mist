@@ -89,7 +89,8 @@ export const AppPage = () => {
       {/* App Info */}
       <main className="flex-1 overflow-y-auto py-6">
         <Tabs defaultValue="info" className="w-full" onValueChange={setActiveTab}>
-          <TabsList className={`grid w-full ${app.appType === 'database' ? 'grid-cols-5' : app.appType === 'web' ? 'grid-cols-7' : 'grid-cols-6'} mb-6`}>
+          <div className="w-full overflow-x-auto mb-6 pb-1">
+            <TabsList className="inline-flex w-full min-w-fit">
             <TabsTrigger value="info">Info</TabsTrigger>
             {app.appType !== 'database' && <TabsTrigger value="git">Git</TabsTrigger>}
             <TabsTrigger value="environment">Environment</TabsTrigger>
@@ -97,12 +98,13 @@ export const AppPage = () => {
             <TabsTrigger value="deployments">Deployments</TabsTrigger>
             <TabsTrigger value="logs">Logs</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
-          </TabsList>
+            </TabsList>
+          </div>
 
           {/* ✅ INFO TAB */}
           <TabsContent value="info" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2">
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+              <div className="xl:col-span-2">
                 <AppInfo app={app} latestCommit={latestCommit} />
               </div>
               <div>

@@ -6,8 +6,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import type { App } from "@/types/app"
-import { Github, Gitlab } from "lucide-react"
-import { SiBitbucket, SiGitea } from "react-icons/si"
+import { Github } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 
 interface GitProviderTabProps {
@@ -130,27 +129,29 @@ export const GitProviderTab = ({ app }: GitProviderTabProps) => {
     <Tabs defaultValue="github" value={provider} onValueChange={setProvider} className="w-full space-y-8">
 
       {/* ✅ PROVIDER LIST */}
-      <TabsList className="grid w-full grid-cols-4">
-        <TabsTrigger value="github" className="flex items-center gap-2">
-          <Github className="h-4 w-4" />
-          GitHub
-        </TabsTrigger>
+      <div className="w-full overflow-x-auto pb-1">
+        <TabsList className="inline-flex w-full min-w-fit">
+          <TabsTrigger value="github" className="flex items-center gap-2">
+            <Github className="h-4 w-4" />
+            GitHub
+          </TabsTrigger>
 
-        <TabsTrigger value="gitlab" disabled className="flex items-center gap-2 opacity-70">
-          <Gitlab className="h-4 w-4" />
-          GitLab
-        </TabsTrigger>
-
-        <TabsTrigger value="gitea" disabled className="flex items-center gap-2 opacity-70">
-          <SiGitea className="h-4 w-4" />
-          Gitea
-        </TabsTrigger>
-
-        <TabsTrigger value="bitbucket" disabled className="flex items-center gap-2 opacity-70">
-          <SiBitbucket className="h-4 w-4" />
-          Bitbucket
-        </TabsTrigger>
-      </TabsList>
+          {/* <TabsTrigger value="gitlab" disabled className="flex items-center gap-2 opacity-70"> */}
+          {/*   <Gitlab className="h-4 w-4" /> */}
+          {/*   GitLab */}
+          {/* </TabsTrigger> */}
+          {/**/}
+          {/* <TabsTrigger value="gitea" disabled className="flex items-center gap-2 opacity-70"> */}
+          {/*   <SiGitea className="h-4 w-4" /> */}
+          {/*   Gitea */}
+          {/* </TabsTrigger> */}
+          {/**/}
+          {/* <TabsTrigger value="bitbucket" disabled className="flex items-center gap-2 opacity-70"> */}
+          {/*   <SiBitbucket className="h-4 w-4" /> */}
+          {/*   Bitbucket */}
+          {/* </TabsTrigger> */}
+        </TabsList>
+      </div>
 
       {/* ✅ GITHUB TAB CONTENT */}
       <TabsContent value="github">

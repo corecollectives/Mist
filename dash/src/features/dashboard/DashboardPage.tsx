@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FullScreenLoading } from '@/components/common';
@@ -35,22 +35,17 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [wsConnection, setWsConnection] = useState<WebSocket | null>(null);
-  const connectionOpenedRef = useRef(false);
-  const hasShownCorsErrorRef = useRef(false);
 
   const connectWebSocket = useCallback(() => {
     try {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const wsUrl = `${protocol}//${window.location.host}/api/ws/stats`;
       const ws = new WebSocket(wsUrl);
-      connectionOpenedRef.current = false;
 
       ws.onopen = () => {
-        connectionOpenedRef.current = true;
         setIsConnected(true);
         setIsLoading(false);
         setError(null);
-        hasShownCorsErrorRef.current = false;
       };
 
       ws.onmessage = (event) => {
@@ -71,18 +66,8 @@ export default function DashboardPage() {
       };
 
       ws.onclose = (event) => {
-        console.log('[Dashboard] WebSocket closed - Code:', event.code, 'Opened:', connectionOpenedRef.current);
+        console.log('[Dashboard] WebSocket closed - Code:', event.code);
         setIsConnected(false);
-
-        if (event.code === 1006 && !connectionOpenedRef.current && !hasShownCorsErrorRef.current) {
-          hasShownCorsErrorRef.current = true;
-          toast.error('WebSocket Connection Failed', {
-            description: 'CORS error: The server may not allow connections from this origin. Check your allowed origins in system settings.',
-            duration: 10000,
-          });
-          setError('WebSocket connection blocked by CORS policy');
-          return;
-        }
 
         setTimeout(() => {
           if (!wsConnection) connectWebSocket();
@@ -143,7 +128,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="flex items-center justify-between py-6 border-b border-border shrink-0">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-6 border-b border-border shrink-0 gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Dashboard</h1>
           <p className="text-muted-foreground mt-1">System monitoring and performance overview</p>
@@ -166,14 +151,14 @@ export default function DashboardPage() {
         <SystemOverview stats={latestStats} />
 
         {stats.length > 0 && (
-          <div className="grid gap-6 md:grid-cols-2">
+          <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
             <ChartCard title="CPU Usage" data={stats} dataKey="cpuUsage" color="#8B5CF6" formatter={formatPercentage} />
             <ChartCard title="Memory Usage" data={stats} dataKey="memory.used" color="#A371F7" formatter={formatMemory} />
           </div>
         )}
 
         {stats.length > 0 && (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
             <MetricCard title="Current CPU" value={latestStats?.cpuUsage || 0} showUsageColor />
             <MetricCard title="Average CPU" value={averageCpuUsage} showUsageColor />
             <MetricCard title="Memory Usage" value={memoryUsagePercentage} showUsageColor />
@@ -190,7 +175,7 @@ export default function DashboardPage() {
           <div className="space-y-4">
             <h2 className="text-xl font-semibold tracking-tight text-foreground">Disk Usage</h2>
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
               {latestStats.disk.map((d) => (
                 <MetricCard
                   key={d.name}

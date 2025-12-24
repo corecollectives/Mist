@@ -394,10 +394,11 @@ export const ProfilePage = () => {
                 />
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
                 <Button
                   type="submit"
                   disabled={isUpdatingProfile || (username === user.username && email === user.email)}
+                  className="w-full sm:w-auto"
                 >
                   {isUpdatingProfile ? (
                     <>
@@ -420,6 +421,7 @@ export const ProfilePage = () => {
                     setProfileError('');
                   }}
                   disabled={isUpdatingProfile}
+                  className="w-full sm:w-auto"
                 >
                   Reset
                 </Button>
@@ -486,10 +488,11 @@ export const ProfilePage = () => {
                 />
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
                 <Button
                   type="submit"
                   disabled={isUpdatingPassword || !currentPassword || !newPassword || !confirmPassword}
+                  className="w-full sm:w-auto"
                 >
                   {isUpdatingPassword ? (
                     <>
@@ -513,6 +516,7 @@ export const ProfilePage = () => {
                     setPasswordError('');
                   }}
                   disabled={isUpdatingPassword}
+                  className="w-full sm:w-auto"
                 >
                   Clear
                 </Button>

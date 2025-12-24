@@ -203,7 +203,8 @@ export const SettingsPage = () => {
       {/* Content with Tabs */}
       <div className="py-6 max-w-4xl">
         <Tabs defaultValue="general" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-6">
+          <div className="w-full overflow-x-auto mb-6 pb-1">
+            <TabsList className="inline-flex w-full min-w-fit">
             <TabsTrigger value="general">
               <Globe className="h-4 w-4 mr-2" />
               General
@@ -216,7 +217,8 @@ export const SettingsPage = () => {
               <HardDrive className="h-4 w-4 mr-2" />
               Docker
             </TabsTrigger>
-          </TabsList>
+            </TabsList>
+          </div>
 
           {/* General Settings Tab */}
           <TabsContent value="general" className="space-y-6">
@@ -284,10 +286,11 @@ export const SettingsPage = () => {
                       </p>
                     </div>
 
-                    <div className="flex items-center gap-2 pt-4">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 pt-4">
                       <Button
                         type="submit"
                         disabled={isUpdatingSystemSettings || !mistAppName.trim()}
+                        className="w-full sm:w-auto"
                       >
                         {isUpdatingSystemSettings ? (
                           <>
@@ -306,6 +309,7 @@ export const SettingsPage = () => {
                         variant="outline"
                         onClick={loadSystemSettings}
                         disabled={isUpdatingSystemSettings}
+                        className="w-full sm:w-auto"
                       >
                         Reset
                       </Button>
@@ -407,10 +411,11 @@ export const SettingsPage = () => {
                       </AlertDescription>
                     </Alert>
 
-                    <div className="flex items-center gap-2 pt-4">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 pt-4">
                       <Button
                         type="submit"
                         disabled={isUpdatingSecuritySettings}
+                        className="w-full sm:w-auto"
                       >
                         {isUpdatingSecuritySettings ? (
                           <>
@@ -429,6 +434,7 @@ export const SettingsPage = () => {
                         variant="outline"
                         onClick={loadSystemSettings}
                         disabled={isUpdatingSecuritySettings}
+                        className="w-full sm:w-auto"
                       >
                         Reset
                       </Button>
@@ -498,10 +504,11 @@ export const SettingsPage = () => {
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2 pt-4 border-t">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 pt-4 border-t">
                         <Button
                           type="submit"
                           disabled={isUpdatingDockerSettings}
+                          className="w-full sm:w-auto"
                         >
                           {isUpdatingDockerSettings ? (
                             <>
@@ -520,6 +527,7 @@ export const SettingsPage = () => {
                           variant="outline"
                           onClick={loadSystemSettings}
                           disabled={isUpdatingDockerSettings}
+                          className="w-full sm:w-auto"
                         >
                           Reset
                         </Button>
@@ -536,11 +544,12 @@ export const SettingsPage = () => {
                         Run manual cleanup operations to free up disk space
                       </p>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <Button
                           variant="outline"
                           onClick={() => handleDockerCleanup('containers')}
                           disabled={isCleaningDocker !== null}
+                          className="w-full"
                         >
                           {isCleaningDocker === 'containers' ? (
                             <>
@@ -559,6 +568,7 @@ export const SettingsPage = () => {
                           variant="outline"
                           onClick={() => handleDockerCleanup('images')}
                           disabled={isCleaningDocker !== null}
+                          className="w-full"
                         >
                           {isCleaningDocker === 'images' ? (
                             <>
@@ -577,6 +587,7 @@ export const SettingsPage = () => {
                           variant="outline"
                           onClick={() => handleDockerCleanup('system')}
                           disabled={isCleaningDocker !== null}
+                          className="w-full"
                         >
                           {isCleaningDocker === 'system' ? (
                             <>
@@ -595,6 +606,7 @@ export const SettingsPage = () => {
                           variant="destructive"
                           onClick={() => handleDockerCleanup('system-all')}
                           disabled={isCleaningDocker !== null}
+                          className="w-full"
                         >
                           {isCleaningDocker === 'system-all' ? (
                             <>

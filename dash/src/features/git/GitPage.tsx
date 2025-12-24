@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FullScreenLoading } from '@/components/common';
-import { GitHubCard, ProviderCard, CreateAppModal } from './components';
+import { GitHubCard, CreateAppModal } from './components';
 import { useAuth } from '@/providers';
 import type { GitHubApp } from '@/types';
 
@@ -36,22 +36,9 @@ export default function GitPage() {
     }
   };
 
-  const fetchRepositories = async () => {
-    try {
-      const response = await fetch("/api/github/repositories", {
-        credentials: 'include'
-      });
-      await response.json();
-      // Repositories fetched successfully
-    } catch (error) {
-      // Silent fail - repositories are optional
-      console.debug('Failed to fetch repositories:', error);
-    }
-  };
 
   useEffect(() => {
     fetchApp();
-    fetchRepositories();
   }, []);
 
   useEffect(() => {
@@ -97,7 +84,7 @@ export default function GitPage() {
       )}
 
       {/* Main Grid */}
-      <div className="grid gap-4 py-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 py-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
         {/* GitHub Card */}
         <GitHubCard
           app={app}
@@ -107,9 +94,9 @@ export default function GitPage() {
         />
 
         {/* Other Providers */}
-        <ProviderCard name="GitLab" icon="Gitlab" />
-        <ProviderCard name="Bitbucket" icon="GitFork" />
-        <ProviderCard name="Gitea" icon="GitMerge" />
+        {/* <ProviderCard name="GitLab" icon="Gitlab" /> */}
+        {/* <ProviderCard name="Bitbucket" icon="GitFork" /> */}
+        {/* <ProviderCard name="Gitea" icon="GitMerge" /> */}
       </div>
 
       {/* Create App Modal */}

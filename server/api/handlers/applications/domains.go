@@ -8,6 +8,7 @@ import (
 
 	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/api/middleware"
+	"github.com/corecollectives/mist/docker"
 	"github.com/corecollectives/mist/models"
 	"github.com/corecollectives/mist/utils"
 )
@@ -49,6 +50,13 @@ func CreateDomain(w http.ResponseWriter, r *http.Request) {
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to create domain", err.Error())
 		return
 	}
+
+	go func() {
+		app, err := models.GetApplicationByID(req.AppID)
+		if err == nil {
+			docker.RecreateContainer(app)
+		}
+	}()
 
 	models.LogUserAudit(userInfo.ID, "create", "domain", &domain.ID, map[string]interface{}{
 		"appId":  req.AppID,
@@ -144,6 +152,14 @@ func UpdateDomain(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Recreate container in background to apply domain changes
+	go func() {
+		app, err := models.GetApplicationByID(domain.AppID)
+		if err == nil {
+			docker.RecreateContainer(app)
+		}
+	}()
+
 	updatedDomain, err := models.GetDomainByID(req.ID)
 	if err != nil {
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to retrieve updated domain", err.Error())
@@ -205,6 +221,14 @@ func DeleteDomain(w http.ResponseWriter, r *http.Request) {
 		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to delete domain", err.Error())
 		return
 	}
+
+	// Recreate container in background to apply domain changes
+	go func() {
+		app, err := models.GetApplicationByID(domain.AppID)
+		if err == nil {
+			docker.RecreateContainer(app)
+		}
+	}()
 
 	models.LogUserAudit(userInfo.ID, "delete", "domain", &req.ID, map[string]interface{}{
 		"appId":  domain.AppID,

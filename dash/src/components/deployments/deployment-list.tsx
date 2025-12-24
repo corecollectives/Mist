@@ -113,12 +113,12 @@ export const DeploymentsTab = ({ appId, app }: { appId: number; app?: App }) => 
 
       {/* Deployments Card */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <CardTitle>Deployments</CardTitle>
           <Button
             onClick={handleDeploy}
             disabled={deploying}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 w-full sm:w-auto"
           >
             {deploying ? (
               <>
@@ -159,7 +159,7 @@ export const DeploymentsTab = ({ appId, app }: { appId: number; app?: App }) => 
               {deployments.map((d) => (
                 <div
                   key={d.id}
-                  className="flex items-start justify-between bg-muted/20 p-4 rounded-lg border hover:bg-muted/30 transition-colors"
+                  className="flex flex-col sm:flex-row sm:items-start sm:justify-between bg-muted/20 p-4 rounded-lg border hover:bg-muted/30 transition-colors gap-4"
                 >
                   <div className="flex-1 space-y-2">
                     <div className="flex items-center gap-3 flex-wrap">
@@ -171,7 +171,7 @@ export const DeploymentsTab = ({ appId, app }: { appId: number; app?: App }) => 
 
                       {/* Progress indicator for in-progress deployments */}
                       {d.status !== 'success' && d.status !== 'failed' && d.progress > 0 && (
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 w-full sm:w-auto">
                           <div className="w-24 bg-muted rounded-full h-1.5 overflow-hidden">
                             <div
                               className="bg-primary h-full transition-all duration-300"
@@ -187,7 +187,7 @@ export const DeploymentsTab = ({ appId, app }: { appId: number; app?: App }) => 
 
                     <div className="space-y-1">
                       {app?.appType === 'database' ? (
-                        <p className="font-mono text-sm">
+                        <p className="font-mono text-sm break-all">
                           <span className="text-primary">Version: {d.commit_hash}</span>
                           {d.commit_message && (
                             <>
@@ -197,7 +197,7 @@ export const DeploymentsTab = ({ appId, app }: { appId: number; app?: App }) => 
                           )}
                         </p>
                       ) : (
-                        <p className="font-mono text-sm">
+                        <p className="font-mono text-sm break-all">
                           <span className="text-primary">{d.commit_hash.slice(0, 7)}</span>
                           {' – '}
                           {d.commit_message}
@@ -207,12 +207,12 @@ export const DeploymentsTab = ({ appId, app }: { appId: number; app?: App }) => 
                       {d.error_message && (
                         <p className="text-xs text-red-500 flex items-start gap-1">
                           <XCircle className="h-3 w-3 mt-0.5 shrink-0" />
-                          {d.error_message}
+                          <span className="break-all">{d.error_message}</span>
                         </p>
                       )}
                     </div>
 
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
                         {new Date(d.created_at).toLocaleString()}
@@ -230,7 +230,7 @@ export const DeploymentsTab = ({ appId, app }: { appId: number; app?: App }) => 
                     variant="outline"
                     size="sm"
                     onClick={() => setSelectedDeployment(d.id)}
-                    className="ml-4"
+                    className="w-full sm:w-auto sm:ml-4"
                   >
                     View Logs
                   </Button>

@@ -108,7 +108,7 @@ export const Domains = ({ appId }: DomainsProps) => {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <CardTitle>Domains</CardTitle>
             <CardDescription>
@@ -116,7 +116,7 @@ export const Domains = ({ appId }: DomainsProps) => {
             </CardDescription>
           </div>
           {!showAddForm && (
-            <Button onClick={() => setShowAddForm(true)} size="sm">
+            <Button onClick={() => setShowAddForm(true)} size="sm" className="w-full sm:w-auto">
               <Plus className="h-4 w-4 mr-2" />
               Add Domain
             </Button>
@@ -139,8 +139,8 @@ export const Domains = ({ appId }: DomainsProps) => {
                 Enter the domain without http:// or https://
               </p>
             </div>
-            <div className="flex gap-2">
-              <Button type="submit" size="sm">
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button type="submit" size="sm" className="w-full sm:w-auto">
                 <Check className="h-4 w-4 mr-2" />
                 Add
               </Button>
@@ -148,6 +148,7 @@ export const Domains = ({ appId }: DomainsProps) => {
                 type="button"
                 variant="outline"
                 size="sm"
+                className="w-full sm:w-auto"
                 onClick={() => {
                   setShowAddForm(false);
                   setNewDomain("");
@@ -178,12 +179,12 @@ export const Domains = ({ appId }: DomainsProps) => {
                         onChange={(e) => setEditDomain(e.target.value)}
                       />
                     </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" onClick={() => handleUpdate(domain.id)}>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <Button size="sm" onClick={() => handleUpdate(domain.id)} className="w-full sm:w-auto">
                         <Check className="h-4 w-4 mr-2" />
                         Save
                       </Button>
-                      <Button size="sm" variant="outline" onClick={cancelEdit}>
+                      <Button size="sm" variant="outline" onClick={cancelEdit} className="w-full sm:w-auto">
                         <X className="h-4 w-4 mr-2" />
                         Cancel
                       </Button>
@@ -191,25 +192,25 @@ export const Domains = ({ appId }: DomainsProps) => {
                   </div>
                 ) : (
                   <>
-                    <div className="p-4 flex items-center justify-between">
-                      <div className="flex items-center gap-3 flex-1">
+                    <div className="p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-3 flex-1 min-w-0">
                         <a
                           href={`https://${domain.domain}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="font-mono font-semibold hover:underline flex items-center gap-1"
+                          className="font-mono font-semibold hover:underline flex items-center gap-1 break-all"
                         >
                           {domain.domain}
-                          <ExternalLink className="h-3 w-3" />
+                          <ExternalLink className="h-3 w-3 flex-shrink-0" />
                         </a>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <Badge variant={getSslStatusColor(domain.sslStatus)}>
                             SSL: {domain.sslStatus}
                           </Badge>
                           {getDnsStatusBadge(domain)}
                         </div>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 self-end sm:self-auto">
                         <Button
                           size="sm"
                           variant="ghost"

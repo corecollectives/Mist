@@ -146,7 +146,7 @@ export const AppInfo = ({ app, latestCommit }: Props) => {
 
   return (
     <Card className="border-border/40 shadow-sm pt-0">
-      <CardHeader className="border-b border-border/40 pt-5 flex justify-between bg-gradient-to-br from-muted/40 to-muted/20">
+      <CardHeader className="border-b border-border/40 pt-5 flex flex-col sm:flex-row justify-between gap-3 bg-gradient-to-br from-muted/40 to-muted/20">
         <div>
           <CardTitle className="text-lg font-semibold">Application Overview</CardTitle>
           <p className="text-xs text-muted-foreground mt-0.5">View and manage your application details</p>
@@ -154,7 +154,7 @@ export const AppInfo = ({ app, latestCommit }: Props) => {
         <Button
           onClick={handleDeploy}
           disabled={deploying}
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 w-full sm:w-auto"
           size="sm"
         >
           {deploying ? (
@@ -210,8 +210,7 @@ export const AppInfo = ({ app, latestCommit }: Props) => {
             {/* Domains or Preview URL - only for web apps */}
             {app.appType === 'web' && app.status === 'running' && (
               <InfoItem icon={Globe} label="Access URLs">
-                <div className="grid grid-cols-3
-                  gap-2">
+                <div className="flex flex-col gap-2">
                   {domains.length > 0 ? (
                     domains.map((domain) => (
                       <a
@@ -222,7 +221,7 @@ export const AppInfo = ({ app, latestCommit }: Props) => {
                         className="inline-flex items-center gap-2 text-sm text-primary hover:underline font-medium w-fit group p-1.5 -ml-1.5 rounded-md hover:bg-muted/50 transition-colors"
                       >
                         <ExternalLink className="h-3.5 w-3.5 flex-shrink-0 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-                        <span className="font-mono">{domain.domain}</span>
+                        <span className="font-mono break-all">{domain.domain}</span>
                         {domain.sslStatus === 'active' && (
                           <Badge variant="outline" className="bg-green-500/10 border-green-500/20 text-green-600 dark:text-green-400 text-xs">
                             SSL
@@ -238,7 +237,7 @@ export const AppInfo = ({ app, latestCommit }: Props) => {
                       className="inline-flex items-center gap-2 text-sm text-primary hover:underline font-medium w-fit group p-1.5 -ml-1.5 rounded-md hover:bg-muted/50 transition-colors"
                     >
                       <ExternalLink className="h-3.5 w-3.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-                      <span className="font-mono">{previewUrl.replace(/^https?:\/\//, '')}</span>
+                      <span className="font-mono break-all">{previewUrl.replace(/^https?:\/\//, '')}</span>
                     </a>
                   ) : (
                     <p className="text-muted-foreground text-sm">No domains configured</p>
@@ -398,16 +397,16 @@ export const AppInfo = ({ app, latestCommit }: Props) => {
           <SectionDivider title="Metadata" />
 
           <InfoItem icon={Clock} label="Timestamps" className="md:col-span-2">
-            <div className="flex flex-wrap gap-6 text-xs">
+            <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:gap-6 text-xs">
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground">Created:</span>
-                <span className="font-medium text-foreground">
+                <span className="font-medium text-foreground break-all">
                   {new Date(app.createdAt).toLocaleString()}
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground">Updated:</span>
-                <span className="font-medium text-foreground">
+                <span className="font-medium text-foreground break-all">
                   {new Date(app.updatedAt).toLocaleString()}
                 </span>
               </div>

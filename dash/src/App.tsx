@@ -12,11 +12,12 @@ import { UsersPage } from "./features/users";
 import { ProjectsPage } from "./features/projects";
 import { GitPage } from "./features/git";
 
-import { DeploymentsPage } from "./pages/Deployments";
+// import { DeploymentsPage } from "./pages/Deployments";
 import { DatabasesPage } from "./pages/Databases";
 import { LogsPage } from "./pages/Logs";
 import { SettingsPage } from "./pages/Settings";
 import { ProfilePage } from "./pages/Profile";
+import { UpdatesPage } from "./pages/Updates";
 import { AuditLogsPage } from "./features/auditLogs";
 import { ProjectPage } from "./features/projects/ProjectPage";
 import { AppPage } from "./features/applications/AppPage";
@@ -49,12 +50,13 @@ export default function App() {
               <Route path="/projects" element={<ProjectsPage />} />
               <Route path="/projects/:projectId" element={<ProjectPage />} />
               <Route path="/projects/:projectId/apps/:appId" element={<AppPage />} />
-              <Route path="/deployments" element={<DeploymentsPage />} />
+              {/* <Route path="/deployments" element={<DeploymentsPage />} /> */}
               <Route path="/databases" element={<DatabasesPage />} />
               <Route path="/logs" element={<LogsPage />} />
               <Route path="/audit-logs" element={<AuditLogsPage />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/updates" element={<UpdatesPage />} />
               <Route path="/callback" element={<CallbackPage />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />

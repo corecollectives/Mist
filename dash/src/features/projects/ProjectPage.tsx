@@ -10,6 +10,7 @@ import { CreateAppModal } from "./components/CreateAppModal";
 import { ManageMembersModal } from "./components/ManageMembersModal";
 import { useApplications, useProject } from "@/hooks";
 import { useAuth } from "@/providers";
+import { applicationsService } from "@/services";
 
 export const ProjectPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -67,6 +68,17 @@ export const ProjectPage = () => {
     const result = await updateProject(projectData);
     if (result) {
       setIsModalOpen(false);
+    }
+  };
+
+  const handleDeleteApp = async (appId: number) => {
+    try {
+      await applicationsService.delete(appId);
+      toast.success("Application deleted successfully");
+      fetchApps();
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to delete application";
+      toast.error(errorMessage);
     }
   };
 
@@ -147,6 +159,7 @@ export const ProjectPage = () => {
                 key={app.id}
                 app={app}
                 onClick={() => navigate(`/projects/${app.projectId}/apps/${app.id}`)}
+                onDelete={handleDeleteApp}
               />
             ))}
           </div>

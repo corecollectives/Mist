@@ -169,13 +169,13 @@
 **Goal**: Make Mist production-ready for small teams
 
 #### High Priority
-- [ ] **SSL/TLS Automation**
-  - [ ] Integrate Let's Encrypt ACME client
-  - [ ] Automatic certificate issuance
-  - [ ] Auto-renewal 30 days before expiry
+- [✅] **SSL/TLS Automation**
+  - [✅] Integrate Let's Encrypt ACME client
+  - [✅] Automatic certificate issuance
+  - [✅] Auto-renewal 30 days before expiry
   - [ ] Certificate storage in database
-  - [ ] Force HTTPS option per app
-  - [ ] Custom certificate upload
+  - [✅ ] Force HTTPS option per app
+  - [] Custom certificate upload
 
 - [ ] **Deployment Rollback**
   - [ ] Store deployment history
@@ -185,11 +185,11 @@
   - [ ] Image cleanup policy
 
 - [ ] **Resource Management**
-  - [ ] CPU limits per container (Docker `--cpus`)
-  - [ ] Memory limits per container (`-m` flag)
-  - [ ] Restart policies (always, on-failure, unless-stopped)
+  - [✅] CPU limits per container (Docker `--cpus`)
+  - [✅] Memory limits per container (`-m` flag)
+  - [✅] Restart policies (always, on-failure, unless-stopped)
   - [ ] Health checks (Docker HEALTHCHECK)
-  - [ ] Container auto-restart on failure
+  - [✅] Container auto-restart on failure
   - [ ] Resource usage alerts
 
 - [ ] **User Management Completion**
@@ -203,9 +203,9 @@
 - [ ] **Security Enhancements**
   - [ ] Rate limiting on API endpoints
   - [ ] CORS configuration
-  - [ ] Webhook signature verification (GitHub)
+  - [✅] Webhook signature verification (GitHub)
   - [ ] Secrets encryption at rest
-  - [ ] Audit log population (user actions)
+  - [✅] Audit log population (user actions)
   - [ ] Security headers (CSP, X-Frame-Options)
   - [ ] IP whitelist for admin actions
 

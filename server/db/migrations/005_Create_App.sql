@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS apps (
     git_clone_url TEXT,
     
     -- Deployment Configuration
-    deployment_strategy TEXT NOT NULL CHECK(deployment_strategy IN ('auto', 'manual')) DEFAULT 'manual',
+    deployment_strategy TEXT NOT NULL CHECK(deployment_strategy IN ('auto', 'manual')) DEFAULT 'auto',
     port INTEGER,
     root_directory TEXT DEFAULT '.',
     build_command TEXT,

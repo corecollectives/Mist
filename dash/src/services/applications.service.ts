@@ -403,4 +403,16 @@ export const applicationsService = {
       throw new Error(data.error || 'Failed to delete volume');
     }
   },
+
+  async delete(appId: number): Promise<void> {
+    const response = await fetch(`${API_BASE}/apps/delete?id=${appId}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to delete application');
+    }
+  },
 };

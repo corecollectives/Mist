@@ -40,8 +40,23 @@ func CreateDeploymentFromGithubPushEvent(evt PushEvent) (int64, error) {
 		return 0, errors.New("no application found for this repository and branch")
 	}
 
-	// if deployment already exist, means we don't need to create another
-	// github might be sending extra req that might cause multiple deployments that is unncecary
+	app, err := models.GetApplicationByID(appID)
+	if err != nil {
+		log.Error().Err(err).
+			Int64("app_id", appID).
+			Msg("Error getting application")
+		return 0, err
+	}
+
+	if app.DeploymentStrategy == models.DeploymentManual {
+		log.Info().
+			Int64("app_id", appID).
+			Str("repo", repoName).
+			Str("branch", branch).
+			Msg("Skipping automatic deployment - deployment strategy is set to manual")
+		return 0, nil
+	}
+
 	dep, err := models.GetDeploymentByAppIDAndCommitHash(appID, commit)
 	if err != nil && err != sql.ErrNoRows {
 		log.Error().Err(err).

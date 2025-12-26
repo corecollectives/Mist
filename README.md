@@ -15,7 +15,7 @@ curl -sSL https://trymist.cloud/install.sh | bash
 - Docker installed
 - Root or sudo access
 
-After installation, access the dashboard at `http://your-server-ip:3000`
+After installation, access the dashboard at `http://your-server-ip:8080`
 
 ## Features
 

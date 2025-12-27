@@ -105,7 +105,7 @@ func TriggerUpdate(w http.ResponseWriter, r *http.Request) {
 
 	var logBuilder strings.Builder
 
-	cmd := exec.Command("/bin/bash", "/opt/mist/update.sh")
+	cmd := exec.Command("/bin/bash", "/opt/mist/install.sh")
 
 	cmd.Env = os.Environ()
 

@@ -545,13 +545,13 @@ fi
 
 log "Cleaning up old backups (keeping last 5)..."
 cd "$BACKUP_DIR"
-ls -t mist-*.db 2>/dev/null | tail -n +6 | xargs -r rm -f
+ls -t mist-*.db 2>/dev/null | tail -n +6 | xargs -r rm -f || true
 
 cd "$LOG_DIR"
-ls -t update-*.log 2>/dev/null | tail -n +11 | xargs -r rm -f
+ls -t update-*.log 2>/dev/null | tail -n +11 | xargs -r rm -f || true
 
 cd "$INSTALL_DIR"
-git tag | grep "^backup-" | sort -r | tail -n +11 | xargs -r git tag -d
+git tag | grep "^backup-" | sort -r | tail -n +11 | xargs -r git tag -d 2>/dev/null || true
 
 
 log "Saving update log to: $PERMANENT_LOG"

@@ -1,9 +1,12 @@
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar"
+import { Loader2 } from "lucide-react"
 
 export function VersionSwitcher({
-  defaultVersion,
+  version,
+  loading = false,
 }: {
-  defaultVersion: string
+  version: string
+  loading?: boolean
 }) {
   return (
     <SidebarMenu>
@@ -15,7 +18,16 @@ export function VersionSwitcher({
           <img src="/mist.png" alt="Mist Icon" className="size-10" />
           <div className="flex flex-col gap-0.5 leading-none">
             <span className="font-medium">Mist</span>
-            <span className="text-sm text-muted-foreground">v{defaultVersion}</span>
+            <span className="text-sm text-muted-foreground flex items-center gap-1">
+              {loading ? (
+                <>
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  <span>Loading...</span>
+                </>
+              ) : (
+                `v${version}`
+              )}
+            </span>
           </div>
         </SidebarMenuButton>
       </SidebarMenuItem>

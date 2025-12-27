@@ -8,3 +8,4 @@ export { useApplication } from './use-application';
 export { useUsers } from './use-users';
 export { useEnvironmentVariables } from './use-environment-variables';
 export { useDomains } from './use-domains';
+export { useVersion } from './use-version';

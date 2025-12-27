@@ -16,6 +16,7 @@ export default defineConfig({
       { text: 'Guide', link: '/guide/getting-started' },
       // { text: 'API', link: '/api/overview' },
       { text: 'Deployment', link: '/deployment/installation' },
+      { text: 'Troubleshooting', link: '/troubleshooting/' }
       // { text: 'GitHub', link: 'https://github.com/corecollectives/mist' }
     ],
 
@@ -58,11 +59,16 @@ export default defineConfig({
           ]
         },
         {
+          text: 'Administration',
+          items: [
+            { text: 'CLI Tool', link: '/guide/cli' }
+          ]
+        },
+        {
           text: 'Coming Soon',
           items: [
             { text: 'Rollback Deployments', link: '/guide/rollback' },
-            { text: 'Notifications', link: '/guide/notifications' },
-            { text: 'CLI Tool', link: '/guide/cli' }
+            { text: 'Notifications', link: '/guide/notifications' }
           ]
         }
       ],
@@ -100,6 +106,16 @@ export default defineConfig({
             { text: 'System Requirements', link: '/deployment/requirements' },
             { text: 'Security Best Practices', link: '/deployment/security' },
             { text: 'Backup & Recovery', link: '/deployment/backup' }
+          ]
+        }
+      ],
+      '/troubleshooting/': [
+        {
+          text: 'Troubleshooting',
+          items: [
+            { text: 'Common Issues', link: '/troubleshooting/' },
+            { text: 'Forgot Password', link: '/troubleshooting/forgot-password' },
+            { text: 'Manual Update', link: '/troubleshooting/manual-update' }
           ]
         }
       ]

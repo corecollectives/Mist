@@ -218,7 +218,12 @@ WantedBy=multi-user.target
 EOF
 " || exit 1
 
-run_step "Starting service" "sudo systemctl daemon-reload && sudo systemctl enable '$APP_NAME' && sudo systemctl start '$APP_NAME'" || exit 1
+if sudo systemctl is-active --quiet "$APP_NAME" 2>/dev/null; then
+    log "Service already running, restarting..."
+    run_step "Restarting service" "sudo systemctl daemon-reload && sudo systemctl restart '$APP_NAME'" || exit 1
+else
+    run_step "Starting service" "sudo systemctl daemon-reload && sudo systemctl enable '$APP_NAME' && sudo systemctl start '$APP_NAME'" || exit 1
+fi
 sleep 3
 sudo systemctl is-active --quiet "$APP_NAME" || { error "Service failed to start"; sudo journalctl -u "$APP_NAME" -n 20; exit 1; }
 log "Service running"
@@ -255,9 +260,9 @@ fi
 echo
 echo "╔════════════════════════════════════════════╗"
 echo "║ 🎉 Mist installation complete              ║"
-echo "║ 👉 http://$SERVER_IP:$PORT                    "
+printf "║ 👉 %-40s║\n" "http://$SERVER_IP:$PORT"
 if [ -n "$CLI_INSTALLED" ]; then
-    echo "$CLI_INSTALLED"
+    printf "║ %-42s ║\n" "$CLI_INSTALLED"
 fi
 echo "╚════════════════════════════════════════════╝"
 echo

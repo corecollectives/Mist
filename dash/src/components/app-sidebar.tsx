@@ -1,5 +1,6 @@
 import { VersionSwitcher } from "@/components/version-switcher"
 import { useSidebar } from "@/components/ui/sidebar"
+import { useVersion } from "@/hooks"
 
 
 import {
@@ -38,7 +39,6 @@ const useNavData = () => {
   const location = useLocation()
 
   const data = {
-    versions: ["1.0.1", "1.1.0-alpha", "2.0.0-beta1"],
     navMain: [
       {
         title: "Home",
@@ -148,13 +148,14 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const { data } = useNavData()
   const { user, logout } = useAuth()
   const { state } = useSidebar()
+  const { version, loading } = useVersion()
 
   const isCollapsed = state === "collapsed"
 
   return (
     <Sidebar {...props} collapsible="icon" variant="floating">
       <SidebarHeader>
-        <VersionSwitcher defaultVersion={data.versions[0]} />
+        <VersionSwitcher version={version} loading={loading} />
       </SidebarHeader>
 
       <SidebarContent>

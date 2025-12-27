@@ -25,8 +25,10 @@ func UpdateApplication(w http.ResponseWriter, r *http.Request) {
 		AppID              int64    `json:"appId"`
 		Name               *string  `json:"name"`
 		Description        *string  `json:"description"`
+		GitProviderID      *int64   `json:"gitProviderId"`
 		GitRepository      *string  `json:"gitRepository"`
 		GitBranch          *string  `json:"gitBranch"`
+		GitCloneURL        *string  `json:"gitCloneUrl"`
 		Port               *int     `json:"port"`
 		RootDirectory      *string  `json:"rootDirectory"`
 		DockerfilePath     *string  `json:"dockerfilePath"`
@@ -74,12 +76,19 @@ func UpdateApplication(w http.ResponseWriter, r *http.Request) {
 		trimmed := strings.TrimSpace(*req.Description)
 		app.Description = &trimmed
 	}
+	if req.GitProviderID != nil {
+		app.GitProviderID = req.GitProviderID
+	}
 	if req.GitRepository != nil {
 		trimmed := strings.TrimSpace(*req.GitRepository)
 		app.GitRepository = &trimmed
 	}
 	if req.GitBranch != nil {
 		app.GitBranch = strings.TrimSpace(*req.GitBranch)
+	}
+	if req.GitCloneURL != nil {
+		trimmed := strings.TrimSpace(*req.GitCloneURL)
+		app.GitCloneURL = &trimmed
 	}
 	if req.Port != nil {
 		port := int64(*req.Port)
@@ -131,11 +140,17 @@ func UpdateApplication(w http.ResponseWriter, r *http.Request) {
 	if req.Name != nil {
 		changes["name"] = *req.Name
 	}
+	if req.GitProviderID != nil {
+		changes["git_provider_id"] = *req.GitProviderID
+	}
 	if req.GitRepository != nil {
 		changes["git_repository"] = *req.GitRepository
 	}
 	if req.GitBranch != nil {
 		changes["git_branch"] = *req.GitBranch
+	}
+	if req.GitCloneURL != nil {
+		changes["git_clone_url"] = *req.GitCloneURL
 	}
 	if req.Port != nil {
 		changes["port"] = *req.Port

@@ -42,6 +42,7 @@ func RegisterRoutes(mux *http.ServeMux) {
 	mux.Handle("POST /api/users/avatar", middleware.AuthMiddleware()(http.HandlerFunc(users.UploadAvatar)))
 	mux.Handle("DELETE /api/users/avatar", middleware.AuthMiddleware()(http.HandlerFunc(users.DeleteAvatar)))
 	mux.Handle("DELETE /api/users/delete", middleware.AuthMiddleware()(http.HandlerFunc(users.DeleteUser)))
+	mux.Handle("GET /api/users/git-providers", middleware.AuthMiddleware()(http.HandlerFunc(users.GetUserGitProviders)))
 
 	mux.Handle("POST /api/projects/create", middleware.AuthMiddleware()(http.HandlerFunc(projects.CreateProject)))
 	mux.Handle("GET /api/projects/getAll", middleware.AuthMiddleware()(http.HandlerFunc(projects.GetProjects)))

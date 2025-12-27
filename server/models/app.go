@@ -342,3 +342,64 @@ func DeleteApplication(appID int64) error {
 	_, err := db.Exec(query, appID)
 	return err
 }
+
+// if git_clone_url is set, it uses that
+// if not, it falls back to git_repository
+// assuming github, becuase in v1.0.0, we only had github as a git provider and we were only storing git_repository and appending the https://github.com/ manually, bad design decision but whatever
+func GetAppCloneURL(appID int64, userID int64) (string, string, bool, error) {
+	gitProviderID, gitRepository, _, gitCloneURL, _, _, err := GetAppGitInfo(appID)
+	if err != nil {
+		return "", "", false, fmt.Errorf("failed to get app git info: %w", err)
+	}
+
+	// case 1 - git_clone_url is set, use it
+	if gitCloneURL != nil && *gitCloneURL != "" {
+		var accessToken string
+		if gitProviderID != nil {
+			token, _, needsRefresh, err := GetGitProviderAccessToken(*gitProviderID)
+			if err != nil {
+				// try to get GitHub access token as fallback
+				_, err := GetInstallationIDByUserID(userID)
+				if err == nil {
+					installation, err := GetInstallationByUserID(int(userID))
+					if err == nil {
+						accessToken = installation.AccessToken
+					}
+				}
+			} else {
+				// Check if token needs refresh
+				if needsRefresh {
+					// Try to refresh the token
+					newToken, err := RefreshGitProviderToken(*gitProviderID)
+					if err == nil {
+						token = newToken
+					}
+					// If refresh fails, continue with expired token - deployment will fail but at least we tried
+				}
+				accessToken = token
+			}
+		}
+		return *gitCloneURL, accessToken, false, nil
+	}
+
+	// Case 2 - git_clone_url missing but git_repository present (legacy github apps)
+	if gitRepository != nil && *gitRepository != "" {
+		// assume GitHub and construct the clone URL
+		cloneURL := fmt.Sprintf("https://github.com/%s.git", *gitRepository)
+
+		// ary to get access token from GitHub installation
+		var accessToken string
+		_, err := GetInstallationIDByUserID(userID)
+		if err == nil {
+			installation, err := GetInstallationByUserID(int(userID))
+			if err == nil {
+				accessToken = installation.AccessToken
+			}
+		}
+
+		// mark that we should migrate this app's data
+		return cloneURL, accessToken, true, nil
+	}
+
+	return "", "", false, fmt.Errorf("app has no git repository or clone URL configured")
+}

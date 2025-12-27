@@ -16,20 +16,23 @@ interface GitProviderTabProps {
 export const GitProviderTab = ({ app }: GitProviderTabProps) => {
   const [provider, setProvider] = useState("github")
 
-  // Github App State
   const [, setGithubApp] = useState<{ name: string; slug: string } | null>(null)
   const [isInstalled, setIsInstalled] = useState<boolean>(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Repo + Branch
-  const [repos, setRepos] = useState<Array<{ id: number; full_name: string }>>([])
+  const [gitProviderId, setGitProviderId] = useState<number | null>(app.gitProviderId || null)
+
+  const [repos, setRepos] = useState<Array<{ id: number; full_name: string; clone_url?: string }>>([])
   const [branches, setBranches] = useState<Array<{ name: string }>>([])
   const [selectedRepo, setSelectedRepo] = useState(app.gitRepository || "")
+  const [selectedRepoCloneUrl, setSelectedRepoCloneUrl] = useState(app.gitCloneUrl || "")
   const [selectedBranch, setSelectedBranch] = useState(app.gitBranch || "")
   const [isRepoLoading, setIsRepoLoading] = useState(true)
   const [isBranchLoading, setIsBranchLoading] = useState(false)
-  // ✅ Fetch GitHub App installation
+
+  // this is for github app fetching
+  // FIX: name of this function should be changed
   const fetchApp = async () => {
     try {
       setIsLoading(true)
@@ -39,8 +42,8 @@ export const GitProviderTab = ({ app }: GitProviderTabProps) => {
       const data = await response.json()
 
       if (data.success) {
-        setGithubApp(data.data.app)      // app metadata
-        setIsInstalled(data.data.isInstalled) // boolean
+        setGithubApp(data.data.app)
+        setIsInstalled(data.data.isInstalled)
       } else {
         setError(data.error || "Failed to load GitHub App details")
       }
@@ -49,6 +52,25 @@ export const GitProviderTab = ({ app }: GitProviderTabProps) => {
       setError("Failed to load GitHub App details")
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  // fetch user's git providers to get the git_provider_id
+  const fetchGitProviders = async () => {
+    try {
+      const response = await fetch("/api/users/git-providers", { credentials: "include" })
+      const data = await response.json()
+
+      if (data.success && data.data && data.data.length > 0) {
+        // find the GitHub provider
+        // it is only the time being when there's only one git provider, and should be changed
+        const githubProvider = data.data.find((p: any) => p.provider === "github")
+        if (githubProvider) {
+          setGitProviderId(githubProvider.id)
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load git providers:', error)
     }
   }
 
@@ -87,6 +109,7 @@ export const GitProviderTab = ({ app }: GitProviderTabProps) => {
   useEffect(() => {
     fetchApp()
     fetchRepos()
+    fetchGitProviders()
   }, [])
 
   useEffect(() => {
@@ -95,7 +118,7 @@ export const GitProviderTab = ({ app }: GitProviderTabProps) => {
 
   useEffect(() => {
     if (app.gitRepository) {
-      setRepos([{ id: 0, full_name: app.gitRepository }])
+      setRepos([{ id: 0, full_name: app.gitRepository, clone_url: app.gitCloneUrl || undefined }])
     }
     if (app.gitBranch) {
       setBranches([{ name: app.gitBranch }])
@@ -110,9 +133,10 @@ export const GitProviderTab = ({ app }: GitProviderTabProps) => {
         credentials: "include",
         body: JSON.stringify({
           appId: app.id,
+          gitProviderId: gitProviderId,
           gitRepository: selectedRepo,
           gitBranch: selectedBranch,
-          gitProviderId: 1,
+          gitCloneUrl: selectedRepoCloneUrl || `https://github.com/${selectedRepo}.git`,
         }),
       })
 
@@ -212,7 +236,20 @@ export const GitProviderTab = ({ app }: GitProviderTabProps) => {
                   {isRepoLoading ? (
                     <Skeleton className="w-full h-10 mt-2" />
                   ) : (
-                    <Select value={selectedRepo} onValueChange={setSelectedRepo}>
+                    <Select
+                      value={selectedRepo}
+                      onValueChange={(value) => {
+                        setSelectedRepo(value)
+                        // Find the repo object to get the clone_url
+                        const repo = repos.find(r => r.full_name === value)
+                        if (repo?.clone_url) {
+                          setSelectedRepoCloneUrl(repo.clone_url)
+                        } else {
+                          // Fallback: construct GitHub URL
+                          setSelectedRepoCloneUrl(`https://github.com/${value}.git`)
+                        }
+                      }}
+                    >
                       <SelectTrigger className="mt-2 w-full">
                         <SelectValue placeholder="Select a repository" />
                       </SelectTrigger>

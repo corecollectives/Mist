@@ -26,6 +26,7 @@ type Manifest struct {
 	Public             bool              `json:"public"`
 	DefaultPermissions map[string]string `json:"default_permissions"`
 	DefaultEvents      []string          `json:"default_events"`
+	SetupOnUpdate      bool              `json:"setup_on_update"`
 }
 
 func CreateGithubApp(w http.ResponseWriter, r *http.Request) {
@@ -83,6 +84,7 @@ func CreateGithubApp(w http.ResponseWriter, r *http.Request) {
 			"repository_hooks": "write",
 		},
 		DefaultEvents: []string{"push", "pull_request", "deployment_status"},
+		SetupOnUpdate: true,
 	}
 
 	manifestJSON, _ := json.Marshal(manifest)

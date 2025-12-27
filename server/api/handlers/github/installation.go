@@ -104,6 +104,34 @@ func HandleInstallationEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userID := int64(stateData.UserId)
+
+	existingProvider, err := models.GetGitProviderByUserAndProvider(userID, models.GitProviderGitHub)
+	if err != nil {
+		gitProvider := models.GitProvider{
+			UserID:       userID,
+			Provider:     models.GitProviderGitHub,
+			AccessToken:  token.Token,
+			RefreshToken: nil,
+			ExpiresAt:    &token.ExpiresAt,
+			Username:     &installInfo.Account.Login,
+			Email:        nil,
+		}
+
+		err = gitProvider.InsertInDB()
+		if err != nil {
+			models.LogUserAudit(userID, "error", "git_provider_creation", nil, map[string]interface{}{
+				"error": err.Error(),
+			})
+		}
+	} else {
+		err = existingProvider.UpdateToken(token.Token, nil, &token.ExpiresAt)
+		if err != nil {
+			models.LogUserAudit(userID, "error", "git_provider_update", &existingProvider.ID, map[string]interface{}{
+				"error": err.Error(),
+			})
+		}
+	}
+
 	models.LogUserAudit(userID, "create", "github_installation", &installation.InstallationID, map[string]interface{}{
 		"installationId": installInfo.ID,
 		"accountLogin":   installInfo.Account.Login,

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 	"time"
 
@@ -220,4 +221,81 @@ func TriggerUpdate(w http.ResponseWriter, r *http.Request) {
 		"to_version":    newVersion,
 		"update_log_id": updateLog.ID,
 	})
+}
+
+// ClearStuckUpdate allows manually clearing a stuck update log
+func ClearStuckUpdate(w http.ResponseWriter, r *http.Request) {
+	userInfo, ok := middleware.GetUser(r)
+	if !ok {
+		handlers.SendResponse(w, http.StatusUnauthorized, false, nil, "Not logged in", "Unauthorized")
+		return
+	}
+
+	role, err := models.GetUserRole(userInfo.ID)
+	if err != nil {
+		log.Error().Err(err).Int64("user_id", userInfo.ID).Msg("Failed to verify user role for clearing stuck update")
+		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to verify user role", err.Error())
+		return
+	}
+	if role != "owner" {
+		log.Warn().Int64("user_id", userInfo.ID).Str("role", role).Msg("Non-owner attempted to clear stuck update")
+		handlers.SendResponse(w, http.StatusForbidden, false, nil, "Only owners can clear stuck updates", "Forbidden")
+		return
+	}
+
+	idStr := r.URL.Query().Get("id")
+	if idStr == "" {
+		handlers.SendResponse(w, http.StatusBadRequest, false, nil, "Missing id parameter", "")
+		return
+	}
+
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		handlers.SendResponse(w, http.StatusBadRequest, false, nil, "Invalid id parameter", err.Error())
+		return
+	}
+
+	// Get the update log
+	updateLog, err := models.GetUpdateLogByID(id)
+	if err != nil {
+		log.Error().Err(err).Int64("update_log_id", id).Msg("Failed to get update log")
+		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to get update log", err.Error())
+		return
+	}
+
+	if updateLog == nil {
+		handlers.SendResponse(w, http.StatusNotFound, false, nil, "Update log not found", "")
+		return
+	}
+
+	// Only allow clearing in_progress updates
+	if updateLog.Status != "in_progress" {
+		handlers.SendResponse(w, http.StatusBadRequest, false, nil, "Can only clear in_progress updates", "Current status: "+updateLog.Status)
+		return
+	}
+
+	// Mark as failed with note that it was manually cleared
+	errMsg := "Update was manually cleared by administrator"
+	clearLog := updateLog.Logs + "\n⚠️ " + errMsg + "\n"
+	err = models.UpdateUpdateLogStatus(id, "failed", clearLog, &errMsg)
+	if err != nil {
+		log.Error().Err(err).Int64("update_log_id", id).Msg("Failed to clear stuck update")
+		handlers.SendResponse(w, http.StatusInternalServerError, false, nil, "Failed to clear update", err.Error())
+		return
+	}
+
+	log.Info().
+		Int64("update_log_id", id).
+		Int64("user_id", userInfo.ID).
+		Msg("Stuck update cleared manually")
+
+	dummyID := int64(1)
+	models.LogUserAudit(userInfo.ID, "update_clear", "system", &dummyID, map[string]any{
+		"update_log_id": id,
+	})
+
+	handlers.SendResponse(w, http.StatusOK, true, map[string]any{
+		"id":      id,
+		"message": "Stuck update cleared successfully",
+	}, "Update cleared", "")
 }

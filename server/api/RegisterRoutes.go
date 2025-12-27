@@ -110,5 +110,6 @@ func RegisterRoutes(mux *http.ServeMux) {
 	mux.Handle("POST /api/updates/trigger", middleware.AuthMiddleware()(http.HandlerFunc(updates.TriggerUpdate)))
 	mux.Handle("GET /api/updates/history", middleware.AuthMiddleware()(http.HandlerFunc(updates.GetUpdateHistory)))
 	mux.Handle("GET /api/updates/log", middleware.AuthMiddleware()(http.HandlerFunc(updates.GetUpdateLogByID)))
+	mux.Handle("POST /api/updates/clear", middleware.AuthMiddleware()(http.HandlerFunc(updates.ClearStuckUpdate)))
 
 }

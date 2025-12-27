@@ -22,6 +22,15 @@ func main() {
 	defer dbInstance.Close()
 	log.Info().Msg("Database initialized successfully")
 	models.SetDB(dbInstance)
+
+	// when we update the app, systemctl restarts the app, and we are unable to update the status of that
+	// particular update in the db, and it gets stuck in 'in_progress' which leads disability in doing
+	// updates, so on each startup we need to check if the last update was successfull or not and change
+	// the status in the db accordingly, even if the update failed atleast we can retry it
+	if err := models.CheckAndCompletePendingUpdates(); err != nil {
+		log.Warn().Err(err).Msg("Failed to check pending updates")
+	}
+
 	err = store.InitStore()
 	if err != nil {
 		log.Fatal().Err(err).Msg("Error initializing store")

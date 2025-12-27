@@ -15,26 +15,44 @@ import (
 func CloneRepo(appId int64, logFile *os.File) error {
 	log.Info().Int64("app_id", appId).Msg("Starting repository clone")
 
-	repo, branch, projectId, name, err := models.GetAppRepoInfo(appId)
-	if err != nil {
-		return fmt.Errorf("failed to fetch app: %w", err)
-	}
-
 	userId, err := models.GetUserIDByAppID(appId)
 	if err != nil {
 		return fmt.Errorf("failed to get user id by app id: %w", err)
 	}
-	accessToken, err := GetGitHubAccessToken(int(*userId))
+
+	cloneURL, accessToken, shouldMigrate, err := models.GetAppCloneURL(appId, *userId)
 	if err != nil {
-		return fmt.Errorf("failed to get github access token: %w", err)
+		return fmt.Errorf("failed to get clone URL: %w", err)
 	}
 
-	repoURL := fmt.Sprintf("https://github.com/%s.git", repo)
+	_, _, branch, _, projectId, name, err := models.GetAppGitInfo(appId)
+	if err != nil {
+		return fmt.Errorf("failed to fetch app: %w", err)
+	}
+
+	if shouldMigrate {
+		log.Info().Int64("app_id", appId).Msg("Migrating legacy app to new git format")
+		// for legacy GitHub apps, we don't have a git_provider_id 
+		// we just update the git_clone_url
+		err = models.UpdateAppGitCloneURL(appId, cloneURL, nil)
+		if err != nil {
+			log.Warn().Err(err).Int64("app_id", appId).Msg("Failed to migrate app git info, continuing anyway")
+		}
+	}
+
+	// construct authenticated clone URL if we have an access token
+	repoURL := cloneURL
 	if accessToken != "" {
-		repoURL = fmt.Sprintf(
-			"https://x-access-token:%s@github.com/%s.git",
-			accessToken, repo,
-		)
+		// insert token into the URL
+		// for GitHub: https://x-access-token:TOKEN@github.com/user/repo.git
+		// for GitLab: https://oauth2:TOKEN@gitlab.com/user/repo.git
+		// for Bitbucket: https://x-token-auth:TOKEN@bitbucket.org/user/repo.git
+		// for Gitea: https://TOKEN@gitea.com/user/repo.git
+
+		// simple approach: insert token after https://
+		if len(cloneURL) > 8 && cloneURL[:8] == "https://" {
+			repoURL = fmt.Sprintf("https://x-access-token:%s@%s", accessToken, cloneURL[8:])
+		}
 	}
 
 	path := fmt.Sprintf("/var/lib/mist/projects/%d/apps/%s", projectId, name)
@@ -52,7 +70,7 @@ func CloneRepo(appId int64, logFile *os.File) error {
 		return fmt.Errorf("failed to create directory: %w", err)
 	}
 
-	log.Info().Str("repo", repo).Str("branch", branch).Str("path", path).Msg("Cloning repository")
+	log.Info().Str("clone_url", cloneURL).Str("branch", branch).Str("path", path).Msg("Cloning repository")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
@@ -62,7 +80,7 @@ func CloneRepo(appId int64, logFile *os.File) error {
 	lines := strings.Split(string(output), "\n")
 	for _, line := range lines {
 		if len(line) > 0 {
-			fmt.Fprintf(logFile, "[GITHUB] %s\n", line)
+			fmt.Fprintf(logFile, "[GIT] %s\n", line)
 		}
 	}
 	if err != nil {

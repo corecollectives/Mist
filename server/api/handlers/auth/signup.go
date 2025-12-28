@@ -9,6 +9,7 @@ import (
 	"github.com/corecollectives/mist/api/middleware"
 	"github.com/corecollectives/mist/models"
 	"github.com/corecollectives/mist/store"
+	"github.com/corecollectives/mist/utils"
 	"github.com/rs/zerolog/log"
 )
 
@@ -83,6 +84,15 @@ func SignUpHandler(w http.ResponseWriter, r *http.Request) {
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   3600 * 24 * 30,
 	})
+
+	err = utils.ChangeLetsEncryptEmail(req.Email)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to update the let's encry email")
+	}
+	err = utils.RestartTraefik()
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to restart traefik container")
+	}
 
 	models.LogUserAudit(user.ID, "signup", "user", &user.ID, map[string]interface{}{
 		"username": user.Username,

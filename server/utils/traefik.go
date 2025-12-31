@@ -44,7 +44,10 @@ func GenerateDynamicConfig(wildcardDomain *string, mistAppName string) error {
 
 func generateDynamicYAML(wildcardDomain *string, mistAppName string) string {
 	var b strings.Builder
-	b.WriteString(`http: routers: `)
+
+	b.WriteString(`http:
+  routers:
+`)
 
 	var mistDomain string
 	if wildcardDomain != nil && *wildcardDomain != "" {

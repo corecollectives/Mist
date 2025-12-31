@@ -8,3 +8,4 @@ export { ContainerControls } from './container-controls';
 export { LiveLogsViewer } from './live-logs-viewer';
 export { AppStats } from './app-stats';
 export { Volumes } from './volumes';
+export { ContainerStats } from './container-stats';

@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useApplication } from "@/hooks";
 import { TabsList, Tabs, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { AppInfo, GitProviderTab, EnvironmentVariables, Domains, AppSettings, LiveLogsViewer, AppStats, Volumes } from "@/components/applications";
+import { AppInfo, GitProviderTab, EnvironmentVariables, Domains, AppSettings, LiveLogsViewer, AppStats, Volumes, ContainerStats } from "@/components/applications";
 import { DeploymentsTab } from "@/components/deployments";
 
 
@@ -96,6 +96,7 @@ export const AppPage = () => {
             <TabsTrigger value="environment">Environment</TabsTrigger>
             {app.appType === 'web' && <TabsTrigger value="domains">Domains</TabsTrigger>}
             <TabsTrigger value="deployments">Deployments</TabsTrigger>
+            <TabsTrigger value="stats">Stats</TabsTrigger>
             <TabsTrigger value="logs">Logs</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
             </TabsList>
@@ -134,6 +135,11 @@ export const AppPage = () => {
           {/* ✅ DEPLOYMENTS TAB */}
           <TabsContent value="deployments">
             <DeploymentsTab appId={app.id} app={app} />
+          </TabsContent>
+
+          {/* ✅ STATS TAB */}
+          <TabsContent value="stats" className="space-y-6">
+            <ContainerStats appId={app.id} />
           </TabsContent>
 
           <TabsContent value="logs" className="h-full">

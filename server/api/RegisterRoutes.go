@@ -26,6 +26,7 @@ func RegisterRoutes(mux *http.ServeMux) {
 
 	mux.Handle("/api/ws/stats", middleware.AuthMiddleware()(http.HandlerFunc(websockets.StatWsHandler)))
 	mux.HandleFunc("/api/ws/container/logs", websockets.ContainerLogsHandler)
+	mux.HandleFunc("/api/ws/container/stats", websockets.ContainerStatsHandler)
 	mux.Handle("/api/ws/system/logs", middleware.AuthMiddleware()(http.HandlerFunc(websockets.SystemLogsHandler)))
 	mux.HandleFunc("GET /api/health", handlers.HealthCheckHandler)
 

@@ -1,18 +1,20 @@
 #!/bin/bash
 set -Eeo pipefail
 
+# local Installation Script for Mist
+# lhis script copies the local directory to /opt/mist instead of cloning from GitHub
+# lseful for local development and testing
 
-LOG_FILE="/tmp/mist-install.log"
+LOG_FILE="/tmp/mist-install-local.log"
 sudo rm -f "$LOG_FILE" 2>/dev/null || true
 : > "$LOG_FILE"
 
 REAL_USER="${SUDO_USER:-$USER}"
 REAL_HOME="$(getent passwd "$REAL_USER" | cut -d: -f6)"
 
-REPO="https://github.com/corecollectives/mist"
-BRANCH="release"
 APP_NAME="mist"
 INSTALL_DIR="/opt/mist"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 GO_BACKEND_DIR="server"
 GO_BINARY_NAME="mist"
 PORT=8080
@@ -27,11 +29,13 @@ export PATH="/usr/local/go/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PAT
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
 NC='\033[0m'
 
 log() { echo -e "${GREEN}[INFO]${NC} $1" | tee -a "$LOG_FILE"; }
 warn() { echo -e "${YELLOW}[WARN]${NC} $1" | tee -a "$LOG_FILE"; }
 error() { echo -e "${RED}[ERROR]${NC} $1" | tee -a "$LOG_FILE"; }
+debug() { echo -e "${BLUE}[DEBUG]${NC} $1" | tee -a "$LOG_FILE"; }
 
 spinner() {
     local i=0 chars='|/-\'
@@ -78,10 +82,23 @@ rollback() {
 }
 
 trap - ERR
-log "Starting Mist installation..."
+echo
+echo "╔════════════════════════════════════════════╗"
+echo "║ 🚀 Mist Local Installation                 ║"
+echo "║ (Development Mode)                         ║"
+echo "╚════════════════════════════════════════════╝"
+echo
+log "Starting Mist local installation from: $SCRIPT_DIR"
 
 if [ "$EUID" -ne 0 ] && [ -z "${SUDO_USER:-}" ]; then
-    error "This script requires sudo. Run: sudo bash install.sh"
+    error "This script requires sudo. Run: sudo bash install-local.sh"
+    exit 1
+fi
+
+# Verify we're in a valid Mist directory
+if [ ! -f "$SCRIPT_DIR/traefik-static.yml" ] || [ ! -d "$SCRIPT_DIR/server" ]; then
+    error "This doesn't look like a Mist directory!"
+    error "Expected to find traefik-static.yml and server/ directory"
     exit 1
 fi
 
@@ -98,23 +115,17 @@ if [ "$AVAILABLE" -lt 2000000 ]; then
     exit 1
 fi
 
-log "Checking network..."
-if ! curl -s --connect-timeout 10 https://github.com >/dev/null 2>&1; then
-    error "No network connectivity"
-    exit 1
-fi
-
 trap rollback ERR
 
 log "Installing dependencies..."
 if command -v apt >/dev/null 2>&1; then
-    run_step "Installing packages (apt)" "sudo DEBIAN_FRONTEND=noninteractive apt update && sudo DEBIAN_FRONTEND=noninteractive apt install -y git curl build-essential wget unzip" || exit 1
+    run_step "Installing packages (apt)" "sudo DEBIAN_FRONTEND=noninteractive apt update && sudo DEBIAN_FRONTEND=noninteractive apt install -y git curl build-essential wget unzip rsync" || exit 1
 elif command -v dnf >/dev/null 2>&1; then
-    run_step "Installing packages (dnf)" "sudo dnf install -y git curl gcc make wget unzip" || exit 1
+    run_step "Installing packages (dnf)" "sudo dnf install -y git curl gcc make wget unzip rsync" || exit 1
 elif command -v yum >/dev/null 2>&1; then
-    run_step "Installing packages (yum)" "sudo yum install -y git curl gcc make wget unzip" || exit 1
+    run_step "Installing packages (yum)" "sudo yum install -y git curl gcc make wget unzip rsync" || exit 1
 elif command -v pacman >/dev/null 2>&1; then
-    run_step "Installing packages (pacman)" "sudo pacman -Sy --noconfirm git curl base-devel wget unzip" || exit 1
+    run_step "Installing packages (pacman)" "sudo pacman -Sy --noconfirm git curl base-devel wget unzip rsync" || exit 1
 else
     error "Unsupported package manager"
     exit 1
@@ -148,28 +159,49 @@ fi
 go version >>"$LOG_FILE" 2>&1 || { error "Go not working"; exit 1; }
 log "Go ready"
 
-# ---------------- Repo ----------------
+# ---------------- Local Copy ----------------
 
-if [ -d "$INSTALL_DIR/.git" ]; then
-    log "Updating repository..."
-    cd "$INSTALL_DIR"
-    git config --local advice.detachedHead false 2>&1 || true
-    run_step "Fetching $BRANCH" "cd '$INSTALL_DIR' && git fetch origin '$BRANCH' && git reset --hard origin/'$BRANCH'" || exit 1
-else
-    run_step "Creating directory" "sudo mkdir -p '$INSTALL_DIR' && sudo chown '$REAL_USER:$REAL_USER' '$INSTALL_DIR'" || exit 1
-    run_step "Cloning repository" "git clone -b '$BRANCH' --single-branch --depth 1 '$REPO' '$INSTALL_DIR'" || exit 1
+log "Copying local files to $INSTALL_DIR..."
+debug "Source: $SCRIPT_DIR"
+debug "Destination: $INSTALL_DIR"
+
+# Stop existing service if running
+if sudo systemctl is-active --quiet "$APP_NAME" 2>/dev/null; then
+    log "Stopping existing service..."
+    sudo systemctl stop "$APP_NAME" || true
 fi
+
+# Stop Traefik if running
+if docker ps --format '{{.Names}}' | grep -q "^traefik$"; then
+    log "Stopping Traefik container..."
+    docker compose -f "$INSTALL_DIR/traefik-compose.yml" down 2>/dev/null || docker stop traefik 2>/dev/null || true
+fi
+
+# Create install directory
+run_step "Creating install directory" "sudo mkdir -p '$INSTALL_DIR'" || exit 1
+
+# Copy files using rsync (excludes .git, node_modules, build artifacts)
+run_step "Copying files" "sudo rsync -av --delete \
+    --exclude='.git' \
+    --exclude='node_modules' \
+    --exclude='dist' \
+    --exclude='build' \
+    --exclude='*.log' \
+    --exclude='mist.db' \
+    --exclude='letsencrypt' \
+    --exclude='server/mist' \
+    --exclude='cli/mist-cli' \
+    --exclude='.env' \
+    '$SCRIPT_DIR/' '$INSTALL_DIR/'" || exit 1
 
 [ -d "$INSTALL_DIR/$GO_BACKEND_DIR" ] || { error "Server directory missing"; exit 1; }
 
 run_step "Setting ownership" "sudo chown -R root:root '$INSTALL_DIR'" || exit 1
 
-sudo git config --global --add safe.directory "$INSTALL_DIR" >>"$LOG_FILE" 2>&1 || true
-
-log "Repository ready"
+log "Local files copied successfully"
 
 run_step "Creating data directories" "sudo mkdir -p /var/lib/mist/{traefik,logs,backups} && sudo touch '$MIST_FILE' && sudo chown -R root:root /var/lib/mist && sudo chmod -R 755 /var/lib/mist" || exit 1
-run_step "Creating Traefik config" "sudo tee /var/lib/mist/traefik/dynamic.yml >/dev/null <<'EOF'
+run_step "Creating Traefik dynamic config" "sudo tee /var/lib/mist/traefik/dynamic.yml >/dev/null <<'EOF'
 http:
   routers: {}
   services: {}
@@ -200,7 +232,7 @@ fi
 
 run_step "Creating systemd service" "sudo tee '$SERVICE_FILE' >/dev/null <<'EOF'
 [Unit]
-Description=Mist Service
+Description=Mist Service (Local Dev)
 After=network.target docker.service
 Requires=docker.service
 
@@ -218,12 +250,7 @@ WantedBy=multi-user.target
 EOF
 " || exit 1
 
-if sudo systemctl is-active --quiet "$APP_NAME" 2>/dev/null; then
-    log "Service already running, restarting..."
-    run_step "Restarting service" "sudo systemctl daemon-reload && sudo systemctl restart '$APP_NAME'" || exit 1
-else
-    run_step "Starting service" "sudo systemctl daemon-reload && sudo systemctl enable '$APP_NAME' && sudo systemctl start '$APP_NAME'" || exit 1
-fi
+run_step "Starting service" "sudo systemctl daemon-reload && sudo systemctl enable '$APP_NAME' && sudo systemctl start '$APP_NAME'" || exit 1
 sleep 3
 sudo systemctl is-active --quiet "$APP_NAME" || { error "Service failed to start"; sudo journalctl -u "$APP_NAME" -n 20; exit 1; }
 log "Service running"
@@ -251,7 +278,7 @@ for i in {1..10}; do
 done
 [ "$HTTP_OK" = true ] && log "HTTP check passed" || warn "HTTP check failed (may still be initializing)"
 
-SERVER_IP=$(curl -fsSL https://api.ipify.org 2>/dev/null || hostname -I | awk '{print $1}')
+SERVER_IP=$(hostname -i 2>/dev/null | awk '{print $1}' || ip route get 1 2>/dev/null | awk '{print $7; exit}' || echo "localhost")
 CLI_INSTALLED=""
 if [ -f "/usr/local/bin/mist-cli" ]; then
     CLI_INSTALLED="║ 💻 CLI Tool: mist-cli --help              ║"
@@ -259,8 +286,9 @@ fi
 
 echo
 echo "╔════════════════════════════════════════════╗"
-echo "║ 🎉 Mist installation complete              ║"
+echo "║ 🎉 Mist local installation complete        ║"
 printf "║ 👉 %-40s║\n" "http://$SERVER_IP:$PORT"
+printf "║ 👉 %-40s║\n" "http://localhost:$PORT"
 if [ -n "$CLI_INSTALLED" ]; then
     printf "║ %-42s ║\n" "$CLI_INSTALLED"
 fi
@@ -272,3 +300,7 @@ echo "📋 Logs: sudo journalctl -u $APP_NAME -f"
 if [ -f "/usr/local/bin/mist-cli" ]; then
     echo "💻 CLI Tool: mist-cli --help"
 fi
+echo
+echo "💡 To reinstall after changes:"
+echo "   sudo bash install-local.sh"
+echo

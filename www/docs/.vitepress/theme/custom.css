@@ -22,6 +22,12 @@
   --vp-c-text-2: oklch(0.461 0.015 286.067);
   --vp-c-text-3: oklch(0.556 0 0);
 
+  /* Custom blocks text colors for light mode */
+  --vp-custom-block-info-text: oklch(0.141 0.005 285.823);
+  --vp-custom-block-tip-text: oklch(0.141 0.005 285.823);
+  --vp-custom-block-warning-text: oklch(0.141 0.005 285.823);
+  --vp-custom-block-danger-text: oklch(0.141 0.005 285.823);
+
   /* Light Border Colors */
   --vp-c-border: oklch(0 0 0 / 10%);
   --vp-c-divider: oklch(0 0 0 / 10%);
@@ -208,7 +214,7 @@
 .coming-soon-badge {
   display: inline-block;
   background: linear-gradient(135deg, oklch(0.488 0.243 264.376), oklch(0.623 0.214 259.815));
-  color: oklch(0.97 0.014 254.604);
+  color: white !important;
   padding: 0.25rem 0.75rem;
   border-radius: 0.5rem;
   font-size: 0.875rem;
@@ -302,17 +308,48 @@
   border-radius: var(--vp-border-radius);
   padding: 1rem 1.5rem;
   margin: 1.5rem 0;
-  color: oklch(0.97 0.014 254.604);
+  color: white !important;
 }
 
 .coming-soon-banner h4 {
   margin: 0 0 0.5rem 0;
-  color: oklch(0.97 0.014 254.604);
+  color: white !important;
 }
 
 .coming-soon-banner p {
   margin: 0;
-  opacity: 0.9;
+  color: white !important;
+  opacity: 0.95;
+}
+
+.coming-soon-banner ul,
+.coming-soon-banner ol {
+  color: white !important;
+}
+
+.coming-soon-banner li {
+  color: white !important;
+}
+
+.coming-soon-banner strong {
+  color: white !important;
+}
+
+.coming-soon-banner code {
+  color: white !important;
+  background: rgba(0, 0, 0, 0.25) !important;
+  padding: 0.2em 0.4em;
+  border-radius: 4px;
+}
+
+.coming-soon-banner a {
+  color: white !important;
+  text-decoration: underline;
+  font-weight: 600;
+}
+
+.coming-soon-banner a:hover {
+  color: rgba(255, 255, 255, 0.85) !important;
 }
 
 /* Code blocks */
@@ -396,6 +433,156 @@ a {
 
 a:hover {
   color: var(--vp-c-brand-2);
+}
+
+/* Fix link visibility in code blocks and inline code */
+.vp-doc a code,
+code a {
+  color: var(--vp-c-brand-1) !important;
+}
+
+.dark .vp-doc a code,
+.dark code a {
+  color: var(--vp-c-brand-2) !important;
+}
+
+/* Fix text visibility in custom blocks (info, tip, warning, danger) */
+/* Keep white text on blue/colored backgrounds in BOTH light and dark modes */
+.vp-doc .custom-block.info,
+.vp-doc .custom-block.tip,
+.vp-doc .custom-block.warning,
+.vp-doc .custom-block.danger,
+.custom-block.info,
+.custom-block.tip,
+.custom-block.warning,
+.custom-block.danger {
+  color: white !important;
+}
+
+.vp-doc .custom-block.info .custom-block-title,
+.vp-doc .custom-block.tip .custom-block-title,
+.vp-doc .custom-block.warning .custom-block-title,
+.vp-doc .custom-block.danger .custom-block-title,
+.custom-block.info .custom-block-title,
+.custom-block.tip .custom-block-title,
+.custom-block.warning .custom-block-title,
+.custom-block.danger .custom-block-title {
+  color: white !important;
+}
+
+.vp-doc .custom-block.info p,
+.vp-doc .custom-block.tip p,
+.vp-doc .custom-block.warning p,
+.vp-doc .custom-block.danger p,
+.custom-block.info p,
+.custom-block.tip p,
+.custom-block.warning p,
+.custom-block.danger p {
+  color: white !important;
+}
+
+.vp-doc .custom-block.info ul,
+.vp-doc .custom-block.tip ul,
+.vp-doc .custom-block.warning ul,
+.vp-doc .custom-block.danger ul,
+.vp-doc .custom-block.info ol,
+.vp-doc .custom-block.tip ol,
+.vp-doc .custom-block.warning ol,
+.vp-doc .custom-block.danger ol,
+.custom-block.info ul,
+.custom-block.tip ul,
+.custom-block.warning ul,
+.custom-block.danger ul,
+.custom-block.info ol,
+.custom-block.tip ol,
+.custom-block.warning ol,
+.custom-block.danger ol {
+  color: white !important;
+}
+
+.vp-doc .custom-block.info li,
+.vp-doc .custom-block.tip li,
+.vp-doc .custom-block.warning li,
+.vp-doc .custom-block.danger li,
+.custom-block.info li,
+.custom-block.tip li,
+.custom-block.warning li,
+.custom-block.danger li {
+  color: white !important;
+}
+
+.vp-doc .custom-block.info strong,
+.vp-doc .custom-block.tip strong,
+.vp-doc .custom-block.warning strong,
+.vp-doc .custom-block.danger strong,
+.custom-block.info strong,
+.custom-block.tip strong,
+.custom-block.warning strong,
+.custom-block.danger strong {
+  color: white !important;
+}
+
+.vp-doc .custom-block.info code,
+.vp-doc .custom-block.tip code,
+.vp-doc .custom-block.warning code,
+.vp-doc .custom-block.danger code,
+.custom-block.info code,
+.custom-block.tip code,
+.custom-block.warning code,
+.custom-block.danger code {
+  color: white !important;
+  background: rgba(0, 0, 0, 0.25) !important;
+  padding: 0.2em 0.4em;
+  border-radius: 4px;
+}
+
+.dark .vp-doc .custom-block.info code,
+.dark .vp-doc .custom-block.tip code,
+.dark .vp-doc .custom-block.warning code,
+.dark .vp-doc .custom-block.danger code,
+.dark .custom-block.info code,
+.dark .custom-block.tip code,
+.dark .custom-block.warning code,
+.dark .custom-block.danger code {
+  color: white !important;
+  background: rgba(0, 0, 0, 0.3) !important;
+  padding: 0.2em 0.4em;
+  border-radius: 4px;
+}
+
+/* Fix links in custom blocks - keep white with underline */
+.vp-doc .custom-block a,
+.custom-block a {
+  color: white !important;
+  text-decoration: underline;
+  font-weight: 600;
+}
+
+.dark .vp-doc .custom-block a,
+.dark .custom-block a {
+  color: white !important;
+}
+
+.vp-doc .custom-block a:hover,
+.custom-block a:hover {
+  color: rgba(255, 255, 255, 0.85) !important;
+  text-decoration: underline;
+}
+
+.dark .vp-doc .custom-block a:hover,
+.dark .custom-block a:hover {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+/* Fix inline code visibility in light mode */
+:not(pre) > code {
+  color: oklch(0.35 0.25 264.376) !important;
+  background-color: oklch(0.96 0 0) !important;
+}
+
+.dark :not(pre) > code {
+  color: oklch(0.809 0.105 251.813) !important;
+  background-color: oklch(0.21 0.006 285.885) !important;
 }
 
 /* Tables */
@@ -720,15 +907,55 @@ tr:hover {
 
 .status-implemented {
   background: oklch(0.488 0.243 264.376);
-  color: oklch(0.97 0.014 254.604);
+  color: white !important;
 }
 
 .status-planned {
   background: oklch(0.274 0.006 286.033);
-  color: oklch(0.705 0.015 286.067);
+  color: white !important;
 }
 
 .status-coming-soon {
   background: linear-gradient(135deg, oklch(0.488 0.243 264.376), oklch(0.623 0.214 259.815));
-  color: oklch(0.97 0.014 254.604);
+  color: white !important;
+}
+
+/* Ultra high specificity override for custom blocks in light mode */
+:root .vp-doc .custom-block.info *,
+:root .vp-doc .custom-block.tip *,
+:root .vp-doc .custom-block.warning *,
+:root .vp-doc .custom-block.danger *,
+:root .custom-block.info *,
+:root .custom-block.tip *,
+:root .custom-block.warning *,
+:root .custom-block.danger * {
+  color: white !important;
+}
+
+/* Ensure custom block backgrounds are visible */
+:root .vp-doc .custom-block.info,
+:root .custom-block.info {
+  background-color: #3b82f6 !important;
+}
+
+:root .vp-doc .custom-block.tip,
+:root .custom-block.tip {
+  background-color: #10b981 !important;
+}
+
+:root .vp-doc .custom-block.warning,
+:root .custom-block.warning {
+  background-color: #f59e0b !important;
+}
+
+:root .vp-doc .custom-block.danger,
+:root .custom-block.danger {
+  background-color: #ef4444 !important;
+}
+
+/* Code blocks inside custom blocks */
+:root .vp-doc .custom-block code,
+:root .custom-block code {
+  background: rgba(0, 0, 0, 0.25) !important;
+  color: white !important;
 }

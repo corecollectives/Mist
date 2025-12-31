@@ -28,12 +28,20 @@ See [Backup & Recovery](./backup) for complete backup procedures.
 
 ## Check Current Version
 
-Currently, Mist does not have a built-in version command. To check your version:
+Check your current Mist version:
 
+**Via Dashboard:**
+1. Navigate to **Extras → Updates**
+2. View current version at the top
+3. Click "Check for Updates" to see if updates are available
+
+**Via API:**
 ```bash
-# Check when Mist was last installed/updated
-ls -la /opt/mist/
+curl http://localhost:8080/api/updates/version
+```
 
+**Via CLI:**
+```bash
 # Check git commit (if available)
 cd /opt/mist && git log -1 --oneline
 
@@ -43,7 +51,38 @@ sudo systemctl status mist
 
 ## Upgrade Methods
 
-### Method 1: Re-run Installation Script (Recommended)
+### Method 1: Dashboard One-Click Update (Recommended)
+
+Mist includes a built-in update system accessible from the dashboard:
+
+1. Navigate to **Extras → Updates** in the dashboard
+2. Click **"Check for Updates"** to see if a new version is available
+3. Review the release notes and changes
+4. Click **"Update Now"** to trigger the automatic update
+5. The system will:
+   - Download and install the latest version
+   - Restart the Mist service
+   - Run database migrations automatically
+   - Mark the update as complete
+
+::: tip Auto-Recovery
+If an update appears stuck (rare), simply restart the Mist service:
+```bash
+sudo systemctl restart mist
+```
+
+The system automatically detects incomplete updates on startup and resolves them based on the installed version.
+:::
+
+::: warning Manual Clearing
+Owners can manually clear stuck updates via the dashboard or API if needed:
+```bash
+curl -X POST http://localhost:8080/api/updates/clear \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+:::
+
+### Method 2: Re-run Installation Script
 
 The installation script is idempotent and will update your existing installation:
 
@@ -69,7 +108,7 @@ sudo journalctl -u mist -n 50
 - Preserves database and all data
 - Runs database migrations automatically
 
-### Method 2: Manual Git Pull and Rebuild
+### Method 3: Manual Git Pull and Rebuild
 
 If you want more control over the upgrade process:
 
@@ -100,7 +139,7 @@ sudo systemctl status mist
 sudo journalctl -u mist -n 50
 ```
 
-### Method 3: Upgrade to Specific Version
+### Method 4: Upgrade to Specific Version
 
 To upgrade to a specific release or branch:
 
@@ -202,15 +241,22 @@ sudo systemctl status mist
 sudo journalctl -u mist -n 50
 ```
 
-### 2. Test Web Interface
+### 2. Test Web Interface and Version
 
 ```bash
 # Test localhost access
 curl http://localhost:8080/health
 
+# Check updated version
+curl http://localhost:8080/api/updates/version
+
 # Or browse to your domain
 # https://your-mist-domain.com
 ```
+
+**Via Dashboard:**
+- Log in and check the sidebar shows the new version
+- Navigate to **Extras → Updates** to verify the update was successful
 
 ### 3. Verify Applications
 
@@ -372,6 +418,21 @@ sudo systemctl stop mist
 sudo systemctl start mist
 ```
 
+**Update appears stuck in dashboard:**
+```bash
+# The system auto-recovers on restart
+sudo systemctl restart mist
+
+# Check logs to verify resolution
+sudo journalctl -u mist -n 50
+
+# Or manually clear via API
+curl -X POST http://localhost:8080/api/updates/clear \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+See the [Troubleshooting Guide](../troubleshooting/) for more update-related issues.
+
 **Applications not accessible after upgrade:**
 ```bash
 # Restart Traefik
@@ -384,16 +445,25 @@ docker logs traefik 2>&1 | tail -100
 cat /var/lib/mist/traefik/dynamic.yml
 ```
 
+## Available Now
+
+The following upgrade features are currently available:
+
+- ✅ **One-Click Dashboard Updates** - Update directly from **Extras → Updates**
+- ✅ **Version Display** - View current version in sidebar and updates page
+- ✅ **Update Status Tracking** - Monitor update progress and history
+- ✅ **Automatic Recovery** - System auto-resolves stuck updates on restart
+- ✅ **Manual Update Clear** - Owners can manually clear stuck updates
+- ✅ **Check for Updates** - View available updates from dashboard
+- ✅ **Database Auto-Migrations** - Migrations run automatically on update
+
 ## Coming Soon
 
 The following upgrade features are planned for future releases:
 
-- **Version Command** - `mist --version` to check current version
-- **In-App Update Notifications** - Get notified when updates are available
-- **One-Click Upgrade** - Upgrade from dashboard with single click
-- **Automatic Updates** - Opt-in automatic updates with configurable schedule
+- **In-App Update Notifications** - Push notifications when updates are available
+- **Automatic Scheduled Updates** - Opt-in automatic updates with configurable schedule
 - **Update Channels** - Choose stable, beta, or nightly update channel
-- **Pre-Upgrade Health Check** - Automatic checks before upgrade
-- **Rollback Functionality** - Built-in rollback from dashboard
-- **Upgrade History** - Track all upgrades and their outcomes
+- **Pre-Upgrade Health Check** - Automatic system checks before upgrade
+- **One-Click Rollback** - Built-in rollback from dashboard
 - **Staged Rollouts** - Upgrade one server at a time in multi-server setup

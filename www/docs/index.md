@@ -112,21 +112,22 @@ Mist is a **lightweight, self-hostable Platform-as-a-Service** designed for deve
 |---------|------|---------|---------|----------|-------|
 | **Installation** | Single command | Docker Compose | Single command | Docker Compose | Single command |
 | **Dependencies** | Docker only | Docker + PostgreSQL/Redis | Docker only | Docker + PostgreSQL | Docker only |
-| **Memory Usage** | ~50MB | ~500MB+ | ~100MB | ~300MB+ | ~100MB |
+| **Memory Usage** | ~50MB | ~500MB+ | ~100MB | ~300MB+ | Minimal |
 | **Database** | SQLite (embedded) | PostgreSQL | PostgreSQL | PostgreSQL | File-based |
 | **Real-time Updates** | ✓ WebSocket | ~ Polling | ✓ WebSocket | ~ Limited | ✗ No |
 | **Multi-User** | ✓ Built-in | ✓ Built-in | ✓ Built-in | ~ Basic | ✗ Single user |
 | **UI Framework** | React | Vue.js | React | Angular | Web + CLI |
 | **Git Providers** | GitHub only | Multi-provider | Multi-provider | Multi-provider | Multi-provider |
-| **Docker Compose** | ✗ Not supported | ✓ Full support | ✓ Full support | ~ Limited | ✗ Not supported |
+| **One-click Upgrade** | ✓ Built-in | ✓ Built-in | ✓ Built-in | ✓ Built-in | ~ CLI only |
+| **Docker Compose** | ✗ Not supported | ✓ Full support | ✓ Full support | ~ Limited | ~ Via plugins |
 | **S3 Backups** | ✗ Not available | ✓ Automated | ✓ Automated | ~ Manual | ✗ Not available |
 | **Template Library** | ✗ Coming soon | ✓ Extensive | ✓ Available | ✓ One-click apps | ~ Limited |
 | **GitHub Integration** | ✓ Native | ✓ Native | ✓ Native | ~ Basic | ~ Via plugins |
-| **Auto SSL** | ✓ Let's Encrypt | ✓ Let's Encrypt | ✓ Let's Encrypt | ✓ Let's Encrypt | ~ Manual |
+| **Auto SSL** | ✓ Let's Encrypt | ✓ Let's Encrypt | ✓ Let's Encrypt | ✓ Let's Encrypt | ~ Via plugins |
 | **Learning Curve** | Easy | Moderate | Easy | Moderate | Steep |
 | **High Availability** | ✗ Single node | ✗ Single node | ✗ Single node | ✓ Cluster support | ✗ Single node |
-| **Container Orchestration** | Docker | Docker | Docker | Docker Swarm | Docker/Herokuish |
-| **Maturity** | New (2024) | Established | New (2024) | Mature | Very mature |
+| **Container Orchestration** | Docker | Docker | Docker | Docker Swarm | Docker/Kubernetes |
+| **Maturity** | New (2025) | Established | New (2024) | Mature | Very mature |
 
 </div>
 
@@ -140,6 +141,7 @@ Mist is a **lightweight, self-hostable Platform-as-a-Service** designed for deve
 - **Real-time Everything** - WebSocket-first architecture for instant feedback on logs, metrics, and deployments
 - **Zero External Dependencies** - No PostgreSQL, Redis, or other services required. Just Docker.
 - **Fast Setup** - Single command installation with automatic configuration
+- **One-Click Updates** - Seamless upgrades from the dashboard with automatic rollback on failure
 - **Modern UI/UX** - Clean, intuitive React interface with excellent developer experience
 
 </div>

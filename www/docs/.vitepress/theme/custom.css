@@ -111,6 +111,83 @@
   box-shadow: var(--shadow-sm);
 }
 
+/* Fix navbar color consistency - remove default VitePress gradient/transition effects */
+.VPNavBar.has-sidebar {
+  background-color: var(--vp-c-bg-soft) !important;
+}
+
+.VPNavBar:not(.home) {
+  background-color: var(--vp-c-bg-soft) !important;
+}
+
+.VPNavBar.filled {
+  background-color: var(--vp-c-bg-soft) !important;
+}
+
+/* Ensure navbar content has consistent colors */
+.VPNavBar .content {
+  background-color: transparent !important;
+}
+
+.VPNavBar .content-body {
+  background-color: transparent !important;
+}
+
+.VPNavBar .divider {
+  background-color: transparent !important;
+}
+
+/* Navbar logo and title sizing */
+.VPNavBarTitle {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+/* Increase logo size */
+.VPNavBar .logo {
+  width: 32px !important;
+  height: 32px !important;
+  margin-right: 12px !important;
+}
+
+/* Increase title/name size */
+.VPNavBar .title {
+  font-size: 1.25rem !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.01em !important;
+}
+
+/* Navbar version positioning - keep it attached to title */
+.navbar-version {
+  flex-shrink: 0;
+  margin-left: 0.5rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+}
+
+/* Ensure the VPNavBarTitle area contains both title and version */
+.VPNavBar .VPNavBarTitle .title-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+@media (max-width: 960px) {
+  .VPNavBar .logo {
+    width: 28px !important;
+    height: 28px !important;
+  }
+  
+  .VPNavBar .title {
+    font-size: 1.1rem !important;
+  }
+  
+  .navbar-version {
+    margin-left: 0.25rem !important;
+  }
+}
+
 .VPSidebar {
   background-color: var(--vp-c-bg-soft) !important;
   box-shadow: var(--shadow-md);

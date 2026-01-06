@@ -79,8 +79,11 @@ func LogsHandler(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	go func() {
+		// Wait for log file to appear
+		fileExists := false
 		for i := 0; i < 20; i++ {
 			if _, err := os.Stat(logPath); err == nil {
+				fileExists = true
 				break
 			}
 			select {
@@ -90,9 +93,37 @@ func LogsHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
+		// If file doesn't exist after waiting, send error event
+		if !fileExists {
+			select {
+			case <-ctx.Done():
+				return
+			case events <- websockets.DeploymentEvent{
+				Type:      "error",
+				Timestamp: time.Now(),
+				Data: map[string]string{
+					"message": "Log file not found. The deployment may have completed without generating logs.",
+				},
+			}:
+			}
+			return
+		}
+
 		send := make(chan string, 100)
 		go func() {
-			_ = websockets.WatcherLogs(ctx, logPath, send)
+			if err := websockets.WatcherLogs(ctx, logPath, send); err != nil {
+				// If error occurs while watching logs, send error event
+				select {
+				case <-ctx.Done():
+				case events <- websockets.DeploymentEvent{
+					Type:      "error",
+					Timestamp: time.Now(),
+					Data: map[string]string{
+						"message": "Failed to read log file: " + err.Error(),
+					},
+				}:
+				}
+			}
 			close(send)
 		}()
 

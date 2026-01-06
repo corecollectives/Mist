@@ -80,15 +80,21 @@ func GetCompletedDeploymentLogsHandler(w http.ResponseWriter, r *http.Request) {
 		file, err := os.Open(logPath)
 		if err != nil {
 			log.Error().Err(err).Int64("deployment_id", depId).Msg("Failed to open log file")
+			logContent = "Error: Failed to open log file"
 		} else {
 			defer file.Close()
 			content, err := io.ReadAll(file)
 			if err != nil {
 				log.Error().Err(err).Int64("deployment_id", depId).Msg("Failed to read log file")
+				logContent = "Error: Failed to read log file"
 			} else {
 				logContent = string(content)
 			}
 		}
+	} else {
+		// Log file doesn't exist
+		log.Warn().Int64("deployment_id", depId).Str("log_path", logPath).Msg("Log file not found")
+		logContent = "Log file not found. The deployment may have completed without generating logs."
 	}
 
 	response := GetDeploymentLogsResponse{

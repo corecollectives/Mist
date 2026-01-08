@@ -9,8 +9,8 @@ import (
 
 func CloneRepo(url string, branch string, logFile *os.File, path string) error {
 	_, err := git.PlainClone(path, &git.CloneOptions{
-		URL:           url,
-		Progress:      logFile,
+		URL: url,
+		// Progress:      logFile,
 		ReferenceName: plumbing.NewBranchReferenceName(branch),
 		SingleBranch:  true,
 	})

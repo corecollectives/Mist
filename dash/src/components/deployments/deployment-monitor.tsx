@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Terminal, X, CheckCircle2, XCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { useDeploymentMonitor } from '@/hooks';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface Props {
   deploymentId: number;
@@ -34,6 +35,10 @@ export const DeploymentMonitor = ({ deploymentId, open, onClose, onComplete }: P
     },
     onError: (err) => {
       console.error('Deployment error:', err);
+      toast.error(err);
+    },
+    onClose: () => {
+      handleClose();
     },
   });
 
@@ -111,7 +116,7 @@ export const DeploymentMonitor = ({ deploymentId, open, onClose, onComplete }: P
                 )}
               />
               <span className="text-muted-foreground">
-                {isLive 
+                {isLive
                   ? (isConnected ? 'Live' : 'Disconnected')
                   : 'Completed'
                 }

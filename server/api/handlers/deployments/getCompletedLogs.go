@@ -89,6 +89,10 @@ func GetCompletedDeploymentLogsHandler(w http.ResponseWriter, r *http.Request) {
 				logContent = string(content)
 			}
 		}
+	} else {
+		log.Warn().Int64("deployment_id", depId).Str("log_path", logPath).Msg("Deployment log file not found")
+		handlers.SendResponse(w, http.StatusNotFound, false, nil, "Deployment log file not found", "")
+		return
 	}
 
 	response := GetDeploymentLogsResponse{

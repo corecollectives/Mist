@@ -1,10 +1,10 @@
 package applications
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os/exec"
 	"strings"
 	"time"
 
@@ -12,6 +12,7 @@ import (
 	"github.com/corecollectives/mist/api/middleware"
 	"github.com/corecollectives/mist/docker"
 	"github.com/corecollectives/mist/models"
+	"github.com/moby/moby/client"
 )
 
 func UpdateApplication(w http.ResponseWriter, r *http.Request) {
@@ -173,10 +174,28 @@ func recreateContainerAsync(appID int64) error {
 
 	containerName := fmt.Sprintf("app-%d", appID)
 
-	cmd := exec.Command("docker", "inspect", containerName)
-	if err := cmd.Run(); err != nil {
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	defer cancel()
+
+	cli, err := client.New(client.FromEnv)
+	if err != nil {
+		return nil
+	}
+
+	_, err = cli.ContainerInspect(ctx, containerName, client.ContainerInspectOptions{})
+	if err != nil {
 		return nil
 	}
 
 	return docker.RecreateContainer(app)
+
+	// legacy exec method
+	//
+	//
+	// cmd := exec.Command("docker", "inspect", containerName)
+	// if err := cmd.Run(); err != nil {
+	// 	return nil
+	// }
+	//
+	// return docker.RecreateContainer(app)
 }

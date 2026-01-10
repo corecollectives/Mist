@@ -1,6 +1,8 @@
 export { useDeploymentMonitor } from './use-deployment-monitor';
+export type { DeploymentLogEntry } from './use-deployment-monitor';
 export { useIsMobile } from './use-mobile';
 export { useContainerLogs } from './use-container-logs';
+export type { ContainerLogEntry } from './use-container-logs';
 export { useProjects } from './use-projects';
 export { useProject } from './use-project';
 export { useApplications } from './use-applications';

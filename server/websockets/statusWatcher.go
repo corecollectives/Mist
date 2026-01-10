@@ -2,6 +2,7 @@ package websockets
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/corecollectives/mist/models"
@@ -9,7 +10,7 @@ import (
 )
 
 type DeploymentEvent struct {
-	Type      string      `json:"type"` // "log", "status", "progress", "error"
+	Type      string      `json:"type"`
 	Timestamp time.Time   `json:"timestamp"`
 	Data      interface{} `json:"data"`
 }
@@ -25,7 +26,41 @@ type StatusUpdate struct {
 
 type LogUpdate struct {
 	Line      string    `json:"line"`
+	Stream    string    `json:"stream,omitempty"`
 	Timestamp time.Time `json:"timestamp"`
+}
+
+func DetectStreamType(line string) string {
+	lineLower := strings.ToLower(line)
+
+	stderrPatterns := []string{
+		"error:",
+		"err:",
+		"fatal:",
+		"panic:",
+		"warning:",
+		"warn:",
+		"failed",
+		"failure",
+		"exception:",
+		"traceback",
+		"stack trace",
+		" err ",
+		"[error]",
+		"[err]",
+		"[fatal]",
+		"[panic]",
+		"[warning]",
+		"[warn]",
+	}
+
+	for _, pattern := range stderrPatterns {
+		if strings.Contains(lineLower, pattern) {
+			return "stderr"
+		}
+	}
+
+	return "stdout"
 }
 
 func WatchDeploymentStatus(ctx context.Context, depID int64, events chan<- DeploymentEvent) {

@@ -3,6 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useContainerLogs } from "@/hooks"
+import { LogLine } from "@/components/logs/log-line"
 import {
   Loader2,
   Wifi,
@@ -63,7 +64,7 @@ export const LiveLogsViewer = ({ appId, enabled = true }: LiveLogsViewerProps) =
   }, [])
 
   const downloadLogs = () => {
-    const logText = logs.join("\n")
+    const logText = logs.map(log => log.line).join("\n")
     const blob = new Blob([logText], { type: "text/plain" })
     const url = URL.createObjectURL(blob)
     const a = document.createElement("a")
@@ -176,19 +177,17 @@ export const LiveLogsViewer = ({ appId, enabled = true }: LiveLogsViewerProps) =
           <>
             <div
               ref={logsContainerRef}
-              className="flex-1 overflow-y-auto bg-slate-950 text-slate-100 font-mono text-xs sm:text-sm p-4 space-y-0.5"
+              className="flex-1 overflow-y-auto bg-slate-950 text-slate-100 p-4 space-y-0.5"
               style={{ height: "calc(100vh - 400px)", minHeight: "400px" }}
             >
               {logs.map((log, index) => (
-                <div
+                <LogLine
                   key={index}
-                  className="hover:bg-slate-900 px-2 py-0.5 rounded transition-colors"
-                >
-                  <span className="text-slate-500 select-none mr-3">
-                    {String(index + 1).padStart(4, " ")}
-                  </span>
-                  <span className="whitespace-pre-wrap break-all">{log}</span>
-                </div>
+                  line={log.line}
+                  index={index}
+                  showLineNumbers={true}
+                  streamType={log.stream}
+                />
               ))}
               <div ref={logsEndRef} />
             </div>

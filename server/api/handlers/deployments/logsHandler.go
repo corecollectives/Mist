@@ -105,6 +105,7 @@ func LogsHandler(w http.ResponseWriter, r *http.Request) {
 				Timestamp: time.Now(),
 				Data: websockets.LogUpdate{
 					Line:      line,
+					Stream:    websockets.DetectStreamType(line),
 					Timestamp: time.Now(),
 				},
 			}:

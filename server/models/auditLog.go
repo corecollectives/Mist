@@ -108,7 +108,7 @@ func GetAuditLogsByUser(userID int64, limit, offset int) ([]AuditLog, error) {
 			u.email,
 			al.action, 
 			al.resource_type, 
-			al.resource_id, 
+			al.resource_id, SELECT
 			al.details, 
 			al.created_at
 		FROM audit_logs al

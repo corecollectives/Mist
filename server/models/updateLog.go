@@ -8,17 +8,25 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+type UpdateStatus string
+
+const (
+	UpdateStatusInProgress UpdateStatus = "in_progress"
+	UpdateStatusSuccess    UpdateStatus = "success"
+	UpdateStatusFailed     UpdateStatus = "failed"
+)
+
 type UpdateLog struct {
-	ID           int64      `json:"id"`
-	VersionFrom  string     `json:"versionFrom"`
-	VersionTo    string     `json:"versionTo"`
-	Status       string     `json:"status"` // in_progress, success, failed
-	Logs         string     `json:"logs"`
-	ErrorMessage *string    `json:"errorMessage"`
-	StartedBy    int64      `json:"startedBy"`
-	StartedAt    time.Time  `json:"startedAt"`
-	CompletedAt  *time.Time `json:"completedAt"`
-	Username     string     `json:"username"`
+	ID           int64
+	VersionFrom  string
+	VersionTo    string
+	Status       UpdateStatus
+	Logs         *string
+	ErrorMessage *string
+	StartedBy    int64
+	StartedAt    time.Time
+	CompletedAt  *time.Time
+	Username     *string
 }
 
 func CreateUpdateLog(versionFrom, versionTo string, startedBy int64) (*UpdateLog, error) {
@@ -56,7 +64,7 @@ func CreateUpdateLog(versionFrom, versionTo string, startedBy int64) (*UpdateLog
 	return updateLog, nil
 }
 
-func UpdateUpdateLogStatus(id int64, status string, logs string, errorMessage *string) error {
+func UpdateUpdateLogStatus(id int64, status UpdateStatus, logs string, errorMessage *string) error {
 	query := `
 		UPDATE update_logs
 		SET status = ?, logs = ?, error_message = ?, completed_at = CURRENT_TIMESTAMP
@@ -71,7 +79,7 @@ func UpdateUpdateLogStatus(id int64, status string, logs string, errorMessage *s
 
 	log.Info().
 		Int64("update_log_id", id).
-		Str("status", status).
+		Str("status", string(status)).
 		Msg("Update log status updated")
 
 	return nil
@@ -195,12 +203,17 @@ func GetUpdateLogsAsString() (string, error) {
 		builder.WriteString(log.VersionTo)
 		builder.WriteString("\n")
 		builder.WriteString("Status: ")
-		builder.WriteString(log.Status)
+		builder.WriteString(string(log.Status))
 		builder.WriteString("\n")
 		builder.WriteString("Started: ")
 		builder.WriteString(log.StartedAt.Format("2006-01-02 15:04:05"))
 		builder.WriteString(" by ")
-		builder.WriteString(log.Username)
+		if log.Username != nil {
+			builder.WriteString(*log.Username)
+		} else {
+			builder.WriteString("unknown")
+		}
+
 		builder.WriteString("\n")
 		if log.CompletedAt != nil {
 			builder.WriteString("Completed: ")
@@ -230,7 +243,7 @@ func CheckAndCompletePendingUpdates() error {
 
 	latestLog := logs[0]
 
-	if latestLog.Status != "in_progress" {
+	if latestLog.Status != UpdateStatusInProgress {
 		return nil
 	}
 
@@ -257,8 +270,14 @@ func CheckAndCompletePendingUpdates() error {
 			Str("version", currentVersion).
 			Msg("Completing successful update that was interrupted by service restart")
 
-		completionLog := latestLog.Logs + "\n✅ Update completed successfully (verified on restart)\n"
-		err = UpdateUpdateLogStatus(latestLog.ID, "success", completionLog, nil)
+		existing := ""
+		if latestLog.Logs != nil {
+			existing = *latestLog.Logs
+		}
+
+		completionLog := existing + "\n✅ Update completed successfully (verified on restart)\n"
+
+		err = UpdateUpdateLogStatus(latestLog.ID, UpdateStatusSuccess, completionLog, nil)
 		if err != nil {
 			log.Error().Err(err).Int64("update_log_id", latestLog.ID).Msg("Failed to complete pending update")
 			return err
@@ -280,8 +299,13 @@ func CheckAndCompletePendingUpdates() error {
 		Msg("Update appears to have failed (version mismatch detected on startup)")
 
 	errMsg := "Update process was interrupted and version does not match target"
-	failureLog := latestLog.Logs + "\n❌ " + errMsg + "\n"
-	err = UpdateUpdateLogStatus(latestLog.ID, "failed", failureLog, &errMsg)
+	existing := ""
+	if latestLog.Logs != nil {
+		existing = *latestLog.Logs
+	}
+
+	failureLog := existing + "\n❌ " + errMsg + "\n"
+	err = UpdateUpdateLogStatus(latestLog.ID, UpdateStatusFailed, failureLog, &errMsg)
 	if err != nil {
 		log.Error().Err(err).Int64("update_log_id", latestLog.ID).Msg("Failed to mark failed update")
 		return err

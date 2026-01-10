@@ -2,11 +2,9 @@ package docker
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/netip"
 	"os"
-	"os/exec"
 	"strings"
 	"time"
 
@@ -125,14 +123,51 @@ func GetContainerLogs(containerName string, tail int) (string, error) {
 		return "", fmt.Errorf("container %s does not exist", containerName)
 	}
 
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	defer cancel()
+	cli, err := client.New(client.FromEnv)
+	if err != nil {
+		return "", fmt.Errorf("error creating moby client: %s", err.Error())
+	}
+
 	tailStr := fmt.Sprintf("%d", tail)
-	cmd := exec.Command("docker", "logs", "--tail", tailStr, containerName)
-	output, err := cmd.CombinedOutput()
+	options := client.ContainerLogsOptions{
+		ShowStdout: true,
+		ShowStderr: true,
+		Tail:       tailStr,
+	}
+
+	logReader, err := cli.ContainerLogs(ctx, containerName, options)
 	if err != nil {
 		return "", fmt.Errorf("failed to get container logs: %w", err)
 	}
+	defer logReader.Close()
 
-	return string(output), nil
+	var logs strings.Builder
+	buf := make([]byte, 8192)
+	for {
+		n, err := logReader.Read(buf)
+		if n > 0 {
+			logs.Write(buf[:n])
+		}
+		if err != nil {
+			break
+		}
+	}
+
+	return logs.String(), nil
+
+	// legacy exec method
+	//
+	//
+	// tailStr := fmt.Sprintf("%d", tail)
+	// cmd := exec.Command("docker", "logs", "--tail", tailStr, containerName)
+	// output, err := cmd.CombinedOutput()
+	// if err != nil {
+	// 	return "", fmt.Errorf("failed to get container logs: %w", err)
+	// }
+	//
+	// return string(output), nil
 }
 
 func GetContainerName(appName string, appId int64) string {
@@ -497,56 +532,104 @@ func GetContainerStatus(containerName string) (*ContainerStatus, error) {
 		}, nil
 	}
 
-	cmd := exec.Command("docker", "inspect", containerName, "--format", "{{json .}}")
-	output, err := cmd.Output()
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	defer cancel()
+	cli, err := client.New(client.FromEnv)
+	if err != nil {
+		return nil, fmt.Errorf("error creating moby client: %s", err.Error())
+	}
+
+	inspectResult, err := cli.ContainerInspect(ctx, containerName, client.ContainerInspectOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to inspect container: %w", err)
 	}
 
-	var inspectData struct {
-		State struct {
-			Status  string `json:"Status"`
-			Running bool   `json:"Running"`
-			Paused  bool   `json:"Paused"`
-			Health  *struct {
-				Status string `json:"Status"`
-			} `json:"Health"`
-		} `json:"State"`
-		Name string `json:"Name"`
-	}
+	inspectData := inspectResult.Container
 
-	if err := json.Unmarshal(output, &inspectData); err != nil {
-		return nil, fmt.Errorf("failed to parse inspect output: %w", err)
-	}
-
-	uptimeCmd := exec.Command("docker", "inspect", containerName, "--format", "{{.State.StartedAt}}")
-	uptimeOutput, err := uptimeCmd.Output()
 	uptime := "N/A"
-	if err == nil {
-		uptime = strings.TrimSpace(string(uptimeOutput))
+	if inspectData.State != nil && inspectData.State.StartedAt != "" {
+		uptime = inspectData.State.StartedAt
 	}
 
 	state := "stopped"
-	if inspectData.State.Running {
-		state = "running"
-	} else if inspectData.State.Status == "exited" {
-		state = "stopped"
-	} else {
-		state = inspectData.State.Status
+	status := ""
+	if inspectData.State != nil {
+		status = string(inspectData.State.Status)
+		if inspectData.State.Running {
+			state = "running"
+		} else if inspectData.State.Status == "exited" {
+			state = "stopped"
+		} else {
+			state = string(inspectData.State.Status)
+		}
 	}
 
 	healthy := true
-	if inspectData.State.Health != nil {
+	if inspectData.State != nil && inspectData.State.Health != nil {
 		healthy = inspectData.State.Health.Status == "healthy"
 	}
 
 	return &ContainerStatus{
 		Name:    strings.TrimPrefix(inspectData.Name, "/"),
-		Status:  inspectData.State.Status,
+		Status:  status,
 		State:   state,
 		Uptime:  uptime,
 		Healthy: healthy,
 	}, nil
+
+	// legacy exec method
+	//
+	//
+	// cmd := exec.Command("docker", "inspect", containerName, "--format", "{{json .}}")
+	// output, err := cmd.Output()
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed to inspect container: %w", err)
+	// }
+	//
+	// var inspectData struct {
+	// 	State struct {
+	// 		Status  string `json:"Status"`
+	// 		Running bool   `json:"Running"`
+	// 		Paused  bool   `json:"Paused"`
+	// 		Health  *struct {
+	// 			Status string `json:"Status"`
+	// 		} `json:"Health"`
+	// 	} `json:"State"`
+	// 	Name string `json:"Name"`
+	// }
+	//
+	// if err := json.Unmarshal(output, &inspectData); err != nil {
+	// 	return nil, fmt.Errorf("failed to parse inspect output: %w", err)
+	// }
+	//
+	// uptimeCmd := exec.Command("docker", "inspect", containerName, "--format", "{{.State.StartedAt}}")
+	// uptimeOutput, err := uptimeCmd.Output()
+	// uptime := "N/A"
+	// if err == nil {
+	// 	uptime = strings.TrimSpace(string(uptimeOutput))
+	// }
+	//
+	// state := "stopped"
+	// if inspectData.State.Running {
+	// 	state = "running"
+	// } else if inspectData.State.Status == "exited" {
+	// 	state = "stopped"
+	// } else {
+	// 	state = inspectData.State.Status
+	// }
+	//
+	// healthy := true
+	// if inspectData.State.Health != nil {
+	// 	healthy = inspectData.State.Health.Status == "healthy"
+	// }
+	//
+	// return &ContainerStatus{
+	// 	Name:    strings.TrimPrefix(inspectData.Name, "/"),
+	// 	Status:  inspectData.State.Status,
+	// 	State:   state,
+	// 	Uptime:  uptime,
+	// 	Healthy: healthy,
+	// }, nil
 }
 
 func RecreateContainer(app *models.App) error {
@@ -556,12 +639,18 @@ func RecreateContainer(app *models.App) error {
 		return fmt.Errorf("container %s does not exist", containerName)
 	}
 
-	cmd := exec.Command("docker", "inspect", containerName, "--format", "{{.Config.Image}}")
-	output, err := cmd.Output()
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	defer cancel()
+	cli, err := client.New(client.FromEnv)
+	if err != nil {
+		return fmt.Errorf("error creating moby client: %s", err.Error())
+	}
+
+	inspectResult, err := cli.ContainerInspect(ctx, containerName, client.ContainerInspectOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to get container image: %w", err)
 	}
-	imageTag := strings.TrimSpace(string(output))
+	imageTag := inspectResult.Container.Image
 
 	port, domains, envVars, err := GetDeploymentConfigForApp(app)
 	if err != nil {
@@ -577,4 +666,29 @@ func RecreateContainer(app *models.App) error {
 	}
 
 	return nil
+
+	// legacy exec method
+	//
+	//
+	// cmd := exec.Command("docker", "inspect", containerName, "--format", "{{.Config.Image}}")
+	// output, err := cmd.Output()
+	// if err != nil {
+	// 	return fmt.Errorf("failed to get container image: %w", err)
+	// }
+	// imageTag := strings.TrimSpace(string(output))
+	//
+	// port, domains, envVars, err := GetDeploymentConfigForApp(app)
+	// if err != nil {
+	// 	return fmt.Errorf("failed to get deployment configuration: %w", err)
+	// }
+	//
+	// if err := StopRemoveContainer(containerName, nil); err != nil {
+	// 	return fmt.Errorf("failed to stop/remove container: %w", err)
+	// }
+	//
+	// if err := RunContainer(app, imageTag, containerName, domains, port, envVars, nil); err != nil {
+	// 	return fmt.Errorf("failed to run container: %w", err)
+	// }
+	//
+	// return nil
 }

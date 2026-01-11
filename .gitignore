@@ -5,4 +5,5 @@ node_modules/
 .env
 mist.db
 letsencrypt/acme.json
+testing/
 

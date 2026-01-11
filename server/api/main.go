@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/corecollectives/mist/api/middleware"
+	// "github.com/corecollectives/mist/api/middleware"
 	"github.com/corecollectives/mist/websockets"
 	"github.com/rs/zerolog/log"
 )
@@ -27,7 +27,7 @@ func InitApiServer() {
 	})
 
 	go websockets.BroadcastMetrics()
-	handler := middleware.Logger(mux)
+	handler := mux
 	server := &http.Server{
 		Addr:              ":8080",
 		Handler:           handler,

@@ -146,6 +146,7 @@ interface UseDeploymentMonitorOptions {
   enabled: boolean;
   onComplete?: () => void;
   onError?: (error: string) => void;
+  onClose?: () => void;
 }
 
 export const useDeploymentMonitor = ({
@@ -153,6 +154,7 @@ export const useDeploymentMonitor = ({
   enabled,
   onComplete,
   onError,
+  onClose,
 }: UseDeploymentMonitorOptions) => {
   const [logs, setLogs] = useState<DeploymentLogEntry[]>([]);
   const [status, setStatus] = useState<StatusUpdate | null>(null);
@@ -179,6 +181,16 @@ export const useDeploymentMonitor = ({
       if (!response.ok) {
         if (response.status === 400) {
           setIsLive(true);
+          setIsLoading(false);
+          hasFetchedRef.current = true;
+          return;
+        }
+        if (response.status === 404) {
+          const result = await response.json();
+          const errorMsg = result.message || 'Deployment log file not found';
+          setError(errorMsg);
+          onError?.(errorMsg);
+          onClose?.();
           setIsLoading(false);
           hasFetchedRef.current = true;
           return;
@@ -298,6 +310,11 @@ export const useDeploymentMonitor = ({
               console.error('[DeploymentMonitor] Error event:', errorMsg);
               setError(errorMsg);
               onError?.(errorMsg);
+
+              // If it's a log file not found error, close the viewer
+              if (errorMsg.includes('log file not found') || errorMsg.includes('Failed to read deployment logs')) {
+                onClose?.();
+              }
               break;
             }
           }
@@ -346,7 +363,7 @@ export const useDeploymentMonitor = ({
       setError('Failed to establish connection');
       setIsLoading(false);
     }
-  }, [deploymentId, enabled, isLive, onComplete, onError]);
+  }, [deploymentId, enabled, isLive, onComplete, onError, onClose]);
 
   useEffect(() => {
     if (enabled) {

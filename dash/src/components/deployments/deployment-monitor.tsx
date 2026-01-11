@@ -10,6 +10,7 @@ import { Terminal, CheckCircle2, XCircle, AlertCircle, Loader2 } from 'lucide-re
 import { useDeploymentMonitor } from '@/hooks';
 import { LogLine } from '@/components/logs/log-line';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface Props {
   deploymentId: number;
@@ -34,6 +35,10 @@ export const DeploymentMonitor = ({ deploymentId, open, onClose, onComplete }: P
     },
     onError: (err) => {
       console.error('Deployment error:', err);
+      toast.error(err);
+    },
+    onClose: () => {
+      handleClose();
     },
   });
 

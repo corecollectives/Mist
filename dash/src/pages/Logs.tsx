@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Terminal, Trash2, Download, Pause, Play, AlertCircle, RefreshCw } from "lucide-react";
+import { LogLine } from "@/components/logs/log-line";
 import { toast } from "sonner";
 
 interface LogEvent {
@@ -242,7 +243,7 @@ export const LogsPage = () => {
           <CardContent className="p-0">
             <div
               ref={logsContainerRef}
-              className="h-[calc(100vh-320px)] sm:h-[calc(100vh-300px)] overflow-y-auto overflow-x-auto bg-black/95 text-green-400 font-mono text-xs p-4"
+              className="h-[calc(100vh-320px)] sm:h-[calc(100vh-300px)] overflow-y-auto overflow-x-auto bg-slate-950 p-4"
             >
               {logs.length === 0 && !connected && (
                 <div className="flex items-center justify-center h-full text-muted-foreground">
@@ -254,11 +255,16 @@ export const LogsPage = () => {
                   <p>Waiting for logs...</p>
                 </div>
               )}
-              {logs.map((log, index) => (
-                <div key={index} className="whitespace-pre-wrap break-all leading-relaxed">
-                  {log}
-                </div>
-              ))}
+              <div className="space-y-0.5">
+                {logs.map((log, index) => (
+                  <LogLine
+                    key={index}
+                    line={log}
+                    index={index}
+                    showLineNumbers={false}
+                  />
+                ))}
+              </div>
               {paused && pausedLogsRef.current.length > 0 && (
                 <div className="mt-4 p-2 bg-yellow-500/10 border border-yellow-500/20 rounded text-yellow-500">
                   {pausedLogsRef.current.length} new log entries (paused)

@@ -2,6 +2,8 @@
 
 A lightweight, self-hostable Platform-as-a-Service built for developers. Deploy Docker applications from Git with automatic builds, custom domains, SSL certificates, and real-time monitoring.
 
+[![PR Build Check](https://github.com/corecollectives/Mist/actions/workflows/pr-build-check.yml/badge.svg)](https://github.com/corecollectives/Mist/actions/workflows/pr-build-check.yml)
+
 ## Quick Start
 
 Install Mist on your server with a single command:

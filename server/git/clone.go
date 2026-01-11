@@ -1,14 +1,20 @@
 package git
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/go-git/go-git/v6"
 	"github.com/go-git/go-git/v6/plumbing"
+	"github.com/rs/zerolog/log"
 )
 
 func CloneRepo(url string, branch string, logFile *os.File, path string) error {
-	_, err := git.PlainClone(path, &git.CloneOptions{
+	_, err := fmt.Fprintf(logFile, "[GIT]: Cloning into %s", path)
+	if err != nil {
+		log.Warn().Msg("error logging into log file")
+	}
+	_, err = git.PlainClone(path, &git.CloneOptions{
 		URL: url,
 		// Progress:      logFile,
 		ReferenceName: plumbing.NewBranchReferenceName(branch),

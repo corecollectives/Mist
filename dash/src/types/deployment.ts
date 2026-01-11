@@ -30,6 +30,7 @@ export interface DeploymentEvent {
 
 export interface LogUpdate {
   line: string;
+  stream?: 'stdout' | 'stderr';
   timestamp: string;
 }
 

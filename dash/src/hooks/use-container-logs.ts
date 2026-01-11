@@ -1,10 +1,16 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 
+export interface ContainerLogEntry {
+  line: string;
+  stream?: 'stdout' | 'stderr';
+}
+
 interface ContainerLogEvent {
   type: 'log' | 'status' | 'error' | 'end';
   timestamp: string;
   data: {
     line?: string;
+    stream?: 'stdout' | 'stderr';
     message?: string;
     container?: string;
     state?: string;
@@ -23,7 +29,7 @@ export const useContainerLogs = ({
   enabled,
   onError,
 }: UseContainerLogsOptions) => {
-  const [logs, setLogs] = useState<string[]>([]);
+  const [logs, setLogs] = useState<ContainerLogEntry[]>([]);
   const [containerState, setContainerState] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -70,7 +76,13 @@ export const useContainerLogs = ({
           switch (logEvent.type) {
             case 'log': {
               if (logEvent.data.line && logEvent.data.line.trim()) {
-                setLogs((prev) => [...prev, logEvent.data.line!]);
+                setLogs((prev) => [
+                  ...prev,
+                  {
+                    line: logEvent.data.line!,
+                    stream: logEvent.data.stream,
+                  },
+                ]);
               }
               break;
             }

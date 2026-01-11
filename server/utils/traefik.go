@@ -176,6 +176,7 @@ func ChangeLetsEncryptEmail(email string) error {
 func RestartTraefik() error {
 	log.Info().Msg("Restarting Traefik container...")
 
+	// NOTE: we still use the exec method here because moby doesn't support docker-compose for now
 	cmd := exec.Command("docker", "compose", "-f", "/opt/mist/traefik-compose.yml", "restart", "traefik")
 
 	output, err := cmd.CombinedOutput()

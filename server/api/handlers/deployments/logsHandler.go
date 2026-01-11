@@ -79,11 +79,8 @@ func LogsHandler(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	go func() {
-		// Wait up to 10 seconds for log file to appear
-		fileFound := false
 		for i := 0; i < 20; i++ {
 			if _, err := os.Stat(logPath); err == nil {
-				fileFound = true
 				break
 			}
 			select {
@@ -93,62 +90,25 @@ func LogsHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		if !fileFound {
+		send := make(chan string, 100)
+		go func() {
+			_ = websockets.WatcherLogs(ctx, logPath, send)
+			close(send)
+		}()
+
+		for line := range send {
 			select {
 			case <-ctx.Done():
 				return
 			case events <- websockets.DeploymentEvent{
-				Type:      "error",
+				Type:      "log",
 				Timestamp: time.Now(),
-				Data: map[string]string{
-					"message": "Deployment log file not found",
+				Data: websockets.LogUpdate{
+					Line:      line,
+					Stream:    websockets.DetectStreamType(line),
+					Timestamp: time.Now(),
 				},
 			}:
-			}
-			return
-		}
-
-		send := make(chan string, 100)
-		errChan := make(chan error, 1)
-		go func() {
-			err := websockets.WatcherLogs(ctx, logPath, send)
-			if err != nil {
-				errChan <- err
-			}
-			close(send)
-		}()
-
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case err := <-errChan:
-				if err != nil {
-					events <- websockets.DeploymentEvent{
-						Type:      "error",
-						Timestamp: time.Now(),
-						Data: map[string]string{
-							"message": "Failed to read deployment logs: " + err.Error(),
-						},
-					}
-					return
-				}
-			case line, ok := <-send:
-				if !ok {
-					return
-				}
-				select {
-				case <-ctx.Done():
-					return
-				case events <- websockets.DeploymentEvent{
-					Type:      "log",
-					Timestamp: time.Now(),
-					Data: websockets.LogUpdate{
-						Line:      line,
-						Timestamp: time.Now(),
-					},
-				}:
-				}
 			}
 		}
 	}()

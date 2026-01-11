@@ -11,6 +11,9 @@ import (
 func WatcherLogs(ctx context.Context, filePath string, send chan<- string) error {
 	file, err := os.Open(filePath)
 	if err != nil {
+		if os.IsNotExist(err) {
+			return err
+		}
 		return err
 	}
 	defer file.Close()

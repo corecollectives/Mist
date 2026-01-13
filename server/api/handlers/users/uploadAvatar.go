@@ -55,12 +55,12 @@ func UploadAvatar(w http.ResponseWriter, r *http.Request) {
 
 	contentType := header.Header.Get("Content-Type")
 	if !isValidImageType(contentType) {
-		handlers.SendResponse(w, http.StatusBadRequest, false, nil, "Invalid file type. Only JPG, PNG, GIF, and WebP are allowed", "")
+		handlers.SendResponse(w, http.StatusBadRequest, false, nil, "", "Invalid file type. Only JPG, PNG, GIF, and WebP are allowed")
 		return
 	}
 
 	if header.Size > maxSize {
-		handlers.SendResponse(w, http.StatusBadRequest, false, nil, "File size exceeds 5MB limit", "")
+		handlers.SendResponse(w, http.StatusBadRequest, false, nil, "", "File size exceeds 5MB limit")
 		return
 	}
 

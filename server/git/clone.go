@@ -10,7 +10,7 @@ import (
 )
 
 func CloneRepo(url string, branch string, logFile *os.File, path string) error {
-	_, err := fmt.Fprintf(logFile, "[GIT]: Cloning into %s", path)
+	_, err := fmt.Fprintf(logFile, "[GIT]: Cloning into %s\n", path)
 	if err != nil {
 		log.Warn().Msg("error logging into log file")
 	}

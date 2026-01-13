@@ -54,7 +54,7 @@ fyrer
 ## Community
 
 - [GitHub](https://github.com/corecollectives/mist)
-- [Discord](https://discord.gg/kxK8XHR6)
+- [Discord](https://discord.gg/hr6TCQDDkj)
 - [Documentation](https://trymist.cloud/guide)
 
 ## License

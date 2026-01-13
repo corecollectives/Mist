@@ -295,7 +295,7 @@ func GetIncompleteDeployments() ([]Deployment, error) {
 	       logs, build_logs_path, status, stage, progress, error_message, 
 	       created_at, started_at, finished_at, duration, is_active, rolled_back_from
 	FROM deployments
-	WHERE status = 'bulding' OR status = 'deploying' ?
+	WHERE status = 'building' OR status = 'deploying'
 	ORDER BY created_at DESC
 	`
 

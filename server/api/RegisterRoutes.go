@@ -21,7 +21,7 @@ import (
 
 func RegisterRoutes(mux *http.ServeMux) {
 
-	avatarDir := constants.Constants["AvatarDirPath"].(string)
+	avatarDir := constants.Constants.AvatarDirPath
 	mux.Handle("/uploads/avatar/", http.StripPrefix("/uploads/avatar/", http.FileServer(http.Dir(avatarDir))))
 
 	mux.Handle("/api/ws/stats", middleware.AuthMiddleware()(http.HandlerFunc(websockets.StatWsHandler)))

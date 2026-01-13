@@ -1,0 +1,49 @@
+package config
+
+var Cfg ConfigType
+
+func WriteConfig(config ConfigType) {
+	Cfg = config
+}
+
+type ResolvedConfig struct {
+	Server   ResolvedServerConfig
+	Network  ResolvedNetworkConfig
+	Security ResolvedSecurityConfig
+	Docker   ResolvedDockerConfig
+	Git      ResolvedGitConfig
+}
+
+func GetConfig() ResolvedConfig {
+	return ResolvedConfig{
+		Server: ResolvedServerConfig{
+			Port:                 getOr(Cfg.Server.Port, defaultConfig.Server.Port),
+			DefaultAppPort:       getOr(Cfg.Server.DefaultAppPort, defaultConfig.Server.DefaultAppPort),
+			APIReadHeaderTimeout: getOr(Cfg.Server.APIReadHeaderTimeout, defaultConfig.Server.APIReadHeaderTimeout),
+			MaxAvatarSize:        getOr(Cfg.Server.MaxAvatarSize, defaultConfig.Server.MaxAvatarSize),
+		},
+		Network: ResolvedNetworkConfig{
+			WildcardDomain:       getOr(Cfg.Network.WildcardDomain, defaultConfig.Network.WildcardDomain),
+			MistAppName:          getOr(Cfg.Network.MistAppName, defaultConfig.Network.MistAppName),
+			DNSValidationTimeout: getOr(Cfg.Network.DNSValidationTimeout, defaultConfig.Network.DNSValidationTimeout),
+		},
+		Security: ResolvedSecurityConfig{
+			JWTExpiry:         getOr(Cfg.Security.JWTExpiry, defaultConfig.Security.JWTExpiry),
+			SecureCookies:     getOr(Cfg.Security.SecureCookies, defaultConfig.Security.SecureCookies),
+			PasswordMinLength: getOr(Cfg.Security.PasswordMinLength, defaultConfig.Security.PasswordMinLength),
+		},
+		Docker: ResolvedDockerConfig{
+			AutoCleanupContainers:   getOr(Cfg.Docker.AutoCleanupContainers, defaultConfig.Docker.AutoCleanupContainers),
+			DefaultRestartPolicy:    getOr(Cfg.Docker.DefaultRestartPolicy, defaultConfig.Docker.DefaultRestartPolicy),
+			BuildImageTimeout:       getOr(Cfg.Docker.BuildImageTimeout, defaultConfig.Docker.BuildImageTimeout),
+			PullImageTimeout:        getOr(Cfg.Docker.PullImageTimeout, defaultConfig.Docker.PullImageTimeout),
+			StartContainerTimeout:   getOr(Cfg.Docker.StartContainerTimeout, defaultConfig.Docker.StartContainerTimeout),
+			StopContainerTimeout:    getOr(Cfg.Docker.StopContainerTimeout, defaultConfig.Docker.StopContainerTimeout),
+			RestartContainerTimeout: getOr(Cfg.Docker.RestartContainerTimeout, defaultConfig.Docker.RestartContainerTimeout),
+		},
+		Git: ResolvedGitConfig{
+			GitCloneTimeout:         getOr(Cfg.Git.GitCloneTimeout, defaultConfig.Git.GitCloneTimeout),
+			RemoveGitRepoAfterBuild: getOr(Cfg.Git.RemoveGitRepoAfterBuild, defaultConfig.Git.RemoveGitRepoAfterBuild),
+		},
+	}
+}

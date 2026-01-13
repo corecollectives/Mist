@@ -10,6 +10,7 @@ import (
 
 	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/api/middleware"
+	"github.com/corecollectives/mist/config"
 	"github.com/corecollectives/mist/constants"
 	"github.com/corecollectives/mist/models"
 	"github.com/corecollectives/mist/utils"
@@ -17,18 +18,18 @@ import (
 )
 
 func init() {
-	avatarDir := constants.Constants["AvatarDirPath"].(string)
+	avatarDir := constants.Constants.AvatarDirPath
 	if err := os.MkdirAll(avatarDir, 0755); err != nil {
 		log.Warn().Err(err).Str("path", avatarDir).Msg("Failed to create avatar directory")
 	}
 }
 
 func getAvatarDir() string {
-	return constants.Constants["AvatarDirPath"].(string)
+	return constants.Constants.AvatarDirPath
 }
 
 func getMaxAvatarSize() int64 {
-	return int64(constants.Constants["MaxAvatarSize"].(int))
+	return int64(config.GetConfig().Server.MaxAvatarSize)
 }
 
 func UploadAvatar(w http.ResponseWriter, r *http.Request) {

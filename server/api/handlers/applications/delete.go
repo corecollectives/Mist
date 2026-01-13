@@ -152,7 +152,7 @@ func DeleteApplication(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	logPath := constants.Constants["LogPath"].(string)
+	logPath := constants.Constants.LogPath
 	logPattern := filepath.Join(logPath, fmt.Sprintf("*%d_build_logs", app.ID))
 	matches, err := filepath.Glob(logPattern)
 	if err == nil {

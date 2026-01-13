@@ -1,8 +1,13 @@
 package constants
 
-var Constants = map[string]any{
-	"RootPath":      "/var/lib/mist",
-	"LogPath":       "/var/lib/mist/logs",
-	"AvatarDirPath": "/var/lib/mist/uploads/avatar",
-	"MaxAvatarSize": 5 << 20,
+var Constants = Constant{
+	RootPath:      "/var/lib/mist",
+	LogPath:       "/var/lib/mist/logs",
+	AvatarDirPath: "/var/lib/mist/uploads/avatar",
+}
+
+type Constant struct {
+	RootPath      string
+	LogPath       string
+	AvatarDirPath string
 }

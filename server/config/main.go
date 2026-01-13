@@ -1,9 +1,53 @@
 package config
 
+import (
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+)
+
+const ConfigPath = "/var/lib/mist/.mistrc"
+
 var Cfg ConfigType
 
 func WriteConfig(config ConfigType) {
 	Cfg = config
+}
+
+func SaveConfig() error {
+	dir := filepath.Dir(ConfigPath)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return fmt.Errorf("failed to create config directory: %w", err)
+	}
+
+	data, err := json.MarshalIndent(Cfg, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal config: %w", err)
+	}
+
+	if err := os.WriteFile(ConfigPath, data, 0644); err != nil {
+		return fmt.Errorf("failed to write config file: %w", err)
+	}
+
+	return nil
+}
+
+func LoadConfig() error {
+	if _, err := os.Stat(ConfigPath); os.IsNotExist(err) {
+		return fmt.Errorf("config file not found at %s", ConfigPath)
+	}
+
+	data, err := os.ReadFile(ConfigPath)
+	if err != nil {
+		return fmt.Errorf("failed to read config file: %w", err)
+	}
+
+	if err := json.Unmarshal(data, &Cfg); err != nil {
+		return fmt.Errorf("failed to unmarshal config: %w", err)
+	}
+
+	return nil
 }
 
 type ResolvedConfig struct {

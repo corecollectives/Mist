@@ -1,6 +1,8 @@
 package config
 
-import "github.com/moby/moby/api/types/container"
+import (
+	"github.com/corecollectives/mist/models"
+)
 
 type ConfigType struct {
 	Server   ServerConfig   `json:"server"`
@@ -30,13 +32,13 @@ type SecurityConfig struct {
 }
 
 type DockerConfig struct {
-	AutoCleanupContainers   *bool                        `json:"autoCleanupContainers,omitempty"`
-	DefaultRestartPolicy    *container.RestartPolicyMode `json:"defaultRestartPolicy,omitempty"`
-	BuildImageTimeout       *int                         `json:"buildImageTimeout,omitempty"`
-	PullImageTimeout        *int                         `json:"pullImageTimeout,omitempty"`
-	StartContainerTimeout   *int                         `json:"startContainerTimeout,omitempty"`
-	StopContainerTimeout    *int                         `json:"stopContainerTimeout,omitempty"`
-	RestartContainerTimeout *int                         `json:"restartContainerTimeout,omitempty"`
+	AutoCleanupContainers   *bool                 `json:"autoCleanupContainers,omitempty"`
+	DefaultRestartPolicy    *models.RestartPolicy `json:"defaultRestartPolicy,omitempty"`
+	BuildImageTimeout       *int                  `json:"buildImageTimeout,omitempty"`
+	PullImageTimeout        *int                  `json:"pullImageTimeout,omitempty"`
+	StartContainerTimeout   *int                  `json:"startContainerTimeout,omitempty"`
+	StopContainerTimeout    *int                  `json:"stopContainerTimeout,omitempty"`
+	RestartContainerTimeout *int                  `json:"restartContainerTimeout,omitempty"`
 }
 
 type GitConfig struct {
@@ -65,7 +67,7 @@ type ResolvedSecurityConfig struct {
 
 type ResolvedDockerConfig struct {
 	AutoCleanupContainers   bool
-	DefaultRestartPolicy    container.RestartPolicyMode
+	DefaultRestartPolicy    models.RestartPolicy
 	BuildImageTimeout       int
 	PullImageTimeout        int
 	StartContainerTimeout   int

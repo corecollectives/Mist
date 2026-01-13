@@ -1,6 +1,8 @@
 package config
 
-import "github.com/moby/moby/api/types/container"
+import (
+	"github.com/corecollectives/mist/models"
+)
 
 var defaultConfig = ConfigType{
 	Server: ServerConfig{
@@ -19,7 +21,7 @@ var defaultConfig = ConfigType{
 	},
 	Docker: DockerConfig{
 		AutoCleanupContainers:   ptr(true),
-		DefaultRestartPolicy:    ptr(container.RestartPolicyAlways),
+		DefaultRestartPolicy:    ptr(models.RestartPolicyAlways),
 		BuildImageTimeout:       ptr(10),
 		PullImageTimeout:        ptr(5),
 		StartContainerTimeout:   ptr(1),

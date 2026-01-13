@@ -12,6 +12,8 @@ var defaultConfig = ConfigType{
 		MaxAvatarSize:        ptr(5),  // MB
 	},
 	Network: NetworkConfig{
+		WildcardDomain:       ptr(""),
+		MistAppName:          ptr("mist"),
 		DNSValidationTimeout: ptr(60),
 	},
 	Security: SecurityConfig{

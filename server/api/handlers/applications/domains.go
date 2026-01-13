@@ -8,6 +8,7 @@ import (
 
 	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/api/middleware"
+	"github.com/corecollectives/mist/config"
 	"github.com/corecollectives/mist/docker"
 	"github.com/corecollectives/mist/models"
 	"github.com/corecollectives/mist/utils"
@@ -275,7 +276,7 @@ func VerifyDomainDNS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	valid, validationErr := utils.ValidateDNSWithTimeout(domain.Domain, 5*time.Second)
+	valid, validationErr := utils.ValidateDNSWithTimeout(domain.Domain, time.Duration(config.GetConfig().Network.DNSValidationTimeout)*time.Second)
 
 	var errorMsg *string
 	if validationErr != nil {

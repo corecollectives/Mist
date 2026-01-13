@@ -1,14 +1,11 @@
 package github
 
 import (
-	"context"
 	"fmt"
-	"os"
-	"time"
-
 	"github.com/corecollectives/mist/git"
 	"github.com/corecollectives/mist/models"
 	"github.com/rs/zerolog/log"
+	"os"
 )
 
 func CloneRepo(appId int64, logFile *os.File) error {
@@ -71,9 +68,6 @@ func CloneRepo(appId int64, logFile *os.File) error {
 
 	log.Info().Str("clone_url", cloneURL).Str("branch", branch).Str("path", path).Msg("Cloning repository")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
-	defer cancel()
-
 	// old command implementation
 	//
 	//
@@ -89,9 +83,6 @@ func CloneRepo(appId int64, logFile *os.File) error {
 	// new git sdk implementation
 	err = git.CloneRepo(repoURL, branch, logFile, path)
 	if err != nil {
-		if ctx.Err() == context.DeadlineExceeded {
-			return fmt.Errorf("git clone timed out after 10 minutes")
-		}
 		return fmt.Errorf("error cloning repository: %v\n", err)
 	}
 

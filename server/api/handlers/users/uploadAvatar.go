@@ -29,7 +29,7 @@ func getAvatarDir() string {
 }
 
 func getMaxAvatarSize() int64 {
-	return int64(config.GetConfig().Server.MaxAvatarSize)
+	return int64(config.GetConfig().Server.MaxAvatarSize * 1024 * 1024)
 }
 
 func UploadAvatar(w http.ResponseWriter, r *http.Request) {

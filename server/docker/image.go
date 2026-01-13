@@ -7,13 +7,14 @@ import (
 	"os"
 	"time"
 
+	"github.com/corecollectives/mist/config"
 	"github.com/moby/go-archive"
 	"github.com/moby/moby/client"
 	"github.com/rs/zerolog/log"
 )
 
 func BuildImage(imageTag, contextPath string, envVars map[string]string, logfile *os.File) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.GetConfig().Docker.BuildImageTimeout)*time.Minute)
 	defer cancel()
 	cli, err := client.New(client.FromEnv)
 	if err != nil {
@@ -89,7 +90,7 @@ func BuildImage(imageTag, contextPath string, envVars map[string]string, logfile
 }
 
 func PullDockerImage(imageName string, logfile *os.File) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.GetConfig().Docker.PullImageTimeout)*time.Minute)
 	defer cancel()
 
 	cli, err := client.New(client.FromEnv)

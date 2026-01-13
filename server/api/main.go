@@ -7,6 +7,7 @@ import (
 	"time"
 
 	// "github.com/corecollectives/mist/api/middleware"
+	"github.com/corecollectives/mist/config"
 	"github.com/corecollectives/mist/websockets"
 	"github.com/rs/zerolog/log"
 )
@@ -31,7 +32,7 @@ func InitApiServer() {
 	server := &http.Server{
 		Addr:              ":8080",
 		Handler:           handler,
-		ReadHeaderTimeout: 5 * time.Second,
+		ReadHeaderTimeout: time.Duration(config.GetConfig().Server.APIReadHeaderTimeout) * time.Second,
 	}
 	log.Info().Msg("Server is running on port 8080")
 	if err := server.ListenAndServe(); err != nil {

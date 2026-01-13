@@ -6,6 +6,7 @@ import (
 
 	"github.com/corecollectives/mist/api/handlers"
 	"github.com/corecollectives/mist/api/middleware"
+	"github.com/corecollectives/mist/config"
 	"github.com/corecollectives/mist/models"
 )
 
@@ -73,7 +74,7 @@ func CreateApplication(w http.ResponseWriter, r *http.Request) {
 			port := int64(*req.Port)
 			app.Port = &port
 		} else {
-			defaultPort := int64(3000)
+			defaultPort := int64(config.GetConfig().Server.DefaultAppPort)
 			app.Port = &defaultPort
 		}
 

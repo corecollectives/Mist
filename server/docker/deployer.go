@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/corecollectives/mist/config"
 	"github.com/corecollectives/mist/constants"
 	"github.com/corecollectives/mist/models"
 	"github.com/corecollectives/mist/utils"
@@ -215,7 +216,7 @@ func UpdateDeployment(dep *models.Deployment, db *sql.DB) error {
 }
 
 func GetLogsPath(commitHash string, depId int64) string {
-	return filepath.Join(constants.Constants["LogPath"].(string), commitHash+strconv.FormatInt(depId, 10)+"_build_logs")
+	return filepath.Join(constants.Constants.LogPath, commitHash+strconv.FormatInt(depId, 10)+"_build_logs")
 }
 
 func UpdateAppStatus(appID int64, status string, db *sql.DB) error {
@@ -236,7 +237,7 @@ func GetDeploymentConfig(deploymentID int64, app *models.App, db *sql.DB) (int, 
 		return 0, nil, nil, fmt.Errorf("get port failed: %w", err)
 	}
 	if port == nil {
-		defaultPort := 3000
+		defaultPort := config.GetConfig().Server.DefaultAppPort
 		port = &defaultPort
 	}
 

@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/corecollectives/mist/config"
 	"github.com/corecollectives/mist/models"
 	"github.com/moby/moby/api/types/container"
 	"github.com/moby/moby/api/types/network"
@@ -20,7 +21,7 @@ func StopContainer(containerName string) error {
 		return fmt.Errorf("container %s does not exist", containerName)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.GetConfig().Docker.StopContainerTimeout)*time.Minute)
 	defer cancel()
 	cli, err := client.New(client.FromEnv)
 	if err != nil {
@@ -54,7 +55,7 @@ func StartContainer(containerName string) error {
 		return fmt.Errorf("container %s does not exist", containerName)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.GetConfig().Docker.StartContainerTimeout)*time.Minute)
 	defer cancel()
 	cli, err := client.New(client.FromEnv)
 	if err != nil {
@@ -88,7 +89,7 @@ func RestartContainer(containerName string) error {
 		return fmt.Errorf("container %s does not exist", containerName)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.GetConfig().Docker.RestartContainerTimeout)*time.Minute)
 	defer cancel()
 	cli, err := client.New(client.FromEnv)
 	if err != nil {
@@ -255,7 +256,7 @@ func ContainerExists(name string) bool {
 
 func RunContainer(app *models.App, imageTag, containerName string, domains []string, Port int, envVars map[string]string, logfile *os.File) error {
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.GetConfig().Docker.StartContainerTimeout)*time.Minute)
 	defer cancel()
 
 	cli, err := client.New(client.FromEnv)

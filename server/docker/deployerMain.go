@@ -38,7 +38,7 @@ func DeployerMain(Id int64, db *sql.DB, logFile *os.File, logger *utils.Deployme
 		"app_type":   app.AppType,
 	})
 
-	appContextPath := filepath.Join(constants.Constants["RootPath"].(string), fmt.Sprintf("projects/%d/apps/%s", app.ProjectID, app.Name))
+	appContextPath := filepath.Join(constants.Constants.RootPath, fmt.Sprintf("projects/%d/apps/%s", app.ProjectID, app.Name))
 	imageTag := dep.CommitHash
 	containerName := fmt.Sprintf("app-%d", app.ID)
 

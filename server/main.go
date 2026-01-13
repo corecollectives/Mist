@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/corecollectives/mist/api"
+	"github.com/corecollectives/mist/config"
 	"github.com/corecollectives/mist/db"
 	"github.com/corecollectives/mist/lib"
 	"github.com/corecollectives/mist/models"
@@ -23,6 +24,21 @@ func main() {
 	defer dbInstance.Close()
 	log.Info().Msg("Database initialized successfully")
 	models.SetDB(dbInstance)
+
+	// initialize the config file,
+	// load if exists, create and then load if not exists
+	if err := config.InitConfig(); err != nil {
+		log.Warn().Err(err).Msg("failed to init the config file, using defaults as fallback")
+	}
+
+	// watch the .mistrc file for changes so that config can be loaded dynamically on runtime, without
+	// restarting the app until there is a change in port
+	// running as a background go func to not block the main thread
+	go func() {
+		if err := config.WatchConfig(); err != nil {
+			log.Error().Err(err).Msg("Config watcher stopped with error")
+		}
+	}()
 
 	// when we update the app, systemctl restarts the app, and we are unable to update the status of that
 	// particular update in the db, and it gets stuck in 'in_progress' which leads disability in doing

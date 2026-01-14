@@ -2,9 +2,14 @@ package models
 
 import "time"
 
-type ProjectMembers struct{
-	ID		int64  `json:"id"`
-	ProjectID	int64  `json:"project_id"`
-	USERID		int64  `json:"user_id"`
-	AddedAt	time.Time  `json:"added_at"`
+type ProjectMember struct {
+	UserID int64 `gorm:"primaryKey;autoIncrement:false" json:"user_id"`
+
+	ProjectID int64 `gorm:"primaryKey;autoIncrement:false" json:"project_id"`
+
+	AddedAt time.Time `gorm:"autoCreateTime" json:"added_at"`
+}
+
+func (ProjectMember) TableName() string {
+	return "project_members"
 }

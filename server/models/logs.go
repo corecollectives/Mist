@@ -19,10 +19,10 @@ const (
 )
 
 type Logs struct {
-	ID        int64
-	Source    LogSource
-	SourceID  *int64
-	Message   string
-	Level     LogLevel
-	CreatedAt time.Time
+	ID        int64     `gorm:"primaryKey;autoIncrement:true"`
+	Source    LogSource `gorm:"not null"`
+	SourceID  *int64    `gorm:"index"`
+	Message   string    `gorm:"not null"`
+	Level     LogLevel  `gorm:"not null;default:'info'"`
+	CreatedAt time.Time `gorm:"autoCreateTime"`
 }

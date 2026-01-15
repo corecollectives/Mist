@@ -32,7 +32,7 @@ func main() {
 		&models.Volume{},
 		&models.Cron{},
 		&models.Registry{},
-		&models.SystemSettings{},
+		&models.SystemSettingEntry{},
 		&models.Logs{},
 		&models.AuditLog{},
 		&models.ServiceTemplate{},
@@ -40,7 +40,7 @@ func main() {
 		&models.Session{},
 		&models.Notification{},
 		&models.UpdateLog{},
-		&models.SystemSettingsDbVer{}, //this needs checking
+		// &models.SystemSettingsDbVer{}, //this needs checking
 	)
 	_ = queue.InitQueue(dbInstance)
 	if err != nil {

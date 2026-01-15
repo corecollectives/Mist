@@ -23,13 +23,13 @@ type SystemSettings struct {
 	AutoCleanupImages     bool    `json:"autoCleanupImages"`
 }
 
-type systemSettingEntry struct {
+type SystemSettingEntry struct {
 	Key       string    `gorm:"primaryKey" json:"key"`
 	Value     string    `json:"value"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 }
 
-func (systemSettingEntry) TableName() string {
+func (SystemSettingEntry) TableName() string {
 	return "system_settings"
 }
 
@@ -42,7 +42,7 @@ func generateRandomSecret(length int) (string, error) {
 }
 
 func GetSystemSetting(key string) (string, error) {
-	var entry systemSettingEntry
+	var entry SystemSettingEntry
 	err := db.Where("key = ?", key).First(&entry).Error
 
 	if err != nil {
@@ -55,7 +55,7 @@ func GetSystemSetting(key string) (string, error) {
 }
 
 func SetSystemSetting(key, value string) error {
-	entry := systemSettingEntry{
+	entry := SystemSettingEntry{
 		Key:   key,
 		Value: value,
 	}

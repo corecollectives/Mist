@@ -40,6 +40,7 @@ func main() {
 		&models.Session{},
 		&models.Notification{},
 		&models.UpdateLog{},
+		&models.SystemSettingsDbVer{}, //this needs checking
 	)
 	_ = queue.InitQueue(dbInstance)
 	if err != nil {

@@ -1,11 +1,152 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import type { DeploymentEvent, StatusUpdate, LogUpdate, Deployment } from '@/types/deployment';
 
+export interface DeploymentLogEntry {
+  line: string;
+  stream?: 'stdout' | 'stderr';
+}
+
+interface DockerLogEntry {
+  stream?: string;
+  aux?: Record<string, unknown>;
+  error?: string;
+  errorDetail?: Record<string, unknown>;
+  status?: string;       // Docker pull status
+  id?: string;           // Layer ID for pull
+  progress?: string;     // Progress string
+  progressDetail?: Record<string, unknown>; // Detailed progress
+}
+
+/**
+ * Parse Docker build JSON format and extract content with stream detection
+ */
+function parseDockerLogLine(line: string): DeploymentLogEntry | null {
+  const trimmed = line.trim();
+  
+  // Check if line looks like JSON
+  if (!trimmed.startsWith('{')) {
+    // Not JSON, detect stream type from content
+    return {
+      line: trimmed,
+      stream: detectStreamType(trimmed),
+    };
+  }
+
+  try {
+    const dockerLog: DockerLogEntry = JSON.parse(trimmed);
+
+    // Extract content based on what's available
+    if (dockerLog.error) {
+      // Error field present - this is an error message
+      return {
+        line: dockerLog.error,
+        stream: 'stderr',
+      };
+    }
+
+    if (dockerLog.stream) {
+      // Stream field present - this is the main content
+      const content = dockerLog.stream;
+      return {
+        line: content,
+        stream: detectStreamType(content),
+      };
+    }
+
+    // Handle Docker image pull progress logs (status field)
+    // Skip most progress updates to reduce noise
+    if (dockerLog.status) {
+      switch (dockerLog.status) {
+        case 'Downloading':
+        case 'Extracting':
+        case 'Waiting':
+        case 'Verifying Checksum':
+          // Skip noisy progress updates
+          return null;
+        case 'Pull complete':
+        case 'Download complete':
+        case 'Already exists':
+          // Show completion messages
+          const completeMsg = dockerLog.id 
+            ? `${dockerLog.status}: ${dockerLog.id}` 
+            : dockerLog.status;
+          return {
+            line: completeMsg,
+            stream: 'stdout',
+          };
+        default:
+          // Show other status messages (like "Pulling from...")
+          const statusMsg = dockerLog.id 
+            ? `${dockerLog.status}: ${dockerLog.id}` 
+            : dockerLog.status;
+          return {
+            line: statusMsg,
+            stream: 'stdout',
+          };
+      }
+    }
+
+    // Aux field only (metadata like image IDs) - skip these
+    if (dockerLog.aux) {
+      return null;
+    }
+  } catch {
+    // Failed to parse as JSON, treat as regular line
+    return {
+      line: trimmed,
+      stream: detectStreamType(trimmed),
+    };
+  }
+
+  // Unknown format, return original
+  return {
+    line: trimmed,
+    stream: 'stdout',
+  };
+}
+
+/**
+ * Detect if a log line is from stderr based on common patterns
+ */
+function detectStreamType(line: string): 'stdout' | 'stderr' {
+  const lineLower = line.toLowerCase();
+
+  const stderrPatterns = [
+    'error:',
+    'err:',
+    'fatal:',
+    'panic:',
+    'warning:',
+    'warn:',
+    'failed',
+    'failure',
+    'exception:',
+    'traceback',
+    'stack trace',
+    ' err ',
+    '[error]',
+    '[err]',
+    '[fatal]',
+    '[panic]',
+    '[warning]',
+    '[warn]',
+  ];
+
+  for (const pattern of stderrPatterns) {
+    if (lineLower.includes(pattern)) {
+      return 'stderr';
+    }
+  }
+
+  return 'stdout';
+}
+
 interface UseDeploymentMonitorOptions {
   deploymentId: number;
   enabled: boolean;
   onComplete?: () => void;
   onError?: (error: string) => void;
+  onClose?: () => void;
 }
 
 export const useDeploymentMonitor = ({
@@ -13,8 +154,9 @@ export const useDeploymentMonitor = ({
   enabled,
   onComplete,
   onError,
+  onClose,
 }: UseDeploymentMonitorOptions) => {
-  const [logs, setLogs] = useState<string[]>([]);
+  const [logs, setLogs] = useState<DeploymentLogEntry[]>([]);
   const [status, setStatus] = useState<StatusUpdate | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -43,6 +185,16 @@ export const useDeploymentMonitor = ({
           hasFetchedRef.current = true;
           return;
         }
+        if (response.status === 404) {
+          const result = await response.json();
+          const errorMsg = result.message || 'Deployment log file not found';
+          setError(errorMsg);
+          onError?.(errorMsg);
+          onClose?.();
+          setIsLoading(false);
+          hasFetchedRef.current = true;
+          return;
+        }
         throw new Error('Failed to fetch deployment logs');
       }
 
@@ -51,7 +203,13 @@ export const useDeploymentMonitor = ({
       const logsContent: string = result.data.logs;
 
       if (logsContent) {
-        setLogs(logsContent.split('\n').filter(line => line.length > 0));
+        setLogs(
+          logsContent
+            .split('\n')
+            .filter(line => line.length > 0)
+            .map(line => parseDockerLogLine(line))
+            .filter(entry => entry !== null) as DeploymentLogEntry[]
+        );
       }
 
       setStatus({
@@ -116,7 +274,13 @@ export const useDeploymentMonitor = ({
             case 'log': {
               const logData = deploymentEvent.data as LogUpdate;
               if (logData.line && logData.line.trim()) {
-                setLogs((prev) => [...prev, logData.line]);
+                setLogs((prev) => [
+                  ...prev,
+                  {
+                    line: logData.line,
+                    stream: logData.stream,
+                  },
+                ]);
               }
               break;
             }
@@ -146,6 +310,11 @@ export const useDeploymentMonitor = ({
               console.error('[DeploymentMonitor] Error event:', errorMsg);
               setError(errorMsg);
               onError?.(errorMsg);
+
+              // If it's a log file not found error, close the viewer
+              if (errorMsg.includes('log file not found') || errorMsg.includes('Failed to read deployment logs')) {
+                onClose?.();
+              }
               break;
             }
           }
@@ -194,7 +363,7 @@ export const useDeploymentMonitor = ({
       setError('Failed to establish connection');
       setIsLoading(false);
     }
-  }, [deploymentId, enabled, isLive, onComplete, onError]);
+  }, [deploymentId, enabled, isLive, onComplete, onError, onClose]);
 
   useEffect(() => {
     if (enabled) {

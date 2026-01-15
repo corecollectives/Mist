@@ -4,10 +4,9 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
-	"strings"
 	"time"
 
+	"github.com/corecollectives/mist/git"
 	"github.com/corecollectives/mist/models"
 	"github.com/rs/zerolog/log"
 )
@@ -32,7 +31,7 @@ func CloneRepo(appId int64, logFile *os.File) error {
 
 	if shouldMigrate {
 		log.Info().Int64("app_id", appId).Msg("Migrating legacy app to new git format")
-		// for legacy GitHub apps, we don't have a git_provider_id 
+		// for legacy GitHub apps, we don't have a git_provider_id
 		// we just update the git_clone_url
 		err = models.UpdateAppGitCloneURL(appId, cloneURL, nil)
 		if err != nil {
@@ -75,19 +74,25 @@ func CloneRepo(appId int64, logFile *os.File) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, "git", "clone", "--branch", branch, repoURL, path)
-	output, err := cmd.CombinedOutput()
-	lines := strings.Split(string(output), "\n")
-	for _, line := range lines {
-		if len(line) > 0 {
-			fmt.Fprintf(logFile, "[GIT] %s\n", line)
-		}
-	}
+	// old command implementation
+	//
+	//
+	// cmd := exec.CommandContext(ctx, "git", "clone", "--branch", branch, repoURL, path)
+	// output, err := cmd.CombinedOutput()
+	// lines := strings.Split(string(output), "\n")
+	// for _, line := range lines {
+	// 	if len(line) > 0 {
+	// 		fmt.Fprintf(logFile, "[GIT] %s\n", line)
+	// 	}
+	// }
+
+	// new git sdk implementation
+	err = git.CloneRepo(repoURL, branch, logFile, path)
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
 			return fmt.Errorf("git clone timed out after 10 minutes")
 		}
-		return fmt.Errorf("error cloning repository: %v\n%s", err, string(output))
+		return fmt.Errorf("error cloning repository: %v\n", err)
 	}
 
 	log.Info().Int64("app_id", appId).Str("path", path).Msg("Repository cloned successfully")

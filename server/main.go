@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/corecollectives/mist/api"
 	"github.com/corecollectives/mist/db"
+	"github.com/corecollectives/mist/lib"
 	"github.com/corecollectives/mist/models"
 	"github.com/corecollectives/mist/queue"
 	"github.com/corecollectives/mist/store"
@@ -32,8 +33,9 @@ func main() {
 	// particular update in the db, and it gets stuck in 'in_progress' which leads disability in doing
 	// updates, so on each startup we need to check if the last update was successfull or not and change
 	// the status in the db accordingly, even if the update failed atleast we can retry it
-	if err := models.CheckAndCompletePendingUpdates(); err != nil {
-		log.Warn().Err(err).Msg("Failed to check pending updates")
+	// similarly if a deployment is running and the system goes down due to overload or any other thing, it get stuck to "progress" this function cleans that too
+	if err := lib.CleanupOnStartup(); err != nil {
+		log.Warn().Err(err).Msg("Failed to check pending updates and deployments")
 	}
 
 	err = store.InitStore()

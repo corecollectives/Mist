@@ -606,7 +606,7 @@ tail -50 /tmp/mist-install.log
 ### Community Support
 
 - **GitHub Issues:** [Report update issues](https://github.com/corecollectives/mist/issues)
-- **Discord:** [Get real-time help](https://discord.gg/kxK8XHR6)
+- **Discord:** [Get real-time help](https://discord.gg/hr6TCQDDkj)
 - **Discussions:** [Ask questions](https://github.com/corecollectives/mist/discussions)
 
 ### Include in Bug Report

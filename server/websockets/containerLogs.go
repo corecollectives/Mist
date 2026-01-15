@@ -1,17 +1,18 @@
 package websockets
 
 import (
-	"bufio"
 	"context"
+	"encoding/binary"
 	"fmt"
+	"io"
 	"net/http"
-	"os/exec"
 	"strconv"
 	"time"
 
 	"github.com/corecollectives/mist/docker"
 	"github.com/corecollectives/mist/models"
 	"github.com/gorilla/websocket"
+	"github.com/moby/moby/client"
 	"github.com/rs/zerolog/log"
 )
 
@@ -104,43 +105,97 @@ func ContainerLogsHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	logChan := make(chan string, 100)
+	type logMessage struct {
+		line       string
+		streamType string
+	}
+
+	logChan := make(chan logMessage, 100)
 	errChan := make(chan error, 1)
 
 	go func() {
 		defer close(logChan)
 
-		cmd := exec.CommandContext(ctx, "sh", "-c",
-			fmt.Sprintf("docker logs -f --tail 100 %s 2>&1", containerName))
-
-		stdout, err := cmd.StdoutPipe()
+		cli, err := client.New(client.FromEnv)
 		if err != nil {
-			errChan <- fmt.Errorf("failed to create stdout pipe: %w", err)
+			errChan <- fmt.Errorf("failed to create docker client: %w", err)
 			return
 		}
+		defer cli.Close()
 
-		if err := cmd.Start(); err != nil {
-			errChan <- fmt.Errorf("failed to start docker logs: %w", err)
-			return
+		options := client.ContainerLogsOptions{
+			ShowStdout: true,
+			ShowStderr: true,
+			Follow:     true,
+			Tail:       "100",
+			Timestamps: false,
 		}
 
-		scanner := bufio.NewScanner(stdout)
-		scanner.Buffer(make([]byte, 64*1024), 1024*1024)
+		logReader, err := cli.ContainerLogs(ctx, containerName, options)
+		if err != nil {
+			errChan <- fmt.Errorf("failed to get container logs: %w", err)
+			return
+		}
+		defer logReader.Close()
 
-		for scanner.Scan() {
-			line := scanner.Text()
+		buf := make([]byte, 8)
+		for {
 			select {
 			case <-ctx.Done():
 				return
-			case logChan <- line:
+			default:
+			}
+
+			_, err := io.ReadFull(logReader, buf)
+			if err != nil {
+				if err == io.EOF {
+					return
+				}
+				errChan <- fmt.Errorf("failed to read log header: %w", err)
+				return
+			}
+
+			streamType := "stdout"
+			if buf[0] == 2 {
+				streamType = "stderr"
+			}
+
+			payloadSize := binary.BigEndian.Uint32(buf[4:8])
+
+			payload := make([]byte, payloadSize)
+			_, err = io.ReadFull(logReader, payload)
+			if err != nil {
+				if err == io.EOF {
+					return
+				}
+				errChan <- fmt.Errorf("failed to read log payload: %w", err)
+				return
+			}
+
+			lines := string(payload)
+			currentLine := ""
+			for i := 0; i < len(lines); i++ {
+				if lines[i] == '\n' {
+					if currentLine != "" {
+						select {
+						case <-ctx.Done():
+							return
+						case logChan <- logMessage{line: currentLine, streamType: streamType}:
+						}
+					}
+					currentLine = ""
+				} else {
+					currentLine += string(lines[i])
+				}
+			}
+			if currentLine != "" {
+				select {
+				case <-ctx.Done():
+					return
+				case logChan <- logMessage{line: currentLine, streamType: streamType}:
+				}
 			}
 		}
-
-		if err := scanner.Err(); err != nil {
-			errChan <- fmt.Errorf("scanner error: %w", err)
-		}
-
-		cmd.Wait()
 	}()
 
 	go func() {
@@ -190,7 +245,7 @@ func ContainerLogsHandler(w http.ResponseWriter, r *http.Request) {
 			})
 			return
 
-		case line, ok := <-logChan:
+		case msg, ok := <-logChan:
 			if !ok {
 				conn.WriteJSON(ContainerLogsEvent{
 					Type:      "end",
@@ -206,7 +261,8 @@ func ContainerLogsHandler(w http.ResponseWriter, r *http.Request) {
 				Type:      "log",
 				Timestamp: time.Now().Format(time.RFC3339),
 				Data: map[string]interface{}{
-					"line": line,
+					"line":   msg.line,
+					"stream": msg.streamType,
 				},
 			}
 

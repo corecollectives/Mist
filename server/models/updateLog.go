@@ -174,6 +174,7 @@ func GetUpdateLogsAsString() (string, error) {
 
 	return builder.String(), nil
 }
+<<<<<<< HEAD
 
 func CheckAndCompletePendingUpdates() error {
 	logs, err := GetUpdateLogs(1)
@@ -584,3 +585,5 @@ func CheckAndCompletePendingUpdates() error {
 
 // 	return nil
 // }
+=======
+>>>>>>> main

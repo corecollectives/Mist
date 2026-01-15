@@ -1,0 +1,34 @@
+name: PR Build Check
+
+on:
+  pull_request:
+  push: 
+    branches: 
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+
+      - name: Install frontend deps
+        working-directory: dash 
+        run: bun install --frozen-lockfile
+
+      - name: Build frontend
+        working-directory: dash 
+        run: bun run build
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Build server 
+        working-directory: server 
+        run: go build ./...

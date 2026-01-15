@@ -178,7 +178,7 @@ Mist is a **lightweight, self-hostable Platform-as-a-Service** designed for deve
 ## Community
 
 - [GitHub Repository](https://github.com/corecollectives/mist)
-- [Discord Server](https://discord.gg/kxK8XHR6)
+- [Discord Server](https://discord.gg/hr6TCQDDkj)
 - [Report Issues](https://github.com/corecollectives/mist/issues)
 - [Discussions](https://github.com/corecollectives/mist/discussions)
 

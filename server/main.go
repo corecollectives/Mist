@@ -14,34 +14,6 @@ func main() {
 	utils.InitLogger()
 	log.Info().Msg("Starting Mist server")
 	dbInstance, err := db.InitDB()
-	dbInstance.AutoMigrate(
-		&models.User{},
-		&models.ApiToken{},
-		&models.App{},
-		&models.AuditLog{},
-		&models.Backup{},
-		&models.Deployment{},
-		&models.EnvVariable{},
-		&models.GithubApp{},
-		&models.Project{},
-		&models.ProjectMember{},
-		&models.GitProvider{},
-		&models.GithubInstallation{},
-		&models.AppRepositories{},
-		&models.Domain{},
-		&models.Volume{},
-		&models.Cron{},
-		&models.Registry{},
-		&models.SystemSettingEntry{},
-		&models.Logs{},
-		&models.AuditLog{},
-		&models.ServiceTemplate{},
-		&models.ApiToken{},
-		&models.Session{},
-		&models.Notification{},
-		&models.UpdateLog{},
-		// &models.SystemSettingsDbVer{}, //this needs checking
-	)
 	_ = queue.InitQueue(dbInstance)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Error initializing database")

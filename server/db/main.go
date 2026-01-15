@@ -9,7 +9,6 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 )
 
 func InitDB() (*gorm.DB, error) {
@@ -25,10 +24,14 @@ func InitDB() (*gorm.DB, error) {
 		return nil, fmt.Errorf("failed to create database directory: %v", err)
 	}
 	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
+		// Logger: logger.Default.LogMode(logger.Info),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %v", err)
+	}
+	err = MigrateDb(db)
+	if err != nil {
+		return nil, err
 	}
 	// if err := runMigrations(db); err != nil {
 	// 	return nil, fmt.Errorf("failed to run migrations: %v", err)

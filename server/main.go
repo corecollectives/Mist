@@ -24,14 +24,14 @@ func main() {
 		&models.EnvVariable{},
 		&models.GithubApp{},
 		&models.Project{},
-		&models.ProjectMembers{},
+		&models.ProjectMember{},
 		&models.GitProvider{},
 		&models.GithubInstallation{},
 		&models.AppRepositories{},
 		&models.Domain{},
 		&models.Volume{},
 		&models.Cron{},
-		&models.Registries{},
+		&models.Registry{},
 		&models.SystemSettings{},
 		&models.Logs{},
 		&models.AuditLog{},
@@ -46,7 +46,12 @@ func main() {
 		log.Fatal().Err(err).Msg("Error initializing database")
 		return
 	}
-	defer dbInstance.Close()
+	sqldb, err := dbInstance.DB()
+	if err != nil {
+		log.Fatal().Err(err).Msg("Error getting sql.DB from gorm DB")
+		return
+	}
+	defer sqldb.Close()
 	log.Info().Msg("Database initialized successfully")
 	models.SetDB(dbInstance)
 

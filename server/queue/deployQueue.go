@@ -2,11 +2,11 @@ package queue
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"sync"
 
 	"github.com/rs/zerolog/log"
+	"gorm.io/gorm"
 )
 
 type Queue struct {
@@ -18,7 +18,7 @@ type Queue struct {
 
 var queue *Queue
 
-func NewQueue(buffer int, db *sql.DB) *Queue {
+func NewQueue(buffer int, db *gorm.DB) *Queue {
 	ctx, cancel := context.WithCancel(context.Background())
 	q := &Queue{
 		jobs: make(chan int64, buffer),
@@ -36,7 +36,7 @@ func GetQueue() *Queue {
 	return queue
 }
 
-func (q *Queue) StartWorker(db *sql.DB) {
+func (q *Queue) StartWorker(db *gorm.DB) {
 	q.wg.Add(1)
 	go func() {
 		defer q.wg.Done()

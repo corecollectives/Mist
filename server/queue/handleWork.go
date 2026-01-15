@@ -1,7 +1,6 @@
 package queue
 
 import (
-	"database/sql"
 	"fmt"
 	"sync"
 
@@ -10,6 +9,7 @@ import (
 	"github.com/corecollectives/mist/github"
 	"github.com/corecollectives/mist/models"
 	"github.com/corecollectives/mist/utils"
+	"gorm.io/gorm"
 )
 
 // to prevent concurrent deployments of same app
@@ -19,7 +19,7 @@ import (
 // then this will be helpful
 var deploymentLocks sync.Map
 
-func (q *Queue) HandleWork(id int64, db *sql.DB) {
+func (q *Queue) HandleWork(id int64, db *gorm.DB) {
 	defer func() {
 		if r := recover(); r != nil {
 			errMsg := fmt.Sprintf("panic during deployment: %v", r)

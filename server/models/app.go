@@ -195,7 +195,7 @@ func GetAppRepoInfo(appId int64) (string, string, int64, string, error) {
 	return repo, app.GitBranch, app.ProjectID, app.Name, nil
 }
 
-func getAppRepoAndBranch(appId int64) (string, string, error) {
+func GetAppRepoAndBranch(appId int64) (string, string, error) {
 	var app App
 	err := db.Select("git_repository, git_branch").First(&app, appId).Error
 	if err != nil {

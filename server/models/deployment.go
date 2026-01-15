@@ -500,40 +500,52 @@ func UpdateContainerInfo(depID int64, containerID, containerName, imageTag strin
 //		return err
 //	}
 func GetIncompleteDeployments() ([]Deployment, error) {
-	query := `
-	SELECT id, app_id, commit_hash, commit_message, commit_author, triggered_by, 
-	       deployment_number, container_id, container_name, image_tag,
-	       logs, build_logs_path, status, stage, progress, error_message, 
-	       created_at, started_at, finished_at, duration, is_active, rolled_back_from
-	FROM deployments
-	WHERE status = 'building' OR status = 'deploying'
-	ORDER BY created_at DESC
-	`
-
-	rows, err := db.Query(query)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
 	var deployments []Deployment
-	for rows.Next() {
-		var d Deployment
-		if err := rows.Scan(
-			&d.ID, &d.AppID, &d.CommitHash, &d.CommitMessage, &d.CommitAuthor,
-			&d.TriggeredBy, &d.DeploymentNumber, &d.ContainerID, &d.ContainerName,
-			&d.ImageTag, &d.Logs, &d.BuildLogsPath, &d.Status, &d.Stage, &d.Progress,
-			&d.ErrorMessage, &d.CreatedAt, &d.StartedAt, &d.FinishedAt, &d.Duration,
-			&d.IsActive, &d.RolledBackFrom,
-		); err != nil {
-			return nil, err
-		}
-		deployments = append(deployments, d)
-	}
 
-	if err := rows.Err(); err != nil {
+	err := db.
+		Where("status IN ?", []string{"building", "deploying"}).
+		Order("created_at DESC").
+		Find(&deployments).Error
+
+	if err != nil {
 		return nil, err
 	}
 
 	return deployments, nil
+	// query := `
+	// SELECT id, app_id, commit_hash, commit_message, commit_author, triggered_by,
+	//        deployment_number, container_id, container_name, image_tag,
+	//        logs, build_logs_path, status, stage, progress, error_message,
+	//        created_at, started_at, finished_at, duration, is_active, rolled_back_from
+	// FROM deployments
+	// WHERE status = 'building' OR status = 'deploying'
+	// ORDER BY created_at DESC
+	// `
+	//
+	// rows, err := db.Query(query)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// defer rows.Close()
+	//
+	// var deployments []Deployment
+	// for rows.Next() {
+	// 	var d Deployment
+	// 	if err := rows.Scan(
+	// 		&d.ID, &d.AppID, &d.CommitHash, &d.CommitMessage, &d.CommitAuthor,
+	// 		&d.TriggeredBy, &d.DeploymentNumber, &d.ContainerID, &d.ContainerName,
+	// 		&d.ImageTag, &d.Logs, &d.BuildLogsPath, &d.Status, &d.Stage, &d.Progress,
+	// 		&d.ErrorMessage, &d.CreatedAt, &d.StartedAt, &d.FinishedAt, &d.Duration,
+	// 		&d.IsActive, &d.RolledBackFrom,
+	// 	); err != nil {
+	// 		return nil, err
+	// 	}
+	// 	deployments = append(deployments, d)
+	// }
+	//
+	// if err := rows.Err(); err != nil {
+	// 	return nil, err
+	// }
+	//
+	// return deployments, nil
 }

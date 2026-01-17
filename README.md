@@ -55,7 +55,7 @@ fyrer
 
 - [GitHub](https://github.com/corecollectives/mist)
 - [Discord](https://discord.gg/hr6TCQDDkj)
-- [Documentation](https://trymist.cloud/guide)
+- [Documentation](https://trymist.cloud/guide/getting-started.html)
 
 ## License
 

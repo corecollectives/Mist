@@ -1,7 +1,6 @@
 package docker
 
 import (
-	"database/sql"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,9 +8,10 @@ import (
 	"github.com/corecollectives/mist/constants"
 	"github.com/corecollectives/mist/models"
 	"github.com/corecollectives/mist/utils"
+	"gorm.io/gorm"
 )
 
-func DeployerMain(Id int64, db *sql.DB, logFile *os.File, logger *utils.DeploymentLogger) (string, error) {
+func DeployerMain(Id int64, db *gorm.DB, logFile *os.File, logger *utils.DeploymentLogger) (string, error) {
 	dep, err := LoadDeployment(Id, db)
 	if err != nil {
 		logger.Error(err, "Failed to load deployment")
@@ -19,7 +19,9 @@ func DeployerMain(Id int64, db *sql.DB, logFile *os.File, logger *utils.Deployme
 	}
 
 	var appId int64
-	err = db.QueryRow("SELECT app_id FROM deployments WHERE id = ?", Id).Scan(&appId)
+	// err = db.QueryRow("SELECT app_id FROM deployments WHERE id = ?", Id).Scan(&appId)
+	err = db.Table("deployments").Select("app_id").Where("id = ?", Id).Take(&appId).Error
+
 	if err != nil {
 		logger.Error(err, "Failed to get app_id")
 		return "", fmt.Errorf("failed to get app_id: %w", err)
